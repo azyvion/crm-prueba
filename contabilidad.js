@@ -27,7 +27,7 @@
         
         /* ── Mostrar módulo solo a Admin y Gerente ── */
         function _initContabilidad() {
-            const esContAccess = (_rol === 'Admin' || _rol === 'Gerente');
+            const esContAccess = (_rol === 'Admin' || _rol === 'ADMIN' || _rol === 'SUPER_ADMIN' || _rol === 'Gerente' || _rol === 'GERENTE' || window._esSuperAdmin === true);
             const navSec  = document.getElementById('nav-section-contabilidad');
             const navItem = document.getElementById('nav-contabilidad');
             if (navSec)  navSec.style.display  = esContAccess ? '' : 'none';
