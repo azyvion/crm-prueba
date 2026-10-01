@@ -11,7 +11,7 @@ function _encSb()        { return window._sb; }
 function _encSet(id, v)  { const el = document.getElementById(id); if (el) el.textContent = v; }
 function _encHtml(id, v) { const el = document.getElementById(id); if (el) el.innerHTML   = v; }
 
-/* ──────────────────────────────────────────────────────────────────
+/* ────────────────────────────────────────────────────────────────── */
 function _encOrgId() {
     return (typeof window._getEffectiveOrgId === 'function' ? window._getEffectiveOrgId() : null) || window._currentOrgId || null;
 }
@@ -640,4 +640,3 @@ window.eliminarPreguntaEncuesta = async function(pregId, encuestaId) {
         showToast('Error: ' + (e.message || e), '#FF453A');
     }
 };
-
