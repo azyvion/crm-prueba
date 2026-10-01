@@ -3752,7 +3752,7 @@ function _aplicarDashboardInit(r) {
     }
 
     /* 9 · Contabilidad (Admin/Gerente) ────────────────────── */
-    if (r.contabilidad && ((_rol === 'Admin') || (_rol === 'Gerente'))) {
+    if (r.contabilidad && ((_rol === 'Admin') || (_rol === 'ADMIN') || (_rol === 'SUPER_ADMIN') || (_rol === 'Gerente') || (_rol === 'GERENTE') || window._esSuperAdmin === true)) {
         const cont = r.contabilidad;
         if (cont.cuentasBancarias)  { _cuentasBancarias = cont.cuentasBancarias; renderBankGrid(); actualizarSelectCuentas(); }
         if (cont.planCuentas)       { _planCuentas = cont.planCuentas; renderPlanCuentas(_filtroPlanActual); actualizarSelectPlan(); }
@@ -3780,7 +3780,7 @@ function _aplicarDashboardInit(r) {
 
     /* ── Siempre mostrar/ocultar el menú de contabilidad según rol ── */
     (function() {
-        const esContAccess = (_rol === 'Admin' || _rol === 'Gerente');
+        const esContAccess = (_rol === 'Admin' || _rol === 'ADMIN' || _rol === 'SUPER_ADMIN' || _rol === 'Gerente' || _rol === 'GERENTE' || window._esSuperAdmin === true);
         const navSec  = document.getElementById('nav-section-contabilidad');
         const navItem = document.getElementById('nav-contabilidad');
         if (navSec)  navSec.style.display  = esContAccess ? '' : 'none';
@@ -3802,7 +3802,7 @@ function _ovApplyRoles() {
     // SUPER_ADMIN / ADMIN / GERENTE ven todo
     // Rol estándar: ve todos los módulos excepto usuarios y contabilidad
     const rol = _rol || '';
-    const esPrivilegiado = (rol === 'Admin' || rol === 'Gerente' || window._esSuperAdmin);
+    const esPrivilegiado = (rol === 'Admin' || rol === 'ADMIN' || rol === 'SUPER_ADMIN' || rol === 'Gerente' || rol === 'GERENTE' || window._esSuperAdmin);
 
     // Módulos accesibles según rol (estándar ve todo excepto contabilidad/usuarios)
     const puedeProspectos   = true; // todos
