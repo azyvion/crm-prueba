@@ -189,7 +189,7 @@ function _empIrPag(n) {
 
 /* ── FILTROS ──────────────────────────────────────────────────── */
 function filtrarEmpleados(estado, el) {
-    document.querySelectorAll('#page-empleados .filter-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#page-empleados .filter-tab').forEach(b => b.classList.remove('open'));
     if (el) el.classList.add('active');
     _empPagActual = 1;
     renderEmpleados(estado);
@@ -431,10 +431,15 @@ function _empAbrirModal(emp) {
     </div>`;
 
     /* Usar el modal global */
-    document.getElementById('modalTitle').textContent = titulo;
-    document.getElementById('modalBody').innerHTML    = body;
-    document.getElementById('modalSaveBtn').onclick   = () => _empGuardar(esEdicion ? emp.id : null);
-    document.getElementById('modal').classList.add('active');
+    if (typeof openModal === 'function') {
+        openModal(titulo, body);
+        document.getElementById('modalSaveBtn').onclick = () => _empGuardar(esEdicion ? emp.id : null);
+    } else {
+        document.getElementById('modalTitle').textContent = titulo;
+        document.getElementById('modalBody').innerHTML    = body;
+        document.getElementById('modalSaveBtn').onclick   = () => _empGuardar(esEdicion ? emp.id : null);
+        document.getElementById('modal').classList.add('open');
+    }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -502,7 +507,7 @@ async function _empGuardar(id) {
         }
         if (error) throw error;
 
-        document.getElementById('modal').classList.remove('active');
+        document.getElementById('modal').classList.remove('open');
         showToast(id ? 'Empleado actualizado' : 'Empleado creado', '#30D158');
         await loadEmpleados();
 
@@ -580,14 +585,18 @@ function _empVerDetalle(id) {
         ${e.notas ? section('Notas') + `<div style="font-size:13px;color:var(--text-secondary);padding:8px 0">${_empEsc(e.notas)}</div>` : ''}
     `;
 
-    document.getElementById('modalTitle').textContent = 'Detalle del empleado';
-    document.getElementById('modalBody').innerHTML    = body;
+    if (typeof openModal === 'function') {
+        openModal('Detalle del empleado', body);
+    } else {
+        document.getElementById('modalTitle').textContent = 'Detalle del empleado';
+        document.getElementById('modalBody').innerHTML    = body;
+        document.getElementById('modal').classList.add('open');
+    }
     document.getElementById('modalSaveBtn').textContent = 'Editar';
     document.getElementById('modalSaveBtn').onclick   = () => {
-        document.getElementById('modal').classList.remove('active');
+        closeModal();
         _empEditar(id);
     };
-    document.getElementById('modal').classList.add('active');
 }
 
 /* ══════════════════════════════════════════════════════════════
