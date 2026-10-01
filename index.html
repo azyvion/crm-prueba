@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Azyvion CRM — Technology Beyond Limits</title>
+  <meta name="description" content="Azyvion CRM es la plataforma de ventas con IA que centraliza tus contactos, automatiza tu pipeline y cierra más negocios." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:        #0A84FF;
+      --blue-dark:   #005cc5;
+      --blue-soft:   #e8f2ff;
+      --navy:        #0d1b3e;
+      --navy-mid:    #1a2f5e;
+      --text:        #0f1117;
+      --text-2:      #4b5263;
+      --text-3:      #8a92a3;
+      --bg:          #ffffff;
+      --bg-alt:      #f7f8fa;
+      --border:      #e4e7ed;
+      --green:       #22c55e;
+      --orange:      #f97316;
+      --purple:      #7c3aed;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── NAV ─────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      height: 64px;
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 40px;
+      gap: 32px;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .nav-logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(145deg, #0A84FF, #005cc5);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .nav-logo-icon svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    .nav-name { font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+
+    .nav-links {
+      display: flex;
+      gap: 4px;
+      list-style: none;
+      margin-left: 16px;
+      flex: 1;
+    }
+
+    .nav-links a {
+      display: block;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 14.5px;
+      font-weight: 500;
+      color: var(--text-2);
+      text-decoration: none;
+      transition: color .15s, background .15s;
+    }
+
+    .nav-links a:hover { color: var(--text); background: var(--bg-alt); }
+
+    .nav-cta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .btn-ghost {
+      padding: 8px 18px;
+      border-radius: 10px;
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color .15s, color .15s;
+    }
+
+    .btn-ghost:hover { border-color: var(--blue); color: var(--blue); }
+
+    .btn-primary-sm {
+      padding: 8px 20px;
+      border-radius: 10px;
+      font-size: 14.5px;
+      font-weight: 600;
+      color: #fff;
+      background: var(--blue);
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background .15s, transform .1s;
+    }
+
+    .btn-primary-sm:hover { background: var(--blue-dark); }
+    .btn-primary-sm:active { transform: scale(0.98); }
+
+    /* ─── HERO ────────────────────────────────────── */
+    .hero {
+      padding: 140px 40px 80px;
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--blue);
+      background: var(--blue-soft);
+      padding: 5px 12px;
+      border-radius: 20px;
+      margin-bottom: 22px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .hero-tag .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--blue);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.7); }
+    }
+
+    .hero h1 {
+      font-size: clamp(36px, 4.5vw, 56px);
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: -1.5px;
+      color: var(--text);
+      margin-bottom: 22px;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: var(--blue);
+    }
+
+    .hero-desc {
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--text-2);
+      max-width: 480px;
+      margin-bottom: 36px;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .btn-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 15px 28px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all .18s;
+    }
+
+    .btn-hero.blue {
+      background: var(--blue);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(10,132,255,0.35);
+    }
+
+    .btn-hero.blue:hover { background: var(--blue-dark); box-shadow: 0 6px 28px rgba(10,132,255,0.45); transform: translateY(-1px); }
+
+    .btn-hero.outline {
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      background: transparent;
+    }
+
+    .btn-hero.outline:hover { border-color: var(--blue); color: var(--blue); }
+
+    .hero-trust {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 28px;
+      font-size: 13px;
+      color: var(--text-3);
+    }
+
+    .trust-stars { color: #f59e0b; font-size: 14px; letter-spacing: 1px; }
+
+
+    /* ─── PRODUCT PREVIEW ────────────────────────── */
+    .product-preview-section {
+      padding: 96px 40px;
+      background: var(--bg);
+    }
+    .product-preview-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .preview-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 20px;
+      background: var(--bg-alt);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 4px;
+      width: fit-content;
+    }
+    .preview-tab {
+      padding: 7px 20px;
+      border-radius: 9px;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-2);
+      cursor: pointer;
+      transition: all .18s;
+    }
+    .preview-tab.active { background: var(--blue); color: #fff; }
+    .preview-frame-wrap {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1.5px solid var(--border);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.13);
+    }
+    .preview-browser-bar {
+      background: #1a2035;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .preview-screen { display: none; }
+    .preview-screen.active { display: block; }
+
+    /* Preview screen tokens */
+    .preview-screen {
+      --pbg: #F2F2F7;
+      --pbg-card: #fff;
+      --pborder: #e4e7ed;
+      --ptext: #0f1117;
+      --ptext-m: #8a92a3;
+      --paccent: #0A84FF;
+      --psidebar: #16171B;
+      --psidebar-text: rgba(255,255,255,0.55);
+      --psidebar-active: #0A84FF;
+      background: var(--pbg);
+    }
+
+    .pscreen-layout {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      height: 420px;
+    }
+
+    .pscreen-sidebar {
+      background: var(--psidebar);
+      padding: 12px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .pscreen-logo {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 8px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      margin-bottom: 8px;
+    }
+    .pscreen-nav-section {
+      font-size: 8.5px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.25);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      padding: 8px 10px 4px;
+    }
+    .pscreen-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 7px;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--psidebar-text);
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .pscreen-nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); }
+    .pscreen-nav-item.active { background: rgba(10,132,255,0.2); color: var(--paccent); }
+    .pscreen-nav-item svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+    .pscreen-main {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 14px 16px;
+      overflow: hidden;
+    }
+    .pscreen-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .pscreen-kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .pscreen-kpi {
+      background: var(--pbg-card);
+      border: 1px solid var(--pborder);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .pscreen-kpi-label { font-size: 9.5px; color: var(--ptext-m); margin-bottom: 4px; }
+    .pscreen-kpi-val { font-size: 18px; font-weight: 800; color: var(--ptext); line-height: 1; letter-spacing: -0.5px; }
+    .pscreen-kpi-delta { font-size: 9px; margin-top: 4px; color: var(--ptext-m); }
+    .pscreen-kpi-delta.up { color: #22c55e; }
+
+    .pscreen-bottom {
+      display: flex;
+      gap: 10px;
+      flex: 1;
+      overflow: hidden;
+    }
+    .pscreen-card {
+      background: var(--pbg-card);
+      border: 1px solid var(--pborder);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .pscreen-card-title { font-size: 10px; font-weight: 600; color: var(--ptext-m); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+
+    /* Chart */
+    .pscreen-chart { flex: 1; display: flex; align-items: flex-end; }
+    .pchart-bars { display: flex; gap: 6px; align-items: flex-end; height: 100%; width: 100%; }
+    .pchart-bar { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; flex: 1; }
+    .pchart-bar-inner { width: 100%; border-radius: 4px 4px 0 0; flex: 1; }
+    .pchart-bar span { font-size: 8px; color: var(--ptext-m); white-space: nowrap; }
+
+    /* Lead list */
+    .pscreen-lead-list { display: flex; flex-direction: column; gap: 6px; }
+    .pscreen-lead-row { display: flex; align-items: center; gap: 7px; padding: 5px 0; border-bottom: 1px solid var(--pborder); }
+    .pscreen-lead-row:last-child { border-bottom: none; }
+    .pscreen-lead-av { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .pscreen-lead-info { flex: 1; }
+    .pscreen-lead-name { font-size: 10.5px; font-weight: 600; color: var(--ptext); }
+    .pscreen-lead-sub { font-size: 9px; color: var(--ptext-m); }
+    .pscreen-lead-badge { font-size: 10px; }
+    .pscreen-lead-badge.hot { color: #ef4444; }
+    .pscreen-lead-badge.warm { color: #f97316; }
+    .pscreen-lead-badge.new { color: #22c55e; }
+
+    /* Pipeline board */
+    .pkboard-col { display: flex; flex-direction: column; gap: 6px; }
+    .pkboard-head { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 6px; border-bottom: 2px solid; display: flex; align-items: center; justify-content: space-between; }
+    .pkboard-head span { background: rgba(255,255,255,0.15); border-radius: 10px; padding: 1px 6px; }
+    .pkboard-card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 7px; padding: 8px; }
+    .pkbc-co { font-size: 9.5px; font-weight: 700; color: rgba(255,255,255,0.85); }
+    .pkbc-val { font-size: 8.5px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+    .pkbc-bar { height: 2px; border-radius: 2px; margin-top: 5px; }
+
+    /* Contacts table */
+    .pscreen-table-head { display: grid; grid-template-columns: 1.5fr 1.2fr 0.8fr 0.7fr 0.7fr; gap: 8px; padding: 0 8px 8px; border-bottom: 1px solid var(--pborder); font-size: 9px; font-weight: 700; color: var(--ptext-m); text-transform: uppercase; letter-spacing: 0.5px; }
+    .pscreen-table-row { display: grid; grid-template-columns: 1.5fr 1.2fr 0.8fr 0.7fr 0.7fr; gap: 8px; padding: 8px; border-bottom: 1px solid var(--pborder); font-size: 10.5px; color: var(--ptext); align-items: center; }
+    .pscreen-table-row:hover { background: var(--bg-alt); }
+
+    @media(max-width:900px){ .product-preview-section { padding: 64px 24px; } .pscreen-layout { grid-template-columns: 1fr; } .pscreen-sidebar { display: none; } .pscreen-kpi-row { grid-template-columns: repeat(2,1fr); } }
+
+    /* ─── PRICING ─────────────────────────────────── */
+    .pricing-section {
+      padding: 96px 40px;
+      background: var(--bg-alt);
+    }
+    .pricing-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .billing-toggle {
+      display: inline-flex;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+      margin: 32px 0 48px;
+    }
+    .billing-btn {
+      padding: 8px 22px;
+      border-radius: 9px;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-2);
+      cursor: pointer;
+      transition: all .18s;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .billing-btn.active {
+      background: var(--blue);
+      color: #fff;
+    }
+    .save-badge {
+      background: var(--green);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+    .billing-btn.active .save-badge {
+      background: rgba(255,255,255,0.25);
+    }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+    @media(max-width:1024px){.pricing-grid{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:600px){.pricing-grid{grid-template-columns:1fr;}}
+
+    .price-skeleton {
+      background: linear-gradient(90deg, var(--border) 25%, var(--bg-alt) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 22px;
+      height: 420px;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .price-card {
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 22px;
+      padding: 28px 24px;
+      position: relative;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .price-card:hover {
+      box-shadow: 0 8px 36px rgba(0,0,0,0.09);
+      transform: translateY(-3px);
+    }
+    .price-card.featured {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(10,132,255,0.09), 0 12px 40px rgba(10,132,255,0.16);
+    }
+    .price-badge {
+      position: absolute;
+      top: -13px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--blue);
+      color: #fff;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .price-plan {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-2);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .price-amount {
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+      margin-bottom: 14px;
+    }
+    .price-currency { font-size: 22px; font-weight: 700; color: var(--text); margin-top: 8px; }
+    .price-num { font-size: 52px; font-weight: 900; color: var(--text); line-height: 1; letter-spacing: -2px; }
+    .price-cycle { font-size: 14px; color: var(--text-3); font-weight: 500; }
+    .price-desc { font-size: 13.5px; color: var(--text-2); line-height: 1.55; margin-bottom: 22px; min-height: 52px; }
+    .price-btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      border-radius: 11px;
+      font-size: 14.5px;
+      font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all .18s;
+      margin-bottom: 24px;
+      border: 1.5px solid transparent;
+    }
+    .price-btn.outline {
+      border-color: var(--border);
+      color: var(--text);
+      background: transparent;
+    }
+    .price-btn.outline:hover { border-color: var(--blue); color: var(--blue); }
+    .price-btn.primary {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+    }
+    .price-btn.primary:hover { background: var(--blue-dark); }
+    .price-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      margin-bottom: 18px;
+    }
+    .price-features li {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 13.5px;
+      color: var(--text);
+    }
+    .price-features li.feature-off { color: var(--text-3); }
+    .price-features li svg {
+      width: 16px; height: 16px;
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    .price-features li:not(.feature-off) svg { stroke: var(--green); }
+    .price-features li.feature-off svg { stroke: var(--text-3); }
+    .price-note {
+      font-size: 11.5px;
+      color: var(--text-3);
+      text-align: center;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ─── HERO VISUAL (dashboard mockup) ─────────── */
+    .hero-visual {
+      position: relative;
+    }
+
+    .dashboard-frame {
+      background: var(--navy);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.28), 0 4px 16px rgba(0,0,0,0.14);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .dash-topbar {
+      background: var(--navy-mid);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .dot-row { display: flex; gap: 6px; }
+    .dot-row span { width: 10px; height: 10px; border-radius: 50%; display: block; }
+    .dot-row span:nth-child(1) { background: #ff5f57; }
+    .dot-row span:nth-child(2) { background: #ffbd2e; }
+    .dot-row span:nth-child(3) { background: #28c840; }
+
+    .dash-url {
+      flex: 1;
+      background: rgba(255,255,255,0.07);
+      border-radius: 6px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      font-family: monospace;
+    }
+
+    .dash-body {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      height: 340px;
+    }
+
+    .dash-sidebar {
+      background: rgba(255,255,255,0.04);
+      border-right: 1px solid rgba(255,255,255,0.06);
+      padding: 14px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sb-icon {
+      width: 36px; height: 36px;
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+
+    .sb-icon.active { background: var(--blue); }
+    .sb-icon svg { width: 16px; height: 16px; stroke: rgba(255,255,255,0.5); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .sb-icon.active svg { stroke: #fff; }
+
+    .dash-content {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .dash-stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .dash-stat {
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .dash-stat-label { font-size: 9.5px; color: rgba(255,255,255,0.4); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .dash-stat-val { font-size: 18px; font-weight: 800; color: #fff; line-height: 1; }
+    .dash-stat-delta { font-size: 9px; color: var(--green); margin-top: 3px; }
+
+    .dash-pipeline {
+      background: rgba(255,255,255,0.04);
+      border-radius: 10px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.07);
+      flex: 1;
+    }
+
+    .dash-pipeline-title { font-size: 10px; color: rgba(255,255,255,0.5); margin-bottom: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .pipeline-stages {
+      display: flex;
+      gap: 6px;
+      height: 80px;
+      align-items: flex-end;
+    }
+
+    .p-stage { flex: 1; border-radius: 6px 6px 0 0; position: relative; }
+    .p-stage-label { position: absolute; bottom: -16px; left: 0; right: 0; text-align: center; font-size: 7.5px; color: rgba(255,255,255,0.35); white-space: nowrap; overflow: hidden; }
+
+    .dash-leads {
+      background: rgba(255,255,255,0.04);
+      border-radius: 10px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .dash-leads-title { font-size: 10px; color: rgba(255,255,255,0.5); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .lead-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .lead-row:last-child { border-bottom: none; }
+
+    .lead-avatar {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+
+    .lead-name { font-size: 10px; color: rgba(255,255,255,0.8); font-weight: 500; flex: 1; }
+    .lead-val { font-size: 10px; color: var(--blue); font-weight: 600; }
+
+    .lead-status {
+      font-size: 8.5px;
+      padding: 2px 6px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .lead-status.hot { background: rgba(239,68,68,0.2); color: #f87171; }
+    .lead-status.warm { background: rgba(249,115,22,0.2); color: #fb923c; }
+    .lead-status.new { background: rgba(34,197,94,0.2); color: #4ade80; }
+
+    /* floating notification pill */
+    .hero-notif {
+      position: absolute;
+      bottom: -16px;
+      left: -20px;
+      background: #fff;
+      border-radius: 14px;
+      padding: 10px 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .notif-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--green); display: flex; align-items: center; justify-content: center; }
+    .notif-icon svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+    .hero-badge {
+      position: absolute;
+      top: 20px;
+      right: -20px;
+      background: var(--navy);
+      border-radius: 14px;
+      padding: 12px 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      text-align: center;
+    }
+
+    .badge-num { font-size: 22px; font-weight: 900; color: #fff; line-height: 1; }
+    .badge-label { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+    /* ─── STATS BAND ──────────────────────────────── */
+    .stats-band {
+      background: var(--navy);
+      padding: 48px 40px;
+    }
+
+    .stats-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 0 24px;
+      border-right: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .stat-item:last-child { border-right: none; }
+
+    .stat-num {
+      font-size: 42px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+
+    .stat-num span { color: var(--blue); }
+
+    .stat-desc {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    /* ─── FEATURES ────────────────────────────────── */
+    .section {
+      padding: 96px 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-tag {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--blue);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: clamp(28px, 3.5vw, 42px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.1;
+      color: var(--text);
+      max-width: 600px;
+      margin-bottom: 18px;
+    }
+
+    .section-desc {
+      font-size: 17px;
+      color: var(--text-2);
+      max-width: 560px;
+      line-height: 1.65;
+      margin-bottom: 56px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--blue);
+      box-shadow: 0 8px 32px rgba(10,132,255,0.1);
+    }
+
+    .feature-icon {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .feature-icon svg { width: 22px; height: 22px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    .feature-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 10px;
+      letter-spacing: -0.3px;
+    }
+
+    .feature-desc {
+      font-size: 14.5px;
+      color: var(--text-2);
+      line-height: 1.65;
+    }
+
+    /* ─── PIPELINE SECTION ────────────────────────── */
+    .pipeline-section {
+      background: var(--bg-alt);
+      padding: 96px 40px;
+    }
+
+    .pipeline-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1.1fr;
+      gap: 72px;
+      align-items: center;
+    }
+
+    .pipeline-visual {
+      background: var(--navy);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.22);
+    }
+
+    .pv-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .pv-title span {
+      background: rgba(10,132,255,0.2);
+      color: var(--blue);
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .kanban-cols {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .kanban-col-head {
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .kcol-1 .kanban-col-head { border-color: var(--blue); color: var(--blue); }
+    .kcol-2 .kanban-col-head { border-color: var(--orange); color: var(--orange); }
+    .kcol-3 .kanban-col-head { border-color: var(--purple); color: var(--purple); }
+    .kcol-4 .kanban-col-head { border-color: var(--green); color: var(--green); }
+
+    .kanban-card {
+      background: rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 9px 10px;
+      margin-bottom: 6px;
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .kc-company { font-size: 9.5px; font-weight: 700; color: rgba(255,255,255,0.85); margin-bottom: 3px; }
+    .kc-value { font-size: 8.5px; color: rgba(255,255,255,0.45); }
+    .kc-bar { height: 3px; border-radius: 2px; margin-top: 6px; background: linear-gradient(90deg, var(--blue), transparent); }
+
+    .kcol-2 .kc-bar { background: linear-gradient(90deg, var(--orange), transparent); }
+    .kcol-3 .kc-bar { background: linear-gradient(90deg, var(--purple), transparent); }
+    .kcol-4 .kc-bar { background: linear-gradient(90deg, var(--green), transparent); }
+
+    .pipeline-text {}
+
+    .check-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .check-list li {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      font-size: 15.5px;
+      color: var(--text-2);
+      line-height: 1.55;
+    }
+
+    .check-list li::before {
+      content: '';
+      flex-shrink: 0;
+      width: 22px; height: 22px;
+      margin-top: 1px;
+      border-radius: 50%;
+      background: var(--blue-soft);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230A84FF' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+      background-size: 13px;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    /* ─── AI SECTION ──────────────────────────────── */
+    .ai-section {
+      padding: 96px 40px;
+      background: var(--bg);
+    }
+
+    .ai-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .ai-cards {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      margin-top: 56px;
+    }
+
+    .ai-card {
+      border-radius: 20px;
+      padding: 36px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ai-card.dark {
+      background: var(--navy);
+      color: #fff;
+    }
+
+    .ai-card.light {
+      background: var(--bg-alt);
+      border: 1.5px solid var(--border);
+    }
+
+    .ai-card-icon {
+      width: 52px; height: 52px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 22px;
+    }
+
+    .ai-card-icon svg { width: 24px; height: 24px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    .ai-card-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+
+    .ai-card.dark .ai-card-title { color: #fff; }
+    .ai-card.light .ai-card-title { color: var(--text); }
+
+    .ai-card-desc {
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    .ai-card.dark .ai-card-desc { color: rgba(255,255,255,0.6); }
+    .ai-card.light .ai-card-desc { color: var(--text-2); }
+
+    .ai-glow {
+      position: absolute;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.15;
+      pointer-events: none;
+    }
+
+    /* ─── TESTIMONIALS ────────────────────────────── */
+    .testimonials {
+      background: var(--bg-alt);
+      padding: 96px 40px;
+    }
+
+    .testimonials-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .testi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 56px;
+    }
+
+    .testi-card {
+      background: var(--bg);
+      border-radius: 20px;
+      padding: 28px;
+      border: 1.5px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .testi-stars { color: #f59e0b; font-size: 14px; letter-spacing: 2px; }
+
+    .testi-quote {
+      font-size: 15px;
+      color: var(--text-2);
+      line-height: 1.7;
+      flex: 1;
+    }
+
+    .testi-author {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .testi-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 800; color: #fff;
+      flex-shrink: 0;
+    }
+
+    .testi-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .testi-role {
+      font-size: 12.5px;
+      color: var(--text-3);
+    }
+
+    /* ─── CTA BAND ────────────────────────────────── */
+    .cta-band {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+      padding: 96px 40px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-band::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 80% at 50% 0%, rgba(10,132,255,0.25), transparent);
+      pointer-events: none;
+    }
+
+    .cta-band-inner {
+      position: relative;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .cta-band h2 {
+      font-size: clamp(30px, 4vw, 48px);
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -1px;
+      line-height: 1.1;
+      margin-bottom: 18px;
+    }
+
+    .cta-band p {
+      font-size: 17px;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.65;
+      margin-bottom: 36px;
+    }
+
+    .cta-actions {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-cta-white {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 15px 30px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--navy);
+      background: #fff;
+      text-decoration: none;
+      transition: all .18s;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .btn-cta-white:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+
+    .btn-cta-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 15px 30px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      border: 1.5px solid rgba(255,255,255,0.3);
+      text-decoration: none;
+      transition: all .18s;
+    }
+
+    .btn-cta-outline:hover { border-color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.07); }
+
+    /* ─── FOOTER ──────────────────────────────────── */
+    footer {
+      background: var(--navy);
+      padding: 56px 40px 32px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .footer-top {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+
+    .footer-brand-desc {
+      font-size: 14px;
+      color: rgba(255,255,255,0.4);
+      line-height: 1.65;
+      margin-top: 14px;
+      max-width: 280px;
+    }
+
+    .footer-col-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.7);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 16px;
+    }
+
+    .footer-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .footer-links a {
+      font-size: 14px;
+      color: rgba(255,255,255,0.4);
+      text-decoration: none;
+      transition: color .15s;
+    }
+
+    .footer-links a:hover { color: rgba(255,255,255,0.85); }
+
+    .footer-bottom {
+      padding-top: 28px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .footer-copy { font-size: 13px; color: rgba(255,255,255,0.3); }
+
+    .footer-legal {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-legal a {
+      font-size: 13px;
+      color: rgba(255,255,255,0.35);
+      text-decoration: none;
+    }
+
+    .footer-legal a:hover { color: rgba(255,255,255,0.7); }
+
+    /* ─── RESPONSIVE ──────────────────────────────── */
+    @media (max-width: 900px) {
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      .hero { grid-template-columns: 1fr; padding: 100px 24px 60px; gap: 40px; }
+      .hero h1 { font-size: 36px; }
+      .hero-visual { display: none; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); gap: 32px; }
+      .stat-item { border-right: none; }
+      .section { padding: 64px 24px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .pipeline-section { padding: 64px 24px; }
+      .pipeline-inner { grid-template-columns: 1fr; gap: 40px; }
+      .ai-cards { grid-template-columns: 1fr; }
+      .testimonials { padding: 64px 24px; }
+      .testi-grid { grid-template-columns: 1fr; }
+      .cta-band { padding: 64px 24px; }
+      footer { padding: 48px 24px 28px; }
+      .footer-top { grid-template-columns: 1fr 1fr; gap: 32px; }
+    }
+
+    @media (max-width: 600px) {
+      .stats-inner { grid-template-columns: 1fr; }
+      .footer-top { grid-template-columns: 1fr; }
+      .hero-actions { flex-direction: column; align-items: flex-start; }
+      .btn-hero { width: 100%; justify-content: center; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════ NAV ══════════════════════ -->
+  <nav>
+    <a class="nav-logo" href="#">
+      <div class="nav-logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <span class="nav-name">Azyvion CRM</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#features">Funciones</a></li>
+      <li><a href="#pipeline">Pipeline</a></li>
+      <li><a href="#ia">IA</a></li>
+      <li><a href="#precios">Precios</a></li>
+      <li><a href="#clientes">Clientes</a></li>
+      <li><a href="#">Precios</a></li>
+    </ul>
+    <div class="nav-cta">
+      <a href="login.html" class="btn-ghost">Iniciar sesión</a>
+      <a href="register.html" class="btn-primary-sm">Crear cuenta gratis</a>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════ HERO ══════════════════════ -->
+  <section>
+    <div class="hero">
+      <div class="hero-text">
+        <div class="hero-tag">
+          <span class="dot"></span>
+          Nuevo — IA Agentic disponible
+        </div>
+        <h1>El CRM que <em>cierra negocios</em>, no solo los registra</h1>
+        <p class="hero-desc">Centraliza contactos, automatiza tu pipeline y deja que la IA trabaje por ti. Más de 1,200 equipos en Latinoamérica confían en Azyvion para vender más rápido.</p>
+        <div class="hero-actions">
+          <a href="register.html" class="btn-hero blue">
+            Comenzar gratis
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="#features" class="btn-hero outline">Ver funciones</a>
+        </div>
+        <div class="hero-trust">
+          <span class="trust-stars">★★★★★</span>
+          <span>4.8/5 · Más de 1,200 empresas activas · Sin tarjeta de crédito</span>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <!-- Dashboard mockup -->
+        <div class="dashboard-frame">
+          <div class="dash-topbar">
+            <div class="dot-row">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="dash-url">app.azyvion.com/dashboard</div>
+          </div>
+          <div class="dash-body">
+            <div class="dash-sidebar">
+              <div class="sb-icon active">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              </div>
+              <div class="sb-icon">
+                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div class="sb-icon">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+              </div>
+              <div class="sb-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div class="sb-icon">
+                <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.37 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.71a16 16 0 0 0 7.38 7.38l.91-.91a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              </div>
+            </div>
+            <div class="dash-content">
+              <div class="dash-stats-row">
+                <div class="dash-stat">
+                  <div class="dash-stat-label">Ingresos</div>
+                  <div class="dash-stat-val">$84K</div>
+                  <div class="dash-stat-delta">↑ 18% este mes</div>
+                </div>
+                <div class="dash-stat">
+                  <div class="dash-stat-label">Leads activos</div>
+                  <div class="dash-stat-val">247</div>
+                  <div class="dash-stat-delta">↑ 32 nuevos</div>
+                </div>
+                <div class="dash-stat">
+                  <div class="dash-stat-label">Tasa cierre</div>
+                  <div class="dash-stat-val">68%</div>
+                  <div class="dash-stat-delta">↑ 5 pts</div>
+                </div>
+              </div>
+              <div class="dash-pipeline">
+                <div class="dash-pipeline-title">Pipeline · Q4 2026</div>
+                <div class="pipeline-stages">
+                  <div class="p-stage" style="height:40%;background:rgba(10,132,255,0.6);">
+                    <div class="p-stage-label">Prospecto</div>
+                  </div>
+                  <div class="p-stage" style="height:70%;background:rgba(249,115,22,0.6);">
+                    <div class="p-stage-label">Calificado</div>
+                  </div>
+                  <div class="p-stage" style="height:55%;background:rgba(124,58,237,0.6);">
+                    <div class="p-stage-label">Propuesta</div>
+                  </div>
+                  <div class="p-stage" style="height:35%;background:rgba(34,197,94,0.6);">
+                    <div class="p-stage-label">Negociación</div>
+                  </div>
+                  <div class="p-stage" style="height:20%;background:rgba(34,197,94,0.9);">
+                    <div class="p-stage-label">Cerrado</div>
+                  </div>
+                </div>
+              </div>
+              <div class="dash-leads">
+                <div class="dash-leads-title">Leads recientes</div>
+                <div class="lead-row">
+                  <div class="lead-avatar" style="background:#0A84FF">CM</div>
+                  <div class="lead-name">Constructora Mérida</div>
+                  <div class="lead-val">$12,400</div>
+                  <div class="lead-status hot">Caliente</div>
+                </div>
+                <div class="lead-row">
+                  <div class="lead-avatar" style="background:#7c3aed">TP</div>
+                  <div class="lead-name">TechParts S.A.</div>
+                  <div class="lead-val">$8,200</div>
+                  <div class="lead-status warm">Tibio</div>
+                </div>
+                <div class="lead-row">
+                  <div class="lead-avatar" style="background:#22c55e">AV</div>
+                  <div class="lead-name">Agrícola Vásquez</div>
+                  <div class="lead-val">$5,600</div>
+                  <div class="lead-status new">Nuevo</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Floating elements -->
+        <div class="hero-notif">
+          <div class="notif-icon">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          Negocio cerrado · $12,400
+        </div>
+        <div class="hero-badge">
+          <div class="badge-num">68%</div>
+          <div class="badge-label">Tasa de cierre</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ STATS ══════════════════════ -->
+  <div class="stats-band">
+    <div class="stats-inner">
+      <div class="stat-item">
+        <div class="stat-num">1<span>,200</span>+</div>
+        <div class="stat-desc">Empresas activas en Latinoamérica</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num"><span>$</span>48M</div>
+        <div class="stat-desc">En ventas procesadas este año</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">38<span>%</span></div>
+        <div class="stat-desc">Más cierres promedio en 90 días</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">4<span>.8</span></div>
+        <div class="stat-desc">Calificación promedio de clientes</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ FEATURES ══════════════════════ -->
+  <div id="features">
+    <div class="section">
+      <div class="section-tag">Funciones clave</div>
+      <h2 class="section-title">Todo lo que tu equipo de ventas necesita</h2>
+      <p class="section-desc">Desde el primer contacto hasta el cierre y la retención. Azyvion CRM cubre cada etapa del proceso con herramientas pensadas para vendedores reales.</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#e8f2ff;">
+            <svg viewBox="0 0 24 24" style="stroke:#0A84FF"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="feature-title">Gestión de contactos</div>
+          <div class="feature-desc">Un perfil completo por contacto: historial de interacciones, actividad, documentos adjuntos y notas. Nada se pierde.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#fef3eb;">
+            <svg viewBox="0 0 24 24" style="stroke:#f97316"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+          </div>
+          <div class="feature-title">Pipeline visual</div>
+          <div class="feature-desc">Arrastra y suelta negocios entre etapas. Crea múltiples pipelines personalizados para cada línea de negocio o equipo.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#f0ebff;">
+            <svg viewBox="0 0 24 24" style="stroke:#7c3aed"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
+          <div class="feature-title">Automatización</div>
+          <div class="feature-desc">Define flujos de trabajo que actúan por ti: correos de seguimiento, asignación de leads, recordatorios y cambios de etapa automáticos.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#eafbf0;">
+            <svg viewBox="0 0 24 24" style="stroke:#22c55e"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <div class="feature-title">Email integrado</div>
+          <div class="feature-desc">Envía, recibe y rastrea correos directamente desde el CRM. Plantillas personalizables y métricas de apertura en tiempo real.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#fff4e6;">
+            <svg viewBox="0 0 24 24" style="stroke:#f59e0b"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="feature-title">Actividades y agenda</div>
+          <div class="feature-desc">Programa llamadas, reuniones y tareas. El equipo siempre sabe qué hacer hoy, sin revisar múltiples calendarios.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#fdeaea;">
+            <svg viewBox="0 0 24 24" style="stroke:#ef4444"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+          <div class="feature-title">Reportes y dashboards</div>
+          <div class="feature-desc">Métricas de ventas en tiempo real: proyección de ingresos, desempeño por agente, ciclo de venta promedio y tasa de conversión.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ PRODUCT PREVIEW ══════════════════════ -->
+  <div class="product-preview-section">
+    <div class="product-preview-inner">
+      <div class="section-tag">Vista real del producto</div>
+      <h2 class="section-title">Lo que verá tu equipo cada día</h2>
+      <p class="section-desc">Una interfaz diseñada para vendedores, no para contadores. Rápida, clara y sin curva de aprendizaje.</p>
+
+      <div class="preview-tabs">
+        <button class="preview-tab active" onclick="showPreview('overview',this)">Inicio</button>
+        <button class="preview-tab" onclick="showPreview('pipeline',this)">Pipeline</button>
+        <button class="preview-tab" onclick="showPreview('contactos',this)">Contactos</button>
+      </div>
+
+      <div class="preview-frame-wrap">
+        <!-- Topbar del browser -->
+        <div class="preview-browser-bar">
+          <div class="dot-row"><span></span><span></span><span></span></div>
+          <div class="dash-url" id="previewUrl">app.azyvion.com/dashboard</div>
+        </div>
+
+        <!-- VISTA: OVERVIEW -->
+        <div class="preview-screen active" id="preview-overview">
+          <div class="pscreen-layout">
+            <!-- Sidebar -->
+            <div class="pscreen-sidebar">
+              <div class="pscreen-logo">
+                <div class="nav-logo-icon" style="width:28px;height:28px;border-radius:7px;">
+                  <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                </div>
+                <span style="font-size:11px;font-weight:700;color:#fff;">Azyvion</span>
+              </div>
+              <div class="pscreen-nav-section">General</div>
+              <div class="pscreen-nav-item active">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                Inicio
+              </div>
+              <div class="pscreen-nav-section">CRM</div>
+              <div class="pscreen-nav-item">
+                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                Clientes
+              </div>
+              <div class="pscreen-nav-item">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+                Pipeline
+              </div>
+              <div class="pscreen-nav-item">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Cotizaciones
+              </div>
+              <div class="pscreen-nav-item">
+                <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                Inventario
+              </div>
+            </div>
+
+            <!-- Main content -->
+            <div class="pscreen-main">
+              <div class="pscreen-header">
+                <div>
+                  <div style="font-size:14px;font-weight:700;color:var(--ptext);">Buenos días, Carlos 👋</div>
+                  <div style="font-size:10px;color:var(--ptext-m);">Resumen de hoy · Lunes 29 Sep 2026</div>
+                </div>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0A84FF,#005cc5);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;">CA</div>
+                </div>
+              </div>
+
+              <!-- KPI row -->
+              <div class="pscreen-kpi-row">
+                <div class="pscreen-kpi">
+                  <div class="pscreen-kpi-label">Ingresos del mes</div>
+                  <div class="pscreen-kpi-val">$84,200</div>
+                  <div class="pscreen-kpi-delta up">↑ 18% vs mes anterior</div>
+                </div>
+                <div class="pscreen-kpi">
+                  <div class="pscreen-kpi-label">Leads activos</div>
+                  <div class="pscreen-kpi-val">247</div>
+                  <div class="pscreen-kpi-delta up">↑ 32 nuevos esta semana</div>
+                </div>
+                <div class="pscreen-kpi">
+                  <div class="pscreen-kpi-label">Tasa de cierre</div>
+                  <div class="pscreen-kpi-val">68%</div>
+                  <div class="pscreen-kpi-delta up">↑ 5 pts</div>
+                </div>
+                <div class="pscreen-kpi">
+                  <div class="pscreen-kpi-label">Tareas pendientes</div>
+                  <div class="pscreen-kpi-val">12</div>
+                  <div class="pscreen-kpi-delta">3 para hoy</div>
+                </div>
+              </div>
+
+              <!-- Bottom row: chart + leads -->
+              <div class="pscreen-bottom">
+                <div class="pscreen-card" style="flex:1.4">
+                  <div class="pscreen-card-title">Ingresos · últimos 6 meses</div>
+                  <div class="pscreen-chart">
+                    <div class="pchart-bars">
+                      <div class="pchart-bar" style="height:45%;"><div class="pchart-bar-inner" style="background:rgba(10,132,255,0.4)"></div><span>Abr</span></div>
+                      <div class="pchart-bar" style="height:60%;"><div class="pchart-bar-inner" style="background:rgba(10,132,255,0.5)"></div><span>May</span></div>
+                      <div class="pchart-bar" style="height:50%;"><div class="pchart-bar-inner" style="background:rgba(10,132,255,0.5)"></div><span>Jun</span></div>
+                      <div class="pchart-bar" style="height:72%;"><div class="pchart-bar-inner" style="background:rgba(10,132,255,0.6)"></div><span>Jul</span></div>
+                      <div class="pchart-bar" style="height:80%;"><div class="pchart-bar-inner" style="background:rgba(10,132,255,0.7)"></div><span>Ago</span></div>
+                      <div class="pchart-bar" style="height:100%;"><div class="pchart-bar-inner" style="background:#0A84FF"></div><span>Sep</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="pscreen-card" style="flex:1">
+                  <div class="pscreen-card-title">Leads recientes</div>
+                  <div class="pscreen-lead-list">
+                    <div class="pscreen-lead-row">
+                      <div class="pscreen-lead-av" style="background:#0A84FF">CM</div>
+                      <div class="pscreen-lead-info"><div class="pscreen-lead-name">Constructora Mérida</div><div class="pscreen-lead-sub">$12,400 · Caliente</div></div>
+                      <div class="pscreen-lead-badge hot">●</div>
+                    </div>
+                    <div class="pscreen-lead-row">
+                      <div class="pscreen-lead-av" style="background:#7c3aed">TP</div>
+                      <div class="pscreen-lead-info"><div class="pscreen-lead-name">TechParts S.A.</div><div class="pscreen-lead-sub">$8,200 · Propuesta</div></div>
+                      <div class="pscreen-lead-badge warm">●</div>
+                    </div>
+                    <div class="pscreen-lead-row">
+                      <div class="pscreen-lead-av" style="background:#22c55e">AV</div>
+                      <div class="pscreen-lead-info"><div class="pscreen-lead-name">Agrícola Vásquez</div><div class="pscreen-lead-sub">$5,600 · Nuevo</div></div>
+                      <div class="pscreen-lead-badge new">●</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VISTA: PIPELINE -->
+        <div class="preview-screen" id="preview-pipeline">
+          <div class="pscreen-layout">
+            <div class="pscreen-sidebar">
+              <div class="pscreen-logo">
+                <div class="nav-logo-icon" style="width:28px;height:28px;border-radius:7px;"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+                <span style="font-size:11px;font-weight:700;color:#fff;">Azyvion</span>
+              </div>
+              <div class="pscreen-nav-section">General</div>
+              <div class="pscreen-nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Inicio</div>
+              <div class="pscreen-nav-section">CRM</div>
+              <div class="pscreen-nav-item"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Clientes</div>
+              <div class="pscreen-nav-item active"><svg viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>Pipeline</div>
+              <div class="pscreen-nav-item"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Cotizaciones</div>
+            </div>
+            <div class="pscreen-main">
+              <div class="pscreen-header">
+                <div style="font-size:14px;font-weight:700;color:var(--ptext);">Pipeline de ventas</div>
+                <div style="display:flex;gap:6px;">
+                  <div style="background:var(--paccent);color:#fff;font-size:10px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;">+ Nuevo negocio</div>
+                </div>
+              </div>
+              <!-- Kanban board preview -->
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;flex:1;overflow:hidden;">
+                <div class="pkboard-col">
+                  <div class="pkboard-head" style="border-color:#0A84FF;color:#0A84FF;">Prospecto <span>4</span></div>
+                  <div class="pkboard-card"><div class="pkbc-co">Logística Norte</div><div class="pkbc-val">$3,200</div><div class="pkbc-bar" style="width:30%;background:#0A84FF"></div></div>
+                  <div class="pkboard-card"><div class="pkbc-co">Ferretería López</div><div class="pkbc-val">$1,800</div><div class="pkbc-bar" style="width:20%;background:#0A84FF"></div></div>
+                  <div class="pkboard-card"><div class="pkbc-co">Distribuidora RC</div><div class="pkbc-val">$4,100</div><div class="pkbc-bar" style="width:15%;background:#0A84FF"></div></div>
+                </div>
+                <div class="pkboard-col">
+                  <div class="pkboard-head" style="border-color:#f97316;color:#f97316;">Calificado <span>3</span></div>
+                  <div class="pkboard-card"><div class="pkbc-co">Grupo Construye</div><div class="pkbc-val">$14,000</div><div class="pkbc-bar" style="width:60%;background:#f97316"></div></div>
+                  <div class="pkboard-card"><div class="pkbc-co">Industrias Beta</div><div class="pkbc-val">$7,500</div><div class="pkbc-bar" style="width:45%;background:#f97316"></div></div>
+                </div>
+                <div class="pkboard-col">
+                  <div class="pkboard-head" style="border-color:#7c3aed;color:#7c3aed;">Propuesta <span>2</span></div>
+                  <div class="pkboard-card"><div class="pkbc-co">TechParts S.A.</div><div class="pkbc-val">$8,200</div><div class="pkbc-bar" style="width:75%;background:#7c3aed"></div></div>
+                </div>
+                <div class="pkboard-col">
+                  <div class="pkboard-head" style="border-color:#22c55e;color:#22c55e;">Cerrado ✓ <span>5</span></div>
+                  <div class="pkboard-card"><div class="pkbc-co">Constructora Mérida</div><div class="pkbc-val">$12,400</div><div class="pkbc-bar" style="width:100%;background:#22c55e"></div></div>
+                  <div class="pkboard-card"><div class="pkbc-co">Agrícola Vásquez</div><div class="pkbc-val">$5,600</div><div class="pkbc-bar" style="width:100%;background:#22c55e"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VISTA: CONTACTOS -->
+        <div class="preview-screen" id="preview-contactos">
+          <div class="pscreen-layout">
+            <div class="pscreen-sidebar">
+              <div class="pscreen-logo">
+                <div class="nav-logo-icon" style="width:28px;height:28px;border-radius:7px;"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+                <span style="font-size:11px;font-weight:700;color:#fff;">Azyvion</span>
+              </div>
+              <div class="pscreen-nav-section">General</div>
+              <div class="pscreen-nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Inicio</div>
+              <div class="pscreen-nav-section">CRM</div>
+              <div class="pscreen-nav-item active"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Clientes</div>
+              <div class="pscreen-nav-item"><svg viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>Pipeline</div>
+              <div class="pscreen-nav-item"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Cotizaciones</div>
+            </div>
+            <div class="pscreen-main">
+              <div class="pscreen-header">
+                <div style="font-size:14px;font-weight:700;color:var(--ptext);">Clientes</div>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <div style="background:var(--pbg-card);border:1px solid var(--pborder);border-radius:6px;padding:4px 10px;font-size:10px;color:var(--ptext-m);">🔍 Buscar...</div>
+                  <div style="background:var(--paccent);color:#fff;font-size:10px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;">+ Nuevo</div>
+                </div>
+              </div>
+              <!-- Table -->
+              <div class="pscreen-card" style="flex:1;overflow:hidden;">
+                <div class="pscreen-table-head">
+                  <span>Nombre</span><span>Empresa</span><span>Estado</span><span>Valor</span><span>Agente</span>
+                </div>
+                <div class="pscreen-table-row">
+                  <div style="display:flex;align-items:center;gap:6px;"><div class="pscreen-lead-av" style="background:#0A84FF;width:22px;height:22px;font-size:8px;">MR</div>María Rodríguez</div>
+                  <span>Logística Norte</span>
+                  <span><div class="lead-status hot" style="font-size:9px;padding:2px 7px;">Caliente</div></span>
+                  <span style="color:var(--paccent);font-weight:600;">$3,200</span>
+                  <span style="color:var(--ptext-m);">Luis P.</span>
+                </div>
+                <div class="pscreen-table-row">
+                  <div style="display:flex;align-items:center;gap:6px;"><div class="pscreen-lead-av" style="background:#7c3aed;width:22px;height:22px;font-size:8px;">CP</div>Carlos Pérez</div>
+                  <span>TechParts S.A.</span>
+                  <span><div class="lead-status warm" style="font-size:9px;padding:2px 7px;">Propuesta</div></span>
+                  <span style="color:var(--paccent);font-weight:600;">$8,200</span>
+                  <span style="color:var(--ptext-m);">Ana V.</span>
+                </div>
+                <div class="pscreen-table-row">
+                  <div style="display:flex;align-items:center;gap:6px;"><div class="pscreen-lead-av" style="background:#22c55e;width:22px;height:22px;font-size:8px;">AV</div>Ana Vásquez</div>
+                  <span>Agrícola Vásquez</span>
+                  <span><div class="lead-status new" style="font-size:9px;padding:2px 7px;">Cliente</div></span>
+                  <span style="color:var(--paccent);font-weight:600;">$5,600</span>
+                  <span style="color:var(--ptext-m);">Carlos M.</span>
+                </div>
+                <div class="pscreen-table-row">
+                  <div style="display:flex;align-items:center;gap:6px;"><div class="pscreen-lead-av" style="background:#f97316;width:22px;height:22px;font-size:8px;">GC</div>Jorge Castillo</div>
+                  <span>Grupo Construye</span>
+                  <span><div class="lead-status hot" style="font-size:9px;padding:2px 7px;">Caliente</div></span>
+                  <span style="color:var(--paccent);font-weight:600;">$14,000</span>
+                  <span style="color:var(--ptext-m);">Luis P.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /preview-frame-wrap -->
+    </div>
+  </div>
+
+  <!-- ══════════════════════ PIPELINE ══════════════════════ -->
+  <div id="pipeline" class="pipeline-section">
+    <div class="pipeline-inner">
+      <div class="pipeline-visual">
+        <div class="pv-title">
+          Pipeline de ventas
+          <span>En tiempo real</span>
+        </div>
+        <div class="kanban-cols">
+          <div class="kcol-1">
+            <div class="kanban-col-head">Prospecto <span>4</span></div>
+            <div class="kanban-card">
+              <div class="kc-company">Logística Norte</div>
+              <div class="kc-value">$3,200</div>
+              <div class="kc-bar" style="width:30%"></div>
+            </div>
+            <div class="kanban-card">
+              <div class="kc-company">Ferretería López</div>
+              <div class="kc-value">$1,800</div>
+              <div class="kc-bar" style="width:20%"></div>
+            </div>
+          </div>
+          <div class="kcol-2">
+            <div class="kanban-col-head">Calificado <span>3</span></div>
+            <div class="kanban-card">
+              <div class="kc-company">Grupo Construye</div>
+              <div class="kc-value">$14,000</div>
+              <div class="kc-bar" style="width:60%"></div>
+            </div>
+            <div class="kanban-card">
+              <div class="kc-company">Industrias Beta</div>
+              <div class="kc-value">$7,500</div>
+              <div class="kc-bar" style="width:45%"></div>
+            </div>
+          </div>
+          <div class="kcol-3">
+            <div class="kanban-col-head">Propuesta <span>2</span></div>
+            <div class="kanban-card">
+              <div class="kc-company">TechParts S.A.</div>
+              <div class="kc-value">$8,200</div>
+              <div class="kc-bar" style="width:75%"></div>
+            </div>
+          </div>
+          <div class="kcol-4">
+            <div class="kanban-col-head">Cerrado <span>5</span></div>
+            <div class="kanban-card">
+              <div class="kc-company">Constructora Mérida</div>
+              <div class="kc-value">$12,400</div>
+              <div class="kc-bar" style="width:100%"></div>
+            </div>
+            <div class="kanban-card">
+              <div class="kc-company">Agrícola Vásquez</div>
+              <div class="kc-value">$5,600</div>
+              <div class="kc-bar" style="width:100%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pipeline-text">
+        <div class="section-tag">Pipeline</div>
+        <h2 class="section-title">Visualiza y controla cada negocio en curso</h2>
+        <p class="section-desc" style="margin-bottom:32px;">Con la vista Kanban de Azyvion ves exactamente en qué etapa está cada oportunidad, quién es el responsable y cuánto vale. Arrastra, actualiza y enfoca el equipo donde importa.</p>
+        <ul class="check-list">
+          <li>Pipelines ilimitados por equipo o línea de producto</li>
+          <li>Alertas automáticas cuando un negocio lleva demasiado tiempo sin avanzar</li>
+          <li>Pronóstico de ingresos basado en probabilidad de cierre</li>
+          <li>Historial de cambios de etapa por negocio</li>
+          <li>Vista lista, kanban o mapa de calor según tu flujo de trabajo</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ IA ══════════════════════ -->
+  <div id="ia" class="ai-section">
+    <div class="ai-inner">
+      <div class="section-tag">Inteligencia artificial</div>
+      <h2 class="section-title">IA que trabaja mientras tú vendes</h2>
+      <p class="section-desc">Azyvion integra IA en cada punto del proceso de ventas: prioriza leads, redacta correos, detecta riesgos y sugiere el siguiente paso óptimo.</p>
+      <div class="ai-cards">
+        <div class="ai-card dark">
+          <div class="ai-glow" style="background:var(--blue);top:-40px;right:-40px;"></div>
+          <div class="ai-card-icon" style="background:rgba(10,132,255,0.25);">
+            <svg viewBox="0 0 24 24" style="stroke:#0A84FF"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
+          <div class="ai-card-title">Puntuación predictiva de leads</div>
+          <div class="ai-card-desc">El motor de IA analiza comportamiento, industria, tamaño y señales de compra para asignarte un score a cada lead. Enfoca tu tiempo donde hay más probabilidad de cierre.</div>
+        </div>
+        <div class="ai-card light">
+          <div class="ai-card-icon" style="background:#f0ebff;">
+            <svg viewBox="0 0 24 24" style="stroke:#7c3aed"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div class="ai-card-title">Redacción asistida por IA</div>
+          <div class="ai-card-desc">Genera correos de seguimiento, propuestas comerciales y mensajes personalizados en segundos. Ajusta el tono, el contexto y el idioma con un clic.</div>
+        </div>
+        <div class="ai-card light">
+          <div class="ai-card-icon" style="background:#eafbf0;">
+            <svg viewBox="0 0 24 24" style="stroke:#22c55e"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+          <div class="ai-card-title">Detección de anomalías</div>
+          <div class="ai-card-desc">Identifica negocios en riesgo antes de que se pierdan: inactividad, patrones de rechazo, ciclos anormalmente largos. La IA te avisa antes de que sea tarde.</div>
+        </div>
+        <div class="ai-card dark">
+          <div class="ai-glow" style="background:var(--purple);bottom:-40px;left:-40px;"></div>
+          <div class="ai-card-icon" style="background:rgba(124,58,237,0.25);">
+            <svg viewBox="0 0 24 24" style="stroke:#a78bfa"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="ai-card-title">Próxima mejor acción</div>
+          <div class="ai-card-desc">Basada en el historial de cada negocio, la IA sugiere qué hacer a continuación: llamar, enviar caso de éxito, agendar demo o escalar al gerente. Menos dudas, más cierres.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════ PRECIOS ══════════════════════ -->
+  <div id="precios" class="pricing-section">
+    <div class="pricing-inner">
+      <div class="section-tag">Planes y precios</div>
+      <h2 class="section-title">Simple, transparente, sin sorpresas</h2>
+      <p class="section-desc">Empieza sin costo y escala cuando estés listo. Sin contratos anuales forzosos.</p>
+
+      <div class="billing-toggle">
+        <button class="billing-btn active" onclick="setBilling('monthly')" id="billMonthly">Mensual</button>
+        <button class="billing-btn" onclick="setBilling('annual')" id="billAnnual">Anual <span class="save-badge">−20%</span></button>
+      </div>
+
+      <div class="pricing-grid" id="pricingGrid">
+        <!-- Los planes se cargan dinámicamente desde Supabase -->
+        <div class="price-skeleton"></div>
+        <div class="price-skeleton"></div>
+        <div class="price-skeleton"></div>
+      </div>
+      <p style="text-align:center;font-size:13px;color:var(--text-3);margin-top:24px;">
+        ¿Necesitas algo diferente? <a href="#" onclick="alert('Escríbenos a ventas@azyvion.com')" style="color:var(--blue);font-weight:600;">Habla con ventas</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+  // Preview tabs
+  window.showPreview = function(name, btn) {
+    document.querySelectorAll('.preview-screen').forEach(function(s){ s.classList.remove('active'); });
+    document.querySelectorAll('.preview-tab').forEach(function(b){ b.classList.remove('active'); });
+    document.getElementById('preview-'+name).classList.add('active');
+    btn.classList.add('active');
+    var urls = { overview: 'app.azyvion.com/dashboard', pipeline: 'app.azyvion.com/pipeline', contactos: 'app.azyvion.com/clientes' };
+    document.getElementById('previewUrl').textContent = urls[name] || 'app.azyvion.com';
+  };
+  </script>
+
+  <script>
+  (function(){
+    var SUPABASE_URL = 'https://dwtykzporgjjvdustjfq.supabase.co';
+    var ANON_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3dHlrenBvcmdqanZkdXN0amZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5MjM2MjIsImV4cCI6MjEwNTQ5OTYyMn0.0SXLE5HhIjHbHz2k0cgyat9bvCper_sjAiiCrkOSmF8';
+    var billingCycle = 'monthly';
+
+    var POPULAR_ID = 'plan_pro';
+
+    function renderPlans(plans) {
+      var grid = document.getElementById('pricingGrid');
+      if(!plans || !plans.length){ grid.innerHTML='<p style="color:#888;text-align:center">No hay planes disponibles.</p>'; return; }
+
+      var html = plans.map(function(p){
+        var price    = parseFloat(p.precio) || 0;
+        var priceAnn = Math.round(price * 0.8);
+        var isPopular = p.id === POPULAR_ID;
+        var displayPrice = price === 0 ? 'Gratis' : null;
+        var users = p.max_usuarios >= 999 ? 'Ilimitados' : p.max_usuarios + ' usuarios';
+        var storage = parseFloat(p.max_storage_gb) >= 100 ? parseFloat(p.max_storage_gb) + ' GB' : parseFloat(p.max_storage_gb) + ' GB';
+
+        // Build feature list from features JSONB
+        var featHtml = '';
+        if(Array.isArray(p.features)){
+          p.features.forEach(function(f){
+            var val = f.valor;
+            if(val === false){ featHtml += '<li class="feature-off"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'+f.label+'</li>'; }
+            else if(val === true){ featHtml += '<li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'+f.label+'</li>'; }
+            else { featHtml += '<li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'+f.label+': <strong>'+val+'</strong></li>'; }
+          });
+        }
+
+        // Always prepend users + storage
+        featHtml = '<li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'+users+'</li>'
+                 + '<li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'+storage+' almacenamiento</li>'
+                 + featHtml;
+
+        var priceDisplay = price === 0
+          ? '<div class="price-amount"><span class="price-num">Gratis</span></div>'
+          : '<div class="price-amount"><span class="price-currency">$</span><span class="price-num" data-monthly="'+price+'" data-annual="'+priceAnn+'">'+price+'</span><span class="price-cycle">/mes</span></div>';
+
+        var trialNote = price === 0
+          ? 'Sin tarjeta de crédito'
+          : '14 días de prueba gratuita · Sin tarjeta';
+
+        var btnClass = isPopular ? 'price-btn primary' : 'price-btn outline';
+        var btnText  = price === 0 ? 'Empezar gratis' : 'Empezar prueba gratis';
+
+        return '<div class="price-card'+(isPopular?' featured':'')+'">'+
+          (isPopular ? '<div class="price-badge">Más popular</div>' : '')+
+          '<div class="price-plan">'+p.nombre+'</div>'+
+          priceDisplay+
+          '<p class="price-desc">'+p.descripcion+'</p>'+
+          '<a href="register.html?plan='+p.id+'" class="'+btnClass+'">'+btnText+'</a>'+
+          '<ul class="price-features">'+featHtml+'</ul>'+
+          '<div class="price-note">'+trialNote+'</div>'+
+          '</div>';
+      }).join('');
+
+      grid.innerHTML = html;
+    }
+
+    window.setBilling = function(cycle){
+      billingCycle = cycle;
+      document.getElementById('billMonthly').classList.toggle('active', cycle==='monthly');
+      document.getElementById('billAnnual').classList.toggle('active', cycle==='annual');
+      document.querySelectorAll('.price-num[data-monthly]').forEach(function(el){
+        el.textContent = cycle==='annual' ? el.dataset.annual : el.dataset.monthly;
+      });
+    };
+
+    function loadPlans(){
+      fetch(SUPABASE_URL+'/rest/v1/sub_planes?select=*&activo=eq.true&order=precio.asc', {
+        headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer '+ANON_KEY }
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(data){ renderPlans(data); })
+      .catch(function(){ document.getElementById('pricingGrid').innerHTML='<p style="color:#888;text-align:center;grid-column:1/-1">No se pudieron cargar los planes. Recarga la página.</p>'; });
+    }
+
+    loadPlans();
+  })();
+  </script>
+
+    <!-- ══════════════════════ TESTIMONIALS ══════════════════════ -->
+  <div id="clientes" class="testimonials">
+    <div class="testimonials-inner">
+      <div class="section-tag">Clientes</div>
+      <h2 class="section-title">Lo que dicen los equipos que usan Azyvion</h2>
+      <div class="testi-grid">
+        <div class="testi-card">
+          <div class="testi-stars">★★★★★</div>
+          <div class="testi-quote">Pasamos de llevar el pipeline en hojas de Excel a tenerlo todo centralizado. En 60 días aumentamos nuestra tasa de cierre en un 40%. No tiene precio.</div>
+          <div class="testi-author">
+            <div class="testi-avatar" style="background:#0A84FF">MR</div>
+            <div>
+              <div class="testi-name">María Rodríguez</div>
+              <div class="testi-role">Gerente de Ventas · Logística Norte</div>
+            </div>
+          </div>
+        </div>
+        <div class="testi-card">
+          <div class="testi-stars">★★★★★</div>
+          <div class="testi-quote">La automatización nos ahorra 3 horas diarias de trabajo manual. Los correos de seguimiento salen solos y nunca se nos olvida un lead importante.</div>
+          <div class="testi-author">
+            <div class="testi-avatar" style="background:#7c3aed">CP</div>
+            <div>
+              <div class="testi-name">Carlos Pérez</div>
+              <div class="testi-role">Director Comercial · TechParts S.A.</div>
+            </div>
+          </div>
+        </div>
+        <div class="testi-card">
+          <div class="testi-stars">★★★★★</div>
+          <div class="testi-quote">El soporte en español y el precio competitivo fueron claves. Pero lo que realmente nos convenció fue ver los datos de nuestro pipeline en tiempo real.</div>
+          <div class="testi-author">
+            <div class="testi-avatar" style="background:#22c55e">AV</div>
+            <div>
+              <div class="testi-name">Ana Vásquez</div>
+              <div class="testi-role">CEO · Agrícola Vásquez</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ CTA ══════════════════════ -->
+  <div class="cta-band">
+    <div class="cta-band-inner">
+      <h2>Empieza a cerrar más negocios hoy</h2>
+      <p>Configura tu cuenta en minutos. Sin tarjeta de crédito. Sin límite de contactos los primeros 30 días.</p>
+      <div class="cta-actions">
+        <a href="register.html" class="btn-cta-white">
+          Crear cuenta gratis
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a href="login.html" class="btn-cta-outline">Iniciar sesión</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ FOOTER ══════════════════════ -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div>
+          <a class="nav-logo" href="#">
+            <div class="nav-logo-icon">
+              <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </div>
+            <span class="nav-name" style="color:#fff;">Azyvion CRM</span>
+          </a>
+          <p class="footer-brand-desc">La plataforma CRM con IA diseñada para equipos de ventas en Latinoamérica. Technology Beyond Limits.</p>
+        </div>
+        <div>
+          <div class="footer-col-title">Producto</div>
+          <ul class="footer-links">
+            <li><a href="#">Funciones</a></li>
+            <li><a href="#">Pipeline</a></li>
+            <li><a href="#">Inteligencia Artificial</a></li>
+            <li><a href="#">Integraciones</a></li>
+            <li><a href="#">Precios</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-col-title">Empresa</div>
+          <ul class="footer-links">
+            <li><a href="#">Acerca de Azyvion</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Casos de éxito</a></li>
+            <li><a href="#">Contacto</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-col-title">Soporte</div>
+          <ul class="footer-links">
+            <li><a href="#">Centro de ayuda</a></li>
+            <li><a href="#">Documentación API</a></li>
+            <li><a href="#">Estado del sistema</a></li>
+            <li><a href="login.html">Iniciar sesión</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-copy">© 2026 Azyvion. Todos los derechos reservados.</div>
+        <div class="footer-legal">
+          <a href="#">Privacidad</a>
+          <a href="#">Términos de uso</a>
+          <a href="#">Cookies</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+
+  
+</body>
+</html>

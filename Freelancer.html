@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evaluación · Ejecutivo de Ventas Freelancer | AZYVION</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --navy:#0b1929;
+  --navy2:#0e2040;
+  --blue:#1a6bcc;
+  --blue2:#1558aa;
+  --sky:#3d9be9;
+  --sky2:#6dbdff;
+  --white:#fff;
+  --off:#f2f5fa;
+  --border:#dde4ed;
+  --text:#0b1929;
+  --muted:#5a6b80;
+  --light:#a0b0c4;
+}
+
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--off);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* ═══════════════════════════
+   PANTALLA DE INICIO
+═══════════════════════════ */
+#screen-intro{
+  position:relative;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+.intro-bg{
+  position:absolute;inset:0;
+  background:var(--navy);
+  overflow:hidden;
+}
+
+/* foto de fondo — ejecutivo/negocios */
+.intro-bg-img{
+  position:absolute;inset:0;
+  background-image:url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1600&q=80');
+  background-size:cover;
+  background-position:center top;
+  opacity:.18;
+}
+
+/* gradiente sobre la foto */
+.intro-bg::after{
+  content:'';position:absolute;inset:0;
+  background:
+    linear-gradient(180deg, rgba(11,25,41,.55) 0%, rgba(11,25,41,.92) 60%, #0b1929 100%),
+    linear-gradient(120deg, rgba(26,107,204,.25) 0%, transparent 60%);
+}
+
+/* líneas decorativas */
+.intro-lines{
+  position:absolute;inset:0;pointer-events:none;overflow:hidden;
+}
+.intro-lines::before{
+  content:'';position:absolute;
+  top:-200px;right:-200px;
+  width:700px;height:700px;
+  border-radius:50%;
+  border:1px solid rgba(58,155,233,.12);
+}
+.intro-lines::after{
+  content:'';position:absolute;
+  top:-300px;right:-300px;
+  width:900px;height:900px;
+  border-radius:50%;
+  border:1px solid rgba(58,155,233,.07);
+}
+
+.intro-inner{
+  position:relative;z-index:2;
+  display:flex;flex-direction:column;
+  min-height:100vh;
+}
+
+/* header intro */
+.intro-header{
+  padding:24px 40px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+
+.logo-wrap{display:flex;align-items:center;gap:12px;text-decoration:none}
+.logo-mark{width:36px;height:36px;flex-shrink:0}
+.logo-text{font-size:20px;font-weight:900;color:#fff;letter-spacing:2.5px}
+.logo-tag{font-size:11px;color:var(--sky2);letter-spacing:1px;font-weight:600;opacity:.8}
+
+/* hero content */
+.intro-hero{
+  flex:1;
+  display:flex;align-items:center;
+  padding:60px 40px 40px;
+  gap:60px;
+}
+
+.intro-left{flex:1;max-width:600px}
+
+.intro-chip{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(26,107,204,.2);
+  border:1px solid rgba(61,155,233,.3);
+  color:var(--sky2);
+  font-size:11px;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;
+  padding:8px 16px;border-radius:30px;
+  margin-bottom:28px;
+}
+.intro-chip-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--sky);
+  animation:blink 2s ease-in-out infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+.intro-eyebrow{
+  font-size:13px;font-weight:600;color:rgba(255,255,255,.45);
+  letter-spacing:.5px;margin-bottom:14px;
+  text-transform:uppercase;
+}
+
+.intro-h1{
+  font-size:clamp(36px,5vw,62px);
+  font-weight:900;
+  color:#fff;
+  line-height:1.1;
+  letter-spacing:-1.5px;
+  margin-bottom:12px;
+}
+
+.intro-h1 .accent{
+  background:linear-gradient(90deg,var(--sky),var(--sky2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+
+.intro-role{
+  display:inline-block;
+  font-size:clamp(14px,2.5vw,20px);
+  font-weight:700;
+  color:rgba(255,255,255,.5);
+  margin-bottom:28px;
+  letter-spacing:-.2px;
+}
+
+.intro-desc{
+  font-size:15px;line-height:1.75;
+  color:rgba(255,255,255,.55);
+  max-width:480px;
+  margin-bottom:40px;
+}
+
+/* cards de info */
+.intro-facts{
+  display:flex;gap:14px;flex-wrap:wrap;
+  margin-bottom:44px;
+}
+
+.fact-card{
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;
+  padding:14px 18px;
+  display:flex;align-items:center;gap:12px;
+  min-width:140px;
+}
+.fact-icon{font-size:20px}
+.fact-info{}
+.fact-label{font-size:10px;color:rgba(255,255,255,.4);font-weight:600;letter-spacing:.8px;text-transform:uppercase}
+.fact-value{font-size:14px;font-weight:700;color:#fff;margin-top:2px}
+
+/* botón de inicio */
+.btn-start{
+  display:inline-flex;align-items:center;gap:12px;
+  background:linear-gradient(135deg,var(--blue),var(--sky));
+  color:#fff;
+  font-size:16px;font-weight:800;
+  padding:18px 36px;border-radius:14px;
+  border:none;cursor:pointer;
+  transition:all .25s;
+  box-shadow:0 8px 32px rgba(26,107,204,.4);
+  letter-spacing:-.2px;
+}
+.btn-start:hover{
+  transform:translateY(-2px);
+  box-shadow:0 14px 40px rgba(26,107,204,.5);
+}
+.btn-start-arrow{
+  width:32px;height:32px;
+  background:rgba(255,255,255,.2);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;
+}
+
+/* imagen derecha */
+.intro-right{
+  width:340px;flex-shrink:0;
+  display:flex;flex-direction:column;gap:16px;
+}
+
+.intro-img-main{
+  width:100%;height:280px;
+  border-radius:20px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.1);
+  position:relative;
+}
+.intro-img-main img{width:100%;height:100%;object-fit:cover;object-position:center}
+.intro-img-main::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,transparent 50%,rgba(11,25,41,.6) 100%);
+}
+
+.intro-img-row{display:flex;gap:16px}
+.intro-img-sm{
+  flex:1;height:130px;border-radius:14px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.1);
+}
+.intro-img-sm img{width:100%;height:100%;object-fit:cover}
+
+/* bottom bar */
+.intro-footer{
+  position:relative;z-index:2;
+  padding:20px 40px;
+  border-top:1px solid rgba(255,255,255,.07);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+}
+.intro-footer-text{
+  font-size:12px;color:rgba(255,255,255,.3);
+}
+.intro-footer-pills{display:flex;gap:8px;flex-wrap:wrap}
+.intro-pill{
+  font-size:11px;color:rgba(255,255,255,.4);
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.1);
+  padding:5px 12px;border-radius:20px;
+  font-weight:600;
+}
+
+
+/* ═══════════════════════════
+   PANTALLA DE TEST
+═══════════════════════════ */
+#screen-test{display:none}
+
+/* sticky header test */
+.test-header{
+  background:var(--navy);
+  height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 20px rgba(0,0,0,.3);
+}
+.test-header .logo-wrap .logo-text{font-size:17px}
+.test-header-right{display:flex;align-items:center;gap:16px}
+.test-step-label{font-size:12px;color:rgba(255,255,255,.45);font-weight:600}
+.test-step-val{font-size:13px;color:var(--sky2);font-weight:800}
+
+/* barra de progreso top */
+.top-progress{
+  height:3px;
+  background:rgba(255,255,255,.08);
+}
+.top-progress-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--blue),var(--sky));
+  transition:width .4s cubic-bezier(.4,0,.2,1);
+  width:0%;
+}
+
+/* step nav dots */
+.step-strip{
+  background:var(--navy2);
+  padding:16px 28px;
+  display:flex;align-items:center;justify-content:center;
+  gap:0;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.sdot{
+  display:flex;align-items:center;gap:0;
+  cursor:pointer;
+}
+.sdot-circle{
+  width:32px;height:32px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.05);
+  color:rgba(255,255,255,.35);
+  font-size:12px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .25s;
+  position:relative;
+}
+.sdot.active .sdot-circle{
+  background:var(--blue);
+  border-color:var(--sky);
+  color:#fff;
+  box-shadow:0 0 0 4px rgba(26,107,204,.25);
+}
+.sdot.done .sdot-circle{
+  background:#0d4a20;
+  border-color:#1a7a36;
+  color:#4ade80;
+}
+.sdot-label{
+  display:none;
+}
+.sline{
+  width:clamp(20px,4vw,60px);
+  height:2px;
+  background:rgba(255,255,255,.1);
+}
+.sdot.done+.sline{background:rgba(26,120,54,.4)}
+
+/* main container */
+.test-main{
+  max-width:720px;
+  margin:0 auto;
+  padding:32px 20px 80px;
+}
+
+/* pregunta card */
+.qcard{
+  display:none;
+  background:#fff;
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid var(--border);
+  box-shadow:0 4px 24px rgba(11,25,41,.06);
+  margin-bottom:20px;
+  animation:fadeUp .3s ease;
+}
+.qcard.visible{display:block}
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(16px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.qcard-top{
+  background:var(--navy);
+  padding:24px 28px;
+}
+.qcard-meta{
+  display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;
+}
+.qcard-num{
+  font-size:11px;font-weight:800;color:var(--sky2);
+  letter-spacing:1.5px;text-transform:uppercase;
+  background:rgba(61,155,233,.15);
+  border:1px solid rgba(61,155,233,.25);
+  padding:5px 12px;border-radius:20px;
+}
+.diff-badge{
+  font-size:11px;font-weight:700;padding:5px 12px;
+  border-radius:20px;letter-spacing:.5px;
+}
+.d1{background:rgba(220,100,50,.15);color:#f59e6b;border:1px solid rgba(220,100,50,.2)}
+.d2{background:rgba(220,60,30,.15);color:#f87171;border:1px solid rgba(220,60,30,.2)}
+.d3{background:rgba(180,20,20,.2);color:#fca5a5;border:1px solid rgba(180,20,20,.25)}
+.d4{background:rgba(100,60,220,.2);color:#c4b5fd;border:1px solid rgba(100,60,220,.25)}
+
+.qcard-title{
+  font-size:18px;font-weight:800;color:#fff;
+  line-height:1.3;
+}
+
+.qcard-body{padding:26px 28px}
+
+.scenario{
+  background:var(--off);
+  border-left:3px solid var(--blue);
+  border-radius:0 12px 12px 0;
+  padding:18px 20px;
+  margin-bottom:22px;
+  font-size:14.5px;
+  color:#2d3e50;
+  line-height:1.72;
+}
+
+.client-quote{
+  display:block;margin:12px 0;
+  padding:14px 18px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:10px;
+  font-style:italic;
+  color:var(--navy);
+  font-size:14.5px;
+  line-height:1.65;
+  position:relative;
+}
+.client-quote::before{
+  content:'"';
+  position:absolute;top:-8px;left:14px;
+  font-size:36px;color:var(--sky);
+  font-family:Georgia,serif;
+  line-height:1;
+}
+
+.condition-note{
+  margin-top:14px;
+  padding:12px 16px;
+  background:#fff8e6;
+  border:1px solid #f0d48a;
+  border-radius:10px;
+  font-size:13px;color:#7a5200;font-weight:500;
+}
+.condition-note strong{color:#5a3800}
+
+textarea{
+  width:100%;min-height:175px;resize:vertical;
+  border:1.5px solid var(--border);
+  border-radius:12px;
+  padding:16px;
+  font-family:inherit;font-size:15px;
+  color:var(--text);outline:none;
+  transition:border-color .2s, box-shadow .2s;
+  background:#fff;
+}
+textarea:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px rgba(26,107,204,.1);
+}
+.ta-done{border-color:#16a34a !important;box-shadow:0 0 0 2px rgba(22,163,74,.1) !important}
+
+.char-row{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:8px;margin-bottom:22px;
+}
+.char-hint{font-size:12px;color:var(--light)}
+.char-cnt{font-size:12px;color:var(--light);font-variant-numeric:tabular-nums}
+
+.qnav{display:flex;gap:12px}
+.btn-prev{
+  padding:13px 20px;border-radius:10px;
+  background:#fff;color:var(--navy);
+  border:1.5px solid var(--border);
+  font-size:14px;font-weight:700;cursor:pointer;
+  transition:.2s;display:flex;align-items:center;gap:6px;
+}
+.btn-prev:hover{background:var(--off)}
+.btn-next{
+  flex:1;padding:13px 20px;border-radius:10px;
+  background:var(--navy);color:#fff;
+  border:none;font-size:14px;font-weight:800;
+  cursor:pointer;transition:.2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-next:hover{background:var(--blue);transform:translateY(-1px)}
+.btn-send{
+  flex:1;padding:14px 20px;border-radius:10px;
+  background:linear-gradient(135deg,#14532d,#166534);
+  color:#fff;border:none;font-size:15px;font-weight:800;
+  cursor:pointer;transition:.2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-send:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(22,101,52,.3)}
+.btn-send:disabled{background:#a0b8a8;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* review */
+.review-card{
+  display:none;
+  background:#fff;
+  border-radius:18px;
+  border:1px solid var(--border);
+  padding:32px;
+  margin-bottom:20px;
+  animation:fadeUp .3s ease;
+}
+.review-card.visible{display:block}
+.review-h{font-size:20px;font-weight:900;color:var(--navy);margin-bottom:4px}
+.review-sub{font-size:14px;color:var(--muted);margin-bottom:24px}
+.ritem{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.ritem-head{
+  background:var(--off);padding:14px 18px;
+  display:flex;justify-content:space-between;align-items:center;
+  cursor:pointer;gap:12px;
+}
+.ritem-title{font-size:13px;font-weight:700;color:var(--navy)}
+.ritem-ok{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px}
+.s-ok{background:#dcfce7;color:#166534}
+.s-err{background:#fee2e2;color:#991b1b}
+.ritem-body{display:none;padding:14px 18px;font-size:13.5px;color:var(--muted);line-height:1.7}
+.ritem.open .ritem-body{display:block}
+
+/* success */
+.success-card{
+  display:none;
+  background:var(--navy);
+  border-radius:20px;
+  padding:70px 32px;
+  text-align:center;
+  color:#fff;
+  animation:fadeUp .4s ease;
+  position:relative;overflow:hidden;
+}
+.success-card::before{
+  content:'';position:absolute;
+  bottom:-100px;left:50%;transform:translateX(-50%);
+  width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(26,107,204,.2) 0%,transparent 70%);
+}
+.success-card.visible{display:block}
+.success-icon{
+  width:80px;height:80px;border-radius:50%;
+  background:rgba(22,163,74,.15);
+  border:2px solid rgba(22,163,74,.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;margin:0 auto 24px;
+  position:relative;
+}
+.success-card h2{font-size:28px;font-weight:900;margin-bottom:10px}
+.success-card p{color:rgba(255,255,255,.5);font-size:15px;max-width:380px;margin:0 auto;line-height:1.7}
+
+/* ── RESPONSIVE ── */
+@media(max-width:860px){
+  .intro-right{display:none}
+  .intro-hero{padding:40px 24px 32px;gap:0}
+  .intro-header{padding:18px 24px}
+  .intro-footer{padding:18px 24px}
+}
+@media(max-width:560px){
+  .intro-h1{letter-spacing:-1px}
+  .intro-facts{gap:10px}
+  .fact-card{padding:12px 14px;min-width:120px}
+  .test-header{padding:0 18px}
+  .step-strip{padding:14px 16px}
+  .sline{width:14px}
+  .qcard-top{padding:18px 20px}
+  .qcard-body{padding:18px 20px}
+  .qnav{flex-direction:column}
+  .btn-prev{order:2}
+  .btn-next,.btn-send{order:1}
+  .intro-footer-pills{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     PANTALLA DE INICIO
+════════════════════════════════════════ -->
+<div id="screen-intro">
+  <div class="intro-bg">
+    <div class="intro-bg-img"></div>
+  </div>
+  <div class="intro-lines"></div>
+
+  <div class="intro-inner">
+
+    <!-- header -->
+    <header class="intro-header">
+      <div></div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:rgba(255,255,255,.35);font-weight:600;letter-spacing:.5px">PORTAL DE RECLUTAMIENTO</div>
+      </div>
+    </header>
+
+    <!-- hero -->
+    <div class="intro-hero">
+      <div class="intro-left">
+
+        <div class="intro-chip">
+          <div class="intro-chip-dot"></div>
+          Convocatoria activa · 2026
+        </div>
+
+        <div class="intro-eyebrow">Evaluación de candidatos</div>
+
+        <h1 class="intro-h1">
+          Ejecutivo de<br>
+          <span class="accent">Ventas</span><br>
+          Freelancer
+        </h1>
+
+        <div class="intro-role">Criterio Comercial · Prueba Avanzada</div>
+
+        <p class="intro-desc">
+          Esta evaluación mide cómo piensas, no cuánto memorizas.
+          5 situaciones reales de ventas. Sin respuestas correctas predeterminadas.
+          Solo tu criterio.
+        </p>
+
+        <div class="intro-facts">
+          <div class="fact-card">
+            <div class="fact-icon">📋</div>
+            <div class="fact-info">
+              <div class="fact-label">Preguntas</div>
+              <div class="fact-value">5 situaciones</div>
+            </div>
+          </div>
+          <div class="fact-card">
+            <div class="fact-icon">⏱</div>
+            <div class="fact-info">
+              <div class="fact-label">Tiempo aprox.</div>
+              <div class="fact-value">15 – 25 min</div>
+            </div>
+          </div>
+          <div class="fact-card">
+            <div class="fact-icon">🎯</div>
+            <div class="fact-info">
+              <div class="fact-label">Modalidad</div>
+              <div class="fact-value">Freelancer</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-start" onclick="showNameScreen()">
+          Comenzar evaluación
+          <div class="btn-start-arrow">→</div>
+        </button>
+
+      </div>
+
+      <!-- imagen lateral -->
+      <div class="intro-right">
+        <div class="intro-img-main">
+          <img
+            src="https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=700&q=80"
+            alt="Ejecutivo de ventas en reunión"
+            loading="lazy"
+          />
+        </div>
+        <div class="intro-img-row">
+          <div class="intro-img-sm">
+            <img
+              src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=400&q=80"
+              alt="Equipo comercial"
+              loading="lazy"
+            />
+          </div>
+          <div class="intro-img-sm">
+            <img
+              src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&q=80"
+              alt="Presentación de ventas"
+              loading="lazy"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- footer -->
+    <div class="intro-footer">
+      <div class="intro-footer-text">© 2026 · Evaluación confidencial</div>
+      <div class="intro-footer-pills">
+        <span class="intro-pill">Ventas B2B</span>
+        <span class="intro-pill">Negociación</span>
+        <span class="intro-pill">Criterio comercial</span>
+        <span class="intro-pill">Manejo de objeciones</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════
+     PANTALLA DE NOMBRE
+════════════════════════════════════════ -->
+<div id="screen-name" style="display:none;min-height:100vh;background:var(--navy);display:none;align-items:center;justify-content:center;flex-direction:column;padding:40px 24px;">
+  <div style="width:100%;max-width:480px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:48px 40px;text-align:center;">
+    <div style="width:56px;height:56px;border-radius:50%;background:rgba(26,107,204,.25);border:1px solid rgba(61,155,233,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:24px;">👤</div>
+    <div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:8px;letter-spacing:-.4px;">¿Cuál es tu nombre?</div>
+    <div style="font-size:14px;color:rgba(255,255,255,.45);margin-bottom:32px;line-height:1.6;">Antes de comenzar, ingresa tu nombre completo para que podamos identificar tu evaluación.</div>
+    <input
+      id="inputNombre"
+      type="text"
+      placeholder="Ej. María González"
+      autocomplete="name"
+      style="width:100%;padding:16px 18px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);color:#fff;font-size:16px;font-family:inherit;outline:none;margin-bottom:8px;transition:border-color .2s;"
+      oninput="syncNameBtn()"
+      onkeydown="if(event.key==='Enter') confirmName()"
+    />
+    <div id="nameErr" style="font-size:12.5px;color:#ff6b6b;margin-bottom:18px;min-height:18px;text-align:left;padding-left:4px;"></div>
+    <button id="btnConfirmName" onclick="confirmName()" disabled
+      style="width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--blue),var(--sky));color:#fff;font-size:16px;font-weight:800;cursor:pointer;opacity:.45;transition:opacity .2s;font-family:inherit;letter-spacing:-.2px;">
+      Comenzar evaluación →
+    </button>
+  </div>
+  <div style="margin-top:24px;font-size:12px;color:rgba(255,255,255,.2);">© 2026 Azyvion · Evaluación confidencial</div>
+</div>
+
+<style>
+#inputNombre:focus{ border-color:var(--sky); background:rgba(255,255,255,.1); }
+#inputNombre::placeholder{ color:rgba(255,255,255,.25); }
+</style>
+
+<!-- ═══════════════════════════════════════
+     PANTALLA DE TEST
+════════════════════════════════════════ -->
+<div id="screen-test">
+
+  <!-- header sticky -->
+  <header class="test-header">
+    <div class="logo-wrap">
+  
+    </div>
+    <div class="test-header-right">
+      <span class="test-step-label">Pregunta</span>
+      <span class="test-step-val" id="hStepVal">1 / 5</span>
+    </div>
+  </header>
+
+  <!-- progress top -->
+  <div class="top-progress">
+    <div class="top-progress-fill" id="topFill"></div>
+  </div>
+
+  <!-- step dots -->
+  <div class="step-strip">
+    <div class="sdot active" data-s="1" onclick="gotoStep(1)">
+      <div class="sdot-circle">1</div>
+    </div>
+    <div class="sline"></div>
+    <div class="sdot" data-s="2" onclick="gotoStep(2)">
+      <div class="sdot-circle">2</div>
+    </div>
+    <div class="sline"></div>
+    <div class="sdot" data-s="3" onclick="gotoStep(3)">
+      <div class="sdot-circle">3</div>
+    </div>
+    <div class="sline"></div>
+    <div class="sdot" data-s="4" onclick="gotoStep(4)">
+      <div class="sdot-circle">4</div>
+    </div>
+    <div class="sline"></div>
+    <div class="sdot" data-s="5" onclick="gotoStep(5)">
+      <div class="sdot-circle">5</div>
+    </div>
+  </div>
+
+  <div class="test-main">
+
+    <!-- PREGUNTA 1 -->
+    <div class="qcard visible" id="card1">
+      <div class="qcard-top">
+        <div class="qcard-meta">
+          <span class="qcard-num">PREGUNTA 1 / 5</span>
+          <span class="diff-badge d1">DIFÍCIL</span>
+        </div>
+        <div class="qcard-title">El cliente que no quiere comprar</div>
+      </div>
+      <div class="qcard-body">
+        <div class="scenario">
+          Un cliente potencial te dice:
+          <span class="client-quote">Ya sé lo que ofrecen. No necesito una explicación. Actualmente estamos bien como estamos y no tengo interés en cambiar.</span>
+          ¿Qué le responderías exactamente? ¿Qué pregunta le harías después y por qué?
+        </div>
+        <textarea id="a1" maxlength="3000" placeholder="Escribe tu respuesta aquí…" oninput="onType(1)"></textarea>
+        <div class="char-row">
+          <span class="char-hint">Mínimo 20 caracteres</span>
+          <span class="char-cnt"><span id="c1">0</span> / 3000</span>
+        </div>
+        <div class="qnav">
+          <button class="btn-next" onclick="gotoStep(2)">Siguiente <span>→</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREGUNTA 2 -->
+    <div class="qcard" id="card2">
+      <div class="qcard-top">
+        <div class="qcard-meta">
+          <span class="qcard-num">PREGUNTA 2 / 5</span>
+          <span class="diff-badge d2">MUY DIFÍCIL</span>
+        </div>
+        <div class="qcard-title">El precio no es realmente el problema</div>
+      </div>
+      <div class="qcard-body">
+        <div class="scenario">
+          Después de presentar tu propuesta, el cliente dice:
+          <span class="client-quote">Me parece demasiado caro. Tu competencia ofrece algo parecido por mucho menos.</span>
+          Tú sabes que tu solución tiene características y beneficios que la competencia no ofrece.<br><br>
+          ¿Cómo responderías sin ofrecer un descuento inmediatamente? Explica qué intentarías descubrir antes de negociar el precio.
+        </div>
+        <textarea id="a2" maxlength="3000" placeholder="Escribe tu respuesta aquí…" oninput="onType(2)"></textarea>
+        <div class="char-row">
+          <span class="char-hint">Mínimo 20 caracteres</span>
+          <span class="char-cnt"><span id="c2">0</span> / 3000</span>
+        </div>
+        <div class="qnav">
+          <button class="btn-prev" onclick="gotoStep(1)">← Anterior</button>
+          <button class="btn-next" onclick="gotoStep(3)">Siguiente →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREGUNTA 3 -->
+    <div class="qcard" id="card3">
+      <div class="qcard-top">
+        <div class="qcard-meta">
+          <span class="qcard-num">PREGUNTA 3 / 5</span>
+          <span class="diff-badge d2">MUY DIFÍCIL</span>
+        </div>
+        <div class="qcard-title">El cliente te está dando largas</div>
+      </div>
+      <div class="qcard-body">
+        <div class="scenario">
+          Llevas tres reuniones con un prospecto. En cada una parece interesado, pero nunca decide. Finalmente te dice:
+          <span class="client-quote">Mándame nuevamente la información y yo la reviso con calma. Si nos interesa, nosotros te contactamos.</span>
+          ¿Qué responderías en ese momento? ¿Cómo determinarías si realmente existe una oportunidad o simplemente estás perdiendo tiempo?
+        </div>
+        <textarea id="a3" maxlength="3000" placeholder="Escribe tu respuesta aquí…" oninput="onType(3)"></textarea>
+        <div class="char-row">
+          <span class="char-hint">Mínimo 20 caracteres</span>
+          <span class="char-cnt"><span id="c3">0</span> / 3000</span>
+        </div>
+        <div class="qnav">
+          <button class="btn-prev" onclick="gotoStep(2)">← Anterior</button>
+          <button class="btn-next" onclick="gotoStep(4)">Siguiente →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREGUNTA 4 -->
+    <div class="qcard" id="card4">
+      <div class="qcard-top">
+        <div class="qcard-meta">
+          <span class="qcard-num">PREGUNTA 4 / 5</span>
+          <span class="diff-badge d3">EXTREMA</span>
+        </div>
+        <div class="qcard-title">Una oportunidad importante está en riesgo</div>
+      </div>
+      <div class="qcard-body">
+        <div class="scenario">
+          Un cliente que representa una venta importante te dice:
+          <span class="client-quote">Estoy decepcionado. Me prometieron que el proceso sería sencillo y hasta ahora he tenido varios problemas. Si esto continúa así, voy a buscar otra empresa.</span>
+          El problema ocurrió parcialmente por un error de tu equipo y parcialmente porque el cliente no siguió correctamente una instrucción.<br><br>
+          ¿Qué le responderías? ¿Cómo manejarías la situación sin culpar al cliente ni asumir responsabilidad total?
+        </div>
+        <textarea id="a4" maxlength="3000" placeholder="Escribe tu respuesta aquí…" oninput="onType(4)"></textarea>
+        <div class="char-row">
+          <span class="char-hint">Mínimo 20 caracteres</span>
+          <span class="char-cnt"><span id="c4">0</span> / 3000</span>
+        </div>
+        <div class="qnav">
+          <button class="btn-prev" onclick="gotoStep(3)">← Anterior</button>
+          <button class="btn-next" onclick="gotoStep(5)">Siguiente →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREGUNTA 5 -->
+    <div class="qcard" id="card5">
+      <div class="qcard-top">
+        <div class="qcard-meta">
+          <span class="qcard-num">PREGUNTA 5 / 5</span>
+          <span class="diff-badge d4">NIVEL EXPERTO</span>
+        </div>
+        <div class="qcard-title">El cliente reconoce el problema pero no quiere comprar</div>
+      </div>
+      <div class="qcard-body">
+        <div class="scenario">
+          Un prospecto lleva semanas hablando contigo. Conoces perfectamente su problema y sabes que tu solución podría ayudarlo. En la última conversación te dice:
+          <span class="client-quote">Tienes razón, tenemos ese problema y sabemos que nos está costando dinero. Pero sinceramente, ahora mismo tenemos otras prioridades. No vamos a comprar.</span>
+          <div class="condition-note">
+            <strong>Condición:</strong> No puedes ofrecer descuento, crear urgencia artificial ni intentar convencerlo de que está equivocado.
+          </div>
+          ¿Qué responderías? ¿Qué preguntarías? ¿Qué harías después de esa conversación?
+        </div>
+        <textarea id="a5" maxlength="3000" placeholder="Escribe tu respuesta aquí…" oninput="onType(5)"></textarea>
+        <div class="char-row">
+          <span class="char-hint">Mínimo 20 caracteres</span>
+          <span class="char-cnt"><span id="c5">0</span> / 3000</span>
+        </div>
+        <div class="qnav">
+          <button class="btn-prev" onclick="gotoStep(4)">← Anterior</button>
+          <button class="btn-send" id="btnSend" onclick="submitFromStep()">Enviar →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REVIEW -->
+    <div class="review-card" id="reviewCard">
+      <div class="review-h">Revisa tus respuestas</div>
+      <div class="review-sub">Toca cada pregunta para expandirla. Cuando estés listo, envía la evaluación.</div>
+      <div id="reviewList"></div>
+      <div class="qnav" style="margin-top:26px">
+        <button class="btn-prev" onclick="backTest()">← Editar</button>
+        <button class="btn-send" onclick="submitTest()">✓ Enviar evaluación</button>
+      </div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div class="success-card" id="successCard">
+      <div class="success-icon">✓</div>
+      <h2>Evaluación enviada</h2>
+      <p>Tus respuestas fueron registradas. El equipo de Azyvion revisará tu evaluación y se comunicará contigo a la brevedad.</p>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ── Supabase Client ── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN SUPABASE
+   Reemplaza los dos valores con los de tu proyecto en:
+   Supabase Dashboard → Project Settings → API
+══════════════════════════════════════════════════════════════════ */
+const SUPABASE_URL      = 'https://dwtykzporgjjvdustjfq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3dHlrenBvcmdqanZkdXN0amZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5MjM2MjIsImV4cCI6MjEwNTQ5OTYyMn0.0SXLE5HhIjHbHz2k0cgyat9bvCper_sjAiiCrkOSmF8';
+
+const _sbFree = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ══════════════════════════════════════════════════════════════════
+   CONSTANTES DE LA EVALUACIÓN
+══════════════════════════════════════════════════════════════════ */
+const ENCUESTA_NOMBRE = 'Ejecutivo de Ventas Freelancer';
+
+const TITLES = [
+  "El cliente que no quiere comprar",
+  "El precio no es realmente el problema",
+  "El cliente te está dando largas",
+  "Una oportunidad importante está en riesgo",
+  "El cliente reconoce el problema pero no quiere comprar"
+];
+
+/* ID de la encuesta en la DB (se resuelve al cargar la página) */
+let _encuestaId = null;
+
+/* ══════════════════════════════════════════════════════════════════
+   INICIALIZACIÓN: obtener / crear el registro de encuesta en la DB
+══════════════════════════════════════════════════════════════════ */
+(async function initEncuesta() {
+  try {
+    const { data, error } = await _sbFree
+      .from('encuestas')
+      .select('id')
+      .eq('nombre', ENCUESTA_NOMBRE)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) { console.warn('[Freelancer] No se pudo conectar con la DB:', error.message); return; }
+
+    if (data) {
+      _encuestaId = data.id;
+    } else {
+      /* La encuesta no existe: crearla automáticamente */
+      const { data: nueva, error: insErr } = await _sbFree
+        .from('encuestas')
+        .insert({ nombre: ENCUESTA_NOMBRE, tipo: 'Mixta', estado: 'Activa', preg_total: 5 })
+        .select('id')
+        .single();
+      if (!insErr && nueva) _encuestaId = nueva.id;
+    }
+  } catch (e) {
+    console.warn('[Freelancer] initEncuesta:', e);
+  }
+})();
+
+/* ══════════════════════════════════════════════════════════════════
+   LÓGICA DE LA EVALUACIÓN
+══════════════════════════════════════════════════════════════════ */
+let cur = 1;
+const done = new Set();
+let _nombreCandidato = '';
+
+function showNameScreen(){
+  document.getElementById('screen-intro').style.display='none';
+  const ns = document.getElementById('screen-name');
+  ns.style.display='flex';
+  setTimeout(()=>document.getElementById('inputNombre').focus(), 100);
+}
+
+function syncNameBtn(){
+  const val = document.getElementById('inputNombre').value.trim();
+  const btn = document.getElementById('btnConfirmName');
+  const err = document.getElementById('nameErr');
+  if(val.length >= 3){
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    err.textContent = '';
+  } else {
+    btn.disabled = true;
+    btn.style.opacity = '.45';
+  }
+}
+
+function confirmName(){
+  const val = document.getElementById('inputNombre').value.trim();
+  const err = document.getElementById('nameErr');
+  if(val.length < 3){
+    err.textContent = 'Por favor ingresa tu nombre completo (mínimo 3 caracteres).';
+    document.getElementById('inputNombre').focus();
+    return;
+  }
+  _nombreCandidato = val;
+  document.getElementById('screen-name').style.display='none';
+  document.getElementById('screen-test').style.display='block';
+  window.scrollTo({top:0});
+}
+
+function startTest(){
+  document.getElementById('screen-intro').style.display='none';
+  document.getElementById('screen-test').style.display='block';
+  window.scrollTo({top:0});
+}
+
+function onType(n){
+  const ta=document.getElementById(`a${n}`);
+  const len=ta.value.length;
+  document.getElementById(`c${n}`).textContent=len;
+  if(ta.value.trim().length>20){
+    done.add(n);ta.classList.add('ta-done');
+  }else{
+    done.delete(n);ta.classList.remove('ta-done');
+  }
+  sync();
+}
+
+function _genUUID(){
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+
+async function submitFromStep(){
+  const btn = document.getElementById('btnSend');
+  if(btn){ btn.disabled=true; btn.textContent='Enviando…'; }
+
+  const answers = {};
+  for(let i=1;i<=5;i++) answers[i] = (document.getElementById(`a${i}`)?.value||'').trim();
+
+  /* 1. Guardar en TestReclutamiento (tabla dedicada, INSERT público) */
+  try {
+    const respuestasJson = {};
+    TITLES.forEach((t, idx) => { respuestasJson[idx+1] = { titulo: t, respuesta: answers[idx+1] || '' }; });
+
+    const { error } = await _sbFree
+      .from('TestReclutamiento')
+      .insert({
+        puesto:           ENCUESTA_NOMBRE,
+        nombre_candidato: _nombreCandidato || null,
+        respuestas:       respuestasJson,
+        submitted_at:     new Date().toISOString()
+      });
+    if (error) console.warn('[Freelancer] TestReclutamiento insert error:', error.message);
+  } catch(e){ console.warn('[Freelancer] TestReclutamiento:', e); }
+
+  /* 2. Guardar también en encuesta_envios + respuestas si tenemos el ID */
+  if (_encuestaId) {
+    try {
+      const envioId = _genUUID();
+      await _sbFree.from('encuesta_envios').insert({
+        id:              envioId,
+        encuesta_id:     _encuestaId,
+        puesto:          ENCUESTA_NOMBRE,
+        nombre_candidato: _nombreCandidato || null,
+        submitted_at:    new Date().toISOString()
+      });
+      const filas = TITLES.map((titulo, idx) => ({
+        envio_id:        envioId,
+        encuesta_id:     _encuestaId,
+        pregunta_orden:  idx + 1,
+        pregunta_titulo: titulo,
+        respuesta:       answers[idx + 1] || ''
+      }));
+      await _sbFree.from('encuesta_respuestas').insert(filas);
+    } catch(e){ console.warn('[Freelancer] encuesta_envios:', e); }
+  }
+
+  for(let i=1;i<=5;i++) document.getElementById(`card${i}`).classList.remove('visible');
+  document.getElementById('reviewCard').classList.remove('visible');
+  document.getElementById('successCard').classList.add('visible');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function sync(){
+  const pct=(done.size/5)*100;
+  document.getElementById('topFill').style.width=pct+'%';
+  for(let i=1;i<=5;i++){
+    const d=document.querySelector(`.sdot[data-s="${i}"]`);
+    if (!d) continue;
+    d.classList.remove('active','done');
+    if(i===cur) d.classList.add('active');
+    else if(done.has(i)) d.classList.add('done');
+  }
+  document.getElementById('hStepVal').textContent=`${cur} / 5`;
+  const btn=document.getElementById('btnSend');
+  if(btn) btn.disabled=false;
+}
+
+function gotoStep(n){
+  for(let i=1;i<=5;i++) document.getElementById(`card${i}`).classList.remove('visible');
+  document.getElementById('reviewCard').classList.remove('visible');
+  document.getElementById('successCard').classList.remove('visible');
+  cur=n;
+  document.getElementById(`card${n}`).classList.add('visible');
+  sync();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function goReview(){
+  for(let i=1;i<=5;i++) document.getElementById(`card${i}`).classList.remove('visible');
+  const list=document.getElementById('reviewList');
+  list.innerHTML='';
+  for(let i=1;i<=5;i++){
+    const val=document.getElementById(`a${i}`).value.trim();
+    const ok=val.length>20;
+    const div=document.createElement('div');
+    div.className='ritem';
+    div.innerHTML=`
+      <div class="ritem-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="ritem-title">Pregunta ${i} / 5 — ${TITLES[i-1]}</span>
+        <span class="ritem-ok ${ok?'s-ok':'s-err'}">${ok?'✓ Respondida':'✗ Incompleta'}</span>
+      </div>
+      <div class="ritem-body">${val?val.replace(/\n/g,'<br>'):'<em>Sin respuesta</em>'}</div>`;
+    list.appendChild(div);
+  }
+  document.getElementById('reviewCard').classList.add('visible');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function backTest(){
+  document.getElementById('reviewCard').classList.remove('visible');
+  gotoStep(cur);
+}
+
+async function submitTest(){
+  const sendBtn = document.querySelector('#reviewCard .btn-send');
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Enviando…'; }
+
+  /* Recoger respuestas */
+  const answers = {};
+  for(let i=1;i<=5;i++) answers[i] = document.getElementById(`a${i}`).value.trim();
+
+  /* ── GUARDAR EN SUPABASE ── */
+  if (_encuestaId) {
+    try {
+      const envioId = _genUUID();
+
+      const { error: envErr } = await _sbFree
+        .from('encuesta_envios')
+        .insert({
+          id:           envioId,
+          encuesta_id:  _encuestaId,
+          puesto:       ENCUESTA_NOMBRE,
+          submitted_at: new Date().toISOString()
+        });
+      if (envErr) throw envErr;
+
+      const filas = TITLES.map((titulo, idx) => ({
+        envio_id:        envioId,
+        encuesta_id:     _encuestaId,
+        pregunta_orden:  idx + 1,
+        pregunta_titulo: titulo,
+        respuesta:       answers[idx + 1] || ''
+      }));
+      const { error: respErr } = await _sbFree.from('encuesta_respuestas').insert(filas);
+      if (respErr) throw respErr;
+
+    } catch (err) {
+      console.error('[Freelancer] submitTest:', err);
+    }
+  }
+
+  /* Mostrar pantalla de éxito */
+  document.getElementById('reviewCard').classList.remove('visible');
+  document.getElementById('successCard').classList.add('visible');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+sync();
+</script>
+</body>
+</html>

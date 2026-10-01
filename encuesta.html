@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Formulario de Encuesta · Azyvion CRM</title>
+  <meta name="description" content="Formulario de respuesta a encuesta corporativa" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F4F6F9;
+      --card-bg: #FFFFFF;
+      --text-main: #1D1D1F;
+      --text-muted: #6E6E73;
+      --accent: #0A84FF;
+      --accent-hover: #0070E0;
+      --accent-soft: #EBF5FF;
+      --success: #30D158;
+      --danger: #FF453A;
+      --border: #E5E8EB;
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px 80px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .survey-container {
+      width: 100%;
+      max-width: 680px;
+    }
+    .survey-header-card {
+      background: linear-gradient(135deg, #0A2540 0%, #1A446C 100%);
+      color: #FFFFFF;
+      border-radius: var(--radius);
+      padding: 36px 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 12px 36px rgba(10, 37, 64, 0.16);
+      position: relative;
+      overflow: hidden;
+    }
+    .survey-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.18);
+      margin-bottom: 12px;
+    }
+    .survey-title {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+    .survey-desc {
+      font-size: 14px;
+      opacity: 0.85;
+      line-height: 1.6;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .q-num {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .form-input, .form-textarea {
+      width: 100%;
+      padding: 12px 16px;
+      font-family: inherit;
+      font-size: 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: #FAFBFC;
+      color: var(--text-main);
+      outline: none;
+      transition: all 0.2s;
+    }
+    .form-input:focus, .form-textarea:focus {
+      background: #FFFFFF;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+    }
+    .nps-grid {
+      display: grid;
+      grid-template-columns: repeat(11, 1fr);
+      gap: 6px;
+      margin-top: 14px;
+    }
+    @media (max-width: 540px) {
+      .nps-grid {
+        grid-template-columns: repeat(6, 1fr);
+      }
+    }
+    .nps-btn {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: #FFFFFF;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .nps-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .nps-btn.selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(10, 132, 255, 0.35);
+    }
+    .nps-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .star-rating {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .star-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 20px;
+      transition: all 0.15s;
+    }
+    .star-btn:hover, .star-btn.selected {
+      border-color: #FFB300;
+      background: #FFF9E6;
+      transform: scale(1.08);
+    }
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .option-pill {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      background: #FAFBFC;
+      transition: all 0.15s;
+    }
+    .option-pill:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+    .option-pill.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      color: #FFFFFF;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(10, 132, 255, 0.3);
+      transition: all 0.2s;
+    }
+    .submit-btn:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .success-card {
+      text-align: center;
+      padding: 48px 24px;
+    }
+    .check-icon {
+      width: 72px;
+      height: 72px;
+      background: #E8F8EE;
+      color: var(--success);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="survey-container" id="surveyContainer">
+    <div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
+      <div style="font-size:18px;font-weight:600;margin-bottom:8px">Cargando encuesta…</div>
+      <div style="font-size:13px">Por favor espera un momento</div>
+    </div>
+  </div>
+
+  <footer style="margin-top:32px;font-size:12px;color:var(--text-muted);text-align:center">
+    Impulsado por Azyvion CRM · Tecnología Empresarial
+  </footer>
+
+  <script>
+    const SUPABASE_URL = 'https://dwtykzporgjjvdustjfq.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable__sKrMJxAHySP1qqHZ5v6mQ_6BTligkc';
+    const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const answers = {};
+    let surveyData = null;
+    let questionsData = [];
+
+    function getParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    async function initSurvey() {
+      const id = getParam('id');
+      const container = document.getElementById('surveyContainer');
+
+      if (!id) {
+        container.innerHTML = `
+          <div class="card" style="text-align:center;padding:48px 20px;">
+            <div style="font-size:40px;margin-bottom:12px">⚠️</div>
+            <h2 style="font-size:20px;font-weight:700;margin-bottom:8px">Enlace de encuesta no válido</h2>
+            <p style="font-size:14px;color:var(--text-muted)">Por favor verifica el enlace proporcionado por la empresa.</p>
+          </div>`;
+        return;
+      }
+
+      try {
+        // Cargar encuesta
+        const { data: enc, error: encErr } = await _sb
+          .from('encuestas')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (encErr || !enc) {
+          throw new Error('No se encontró la encuesta especificada.');
+        }
+
+        surveyData = enc;
+
+        // Cargar preguntas
+        const { data: pregs, error: pregErr } = await _sb
+          .from('encuesta_preguntas')
+          .select('*')
+          .eq('encuesta_id', id)
+          .order('orden', { ascending: true });
+
+        if (pregErr) throw pregErr;
+        questionsData = pregs || [];
+
+        renderForm();
+
+      } catch (err) {
+        container.innerHTML = `
+          <div class="card" style="text-align:center;padding:48px 20px;">
+            <div style="font-size:40px;margin-bottom:12px">❌</div>
+            <h2 style="font-size:20px;font-weight:700;margin-bottom:8px">No se pudo cargar la encuesta</h2>
+            <p style="font-size:14px;color:var(--text-muted)">${err.message || 'Verifica tu conexión a internet.'}</p>
+          </div>`;
+      }
+    }
+
+    function renderForm() {
+      const container = document.getElementById('surveyContainer');
+      const e = surveyData;
+
+      let questionsHtml = '';
+
+      if (!questionsData.length) {
+        questionsHtml = `
+          <div class="card" style="text-align:center;padding:32px;">
+            <p style="font-size:14px;color:var(--text-muted)">Esta encuesta aún no tiene preguntas publicadas.</p>
+          </div>`;
+      } else {
+        questionsHtml = questionsData.map((q, idx) => {
+          const qId = q.id;
+          let inputContent = '';
+
+          if (q.tipo === 'nps') {
+            inputContent = `
+              <div class="nps-grid" id="nps_${qId}">
+                ${Array.from({length: 11}, (_, i) => `
+                  <button type="button" class="nps-btn" onclick="selectNps('${qId}', ${i}, this)">${i}</button>
+                `).join('')}
+              </div>
+              <div class="nps-labels">
+                <span>0 · Nada probable</span>
+                <span>10 · Totalmente probable</span>
+              </div>`;
+          } else if (q.tipo === 'escala_1_5') {
+            inputContent = `
+              <div class="star-rating" id="star_${qId}">
+                ${[1, 2, 3, 4, 5].map(s => `
+                  <button type="button" class="star-btn" onclick="selectStar('${qId}', ${s}, this)" title="${s} estrellas">
+                    ⭐ ${s}
+                  </button>
+                `).join('')}
+              </div>`;
+          } else if (q.tipo === 'opcion_multiple') {
+            const opciones = Array.isArray(q.opciones) ? q.opciones : (String(q.opciones || '').split(',').map(s=>s.trim()).filter(Boolean));
+            inputContent = `
+              <div class="options-grid" id="opt_${qId}">
+                ${opciones.map(opt => `
+                  <div class="option-pill" onclick="selectOption('${qId}', '${opt.replace(/'/g, "\\'")}', this)">
+                    <div style="width:16px;height:16px;border-radius:50%;border:2px solid currentColor;display:inline-block"></div>
+                    ${opt}
+                  </div>
+                `).join('')}
+              </div>`;
+          } else {
+            inputContent = `
+              <div style="margin-top:12px;">
+                <textarea class="form-textarea" rows="3" placeholder="Escribe tu respuesta aquí…" oninput="answers['${qId}'] = this.value"></textarea>
+              </div>`;
+          }
+
+          return `
+            <div class="card">
+              <div class="card-title">
+                <span class="q-num">${idx + 1}</span>
+                <span>${q.titulo}</span>
+              </div>
+              ${inputContent}
+            </div>`;
+        }).join('');
+      }
+
+      container.innerHTML = `
+        <div class="survey-header-card">
+          <div class="survey-badge">Encuesta Corporativa</div>
+          <h1 class="survey-title">${e.nombre}</h1>
+          <p class="survey-desc">${e.notas || 'Agradecemos tu tiempo para responder este cuestionario. Tus respuestas nos ayudan a mejorar continuamente.'}</p>
+        </div>
+
+        <form id="surveyForm" onsubmit="submitSurvey(event)">
+          <div class="card">
+            <h2 style="font-size:15px;font-weight:700;margin-bottom:14px">Información del participante</h2>
+            <div class="form-group">
+              <label class="form-label">Nombre completo *</label>
+              <input class="form-input" id="respNombre" placeholder="Tu nombre" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Correo electrónico</label>
+              <input class="form-input" id="respEmail" type="email" placeholder="tucorreo@ejemplo.com" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cargo / Empresa (Opcional)</label>
+              <input class="form-input" id="respPuesto" placeholder="Ej. Gerente de Operaciones" />
+            </div>
+          </div>
+
+          ${questionsHtml}
+
+          <button type="submit" class="submit-btn" id="submitBtn">
+            Enviar respuestas
+          </button>
+        </form>`;
+    }
+
+    function selectNps(qId, val, btn) {
+      answers[qId] = String(val);
+      const parent = document.getElementById('nps_' + qId);
+      if (parent) {
+        parent.querySelectorAll('.nps-btn').forEach(b => b.classList.remove('selected'));
+      }
+      btn.classList.add('selected');
+    }
+
+    function selectStar(qId, val, btn) {
+      answers[qId] = String(val) + ' estrellas';
+      const parent = document.getElementById('star_' + qId);
+      if (parent) {
+        parent.querySelectorAll('.star-btn').forEach(b => b.classList.remove('selected'));
+      }
+      btn.classList.add('selected');
+    }
+
+    function selectOption(qId, val, pill) {
+      answers[qId] = val;
+      const parent = document.getElementById('opt_' + qId);
+      if (parent) {
+        parent.querySelectorAll('.option-pill').forEach(p => p.classList.remove('selected'));
+      }
+      pill.classList.add('selected');
+    }
+
+    async function submitSurvey(ev) {
+      ev.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Enviando respuestas…';
+
+      const nombre = (document.getElementById('respNombre')?.value || '').trim();
+      const email = (document.getElementById('respEmail')?.value || '').trim();
+      const puesto = (document.getElementById('respPuesto')?.value || '').trim();
+
+      try {
+        // 1. Insertar el envío
+        const { data: envioData, error: envioErr } = await _sb
+          .from('encuesta_envios')
+          .insert({
+            encuesta_id: surveyData.id,
+            nombre_candidato: nombre,
+            email_candidato: email,
+            puesto: puesto,
+            organization_id: surveyData.organization_id || null,
+            submitted_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (envioErr) throw envioErr;
+
+        // 2. Insertar cada respuesta
+        const respuestasPayload = questionsData.map(q => ({
+          envio_id: envioData.id,
+          encuesta_id: surveyData.id,
+          pregunta_id: q.id,
+          pregunta_titulo: q.titulo,
+          pregunta_orden: q.orden || 1,
+          respuesta: answers[q.id] || '(Sin respuesta)',
+          organization_id: surveyData.organization_id || null
+        }));
+
+        if (respuestasPayload.length) {
+          const { error: respErr } = await _sb
+            .from('encuesta_respuestas')
+            .insert(respuestasPayload);
+
+          if (respErr) throw respErr;
+        }
+
+        // Pantalla de confirmación
+        const container = document.getElementById('surveyContainer');
+        container.innerHTML = `
+          <div class="card success-card">
+            <div class="check-icon">
+              <svg viewBox="0 0 24 24" style="width:36px;height:36px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <h2 style="font-size:24px;font-weight:800;color:var(--text-main);margin-bottom:8px">¡Respuestas recibidas!</h2>
+            <p style="font-size:15px;color:var(--text-muted);line-height:1.6;max-width:440px;margin:0 auto">
+              Muchas gracias <strong>${nombre}</strong>, tu evaluación ha sido registrada exitosamente.
+            </p>
+          </div>`;
+
+      } catch (err) {
+        alert('Error al enviar la encuesta: ' + (err.message || err));
+        btn.disabled = false;
+        btn.textContent = 'Enviar respuestas';
+      }
+    }
+
+    initSurvey();
+  </script>
+</body>
+</html>

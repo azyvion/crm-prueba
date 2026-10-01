@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#eef0f4" />
+  <title>Crear cuenta — Azyvion CRM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:   #0A84FF; --blue-d: #0060DF; --text: #111827;
+      --text-2: #4b5563; --text-3: #9ca3af; --border: #e5e7eb;
+      --bg:     #eef0f4; --green: #22c55e;  --danger: #ef4444;
+      --orange: #f97316;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100dvh;
+      padding: 32px 20px;
+      padding-top: calc(32px + env(safe-area-inset-top,0px));
+      padding-bottom: calc(32px + env(safe-area-inset-bottom,0px));
+      position: relative;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50V18L28 2l28 16v32z' fill='none' stroke='%23c8cdd8' stroke-width='1'/%3E%3Cpath d='M28 100L0 84V52L28 36l28 16v32z' fill='none' stroke='%23c8cdd8' stroke-width='1'/%3E%3C/svg%3E");
+      opacity:.35; pointer-events:none; z-index:0;
+    }
+    .card {
+      position:relative; z-index:1; background:#fff; border-radius:18px;
+      box-shadow:0 2px 4px rgba(0,0,0,0.04),0 8px 32px rgba(0,0,0,0.08);
+      display:grid; grid-template-columns:1.1fr 1fr;
+      width:100%; max-width:900px; overflow:hidden;
+    }
+    .form-side {
+      padding:40px 44px 36px; display:flex; flex-direction:column;
+      border-right:1px solid var(--border); overflow-y:auto; max-height:92vh;
+    }
+    .brand { display:flex; align-items:center; gap:10px; margin-bottom:22px; }
+    .brand-icon {
+      width:38px; height:38px;
+      background:linear-gradient(145deg,var(--blue),var(--blue-d));
+      border-radius:11px; display:flex; align-items:center; justify-content:center;
+      box-shadow:0 3px 12px rgba(10,132,255,0.3); flex-shrink:0;
+    }
+    .brand-icon svg { width:19px; height:19px; stroke:#fff; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .brand-name { font-size:17px; font-weight:700; color:var(--text); letter-spacing:-0.3px; }
+
+    /* Steps */
+    .steps-wrap { margin-bottom:20px; }
+    .steps-bar { display:flex; align-items:center; }
+    .step-dot {
+      width:28px; height:28px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:12px; font-weight:700;
+      border:2px solid var(--border); color:var(--text-3);
+      background:transparent; transition:all .3s; flex-shrink:0;
+    }
+    .step-dot.active { background:var(--blue); border-color:var(--blue); color:#fff; }
+    .step-dot.done   { background:var(--green); border-color:var(--green); color:#fff; }
+    .step-dot.done::before { content:''; display:block; width:10px; height:10px; background:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='20 6 9 17 4 12' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat; }
+    .step-dot.done span { display:none; }
+    .step-line { flex:1; height:2px; background:var(--border); transition:background .3s; }
+    .step-line.done { background:var(--green); }
+    .steps-labels { display:flex; justify-content:space-between; margin-top:7px; }
+    .step-label { font-size:10.5px; font-weight:600; color:var(--text-3); flex:1; text-align:center; transition:color .3s; }
+    .step-label.active { color:var(--blue); }
+    .step-label.done   { color:var(--green); }
+
+    .form-title { font-size:23px; font-weight:800; color:var(--text); letter-spacing:-0.6px; margin-bottom:3px; }
+    .form-sub   { font-size:13px; color:var(--text-3); margin-bottom:20px; line-height:1.5; }
+
+    /* Fields */
+    .field-wrap { margin-bottom:11px; }
+    .field-label { display:block; font-size:11.5px; font-weight:600; color:var(--text-2); margin-bottom:5px; }
+    .field-inner { position:relative; }
+    .field-input {
+      width:100%; height:44px;
+      background:#f9fafb; border:1.5px solid #e9ebee; border-radius:10px;
+      padding:0 14px; font-family:inherit; font-size:14px; color:var(--text);
+      outline:none; transition:border-color .18s,box-shadow .18s,background .18s;
+      -webkit-appearance:none;
+    }
+    .field-input::placeholder { color:var(--text-3); }
+    .field-input:focus { border-color:var(--blue); background:#fff; box-shadow:0 0 0 3px rgba(10,132,255,0.1); }
+    .field-input.pad-r { padding-right:42px; }
+    .field-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:11px; }
+    @media(max-width:560px){ .field-grid{grid-template-columns:1fr;} }
+
+    .field-btn {
+      position:absolute; right:0; top:0; bottom:0; width:40px;
+      display:flex; align-items:center; justify-content:center;
+      background:none; border:none; cursor:pointer; color:var(--text-3); transition:color .15s;
+    }
+    .field-btn:hover { color:var(--blue); }
+    .field-btn svg { width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+
+    /* ── COUNTRY PICKER ── */
+    .country-picker { position:relative; }
+    .country-btn {
+      width:100%; height:44px; background:#f9fafb; border:1.5px solid #e9ebee;
+      border-radius:10px; padding:0 14px; font-family:inherit; font-size:14px;
+      color:var(--text); cursor:pointer; display:flex; align-items:center; gap:9px;
+      transition:border-color .18s,box-shadow .18s,background .18s; text-align:left;
+    }
+    .country-btn:focus, .country-btn.open { border-color:var(--blue); background:#fff; box-shadow:0 0 0 3px rgba(10,132,255,0.1); outline:none; }
+    .country-btn .placeholder { color:var(--text-3); }
+    .country-flag { font-size:18px; line-height:1; flex-shrink:0; }
+    .country-name-txt { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .country-chevron { margin-left:auto; flex-shrink:0; transition:transform .2s; }
+    .country-chevron svg { width:14px; height:14px; stroke:var(--text-3); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .country-btn.open .country-chevron { transform:rotate(180deg); }
+
+    .country-dropdown {
+      position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:200;
+      background:#fff; border:1.5px solid var(--border); border-radius:12px;
+      box-shadow:0 8px 32px rgba(0,0,0,0.12); overflow:hidden;
+      display:none; flex-direction:column;
+    }
+    .country-dropdown.open { display:flex; }
+    .country-search-wrap { padding:10px 10px 8px; border-bottom:1px solid var(--border); }
+    .country-search {
+      width:100%; height:36px; background:#f3f4f6; border:1.5px solid transparent;
+      border-radius:8px; padding:0 12px; font-family:inherit; font-size:13px;
+      color:var(--text); outline:none; transition:border-color .18s;
+    }
+    .country-search:focus { border-color:var(--blue); background:#fff; }
+    .country-list { max-height:200px; overflow-y:auto; padding:4px; }
+    .country-list::-webkit-scrollbar { width:4px; }
+    .country-list::-webkit-scrollbar-thumb { background:#e5e7eb; border-radius:4px; }
+    .country-option {
+      display:flex; align-items:center; gap:9px; padding:8px 10px;
+      border-radius:8px; cursor:pointer; font-size:13.5px; color:var(--text);
+      transition:background .12s; white-space:nowrap;
+    }
+    .country-option:hover { background:#f3f4f6; }
+    .country-option.selected { background:rgba(10,132,255,0.07); color:var(--blue); font-weight:600; }
+    .country-option .flag  { font-size:17px; flex-shrink:0; }
+    .country-empty { padding:20px; text-align:center; color:var(--text-3); font-size:13px; }
+
+    /* Sector select */
+    .field-select {
+      width:100%; height:44px; background:#f9fafb; border:1.5px solid #e9ebee;
+      border-radius:10px; padding:0 36px 0 14px; font-family:inherit; font-size:14px;
+      color:var(--text); outline:none; cursor:pointer;
+      transition:border-color .18s,box-shadow .18s;
+      -webkit-appearance:none; appearance:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 12px center; background-size:16px;
+    }
+    .field-select:focus { border-color:var(--blue); background-color:#fff; box-shadow:0 0 0 3px rgba(10,132,255,0.1); }
+
+    /* Plan cards */
+    .plan-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:12px; }
+    .plan-radio { display:none; }
+    .plan-card {
+      border:1.5px solid var(--border); border-radius:12px; padding:13px 12px;
+      cursor:pointer; transition:all .2s; position:relative;
+    }
+    .plan-card:hover { border-color:rgba(10,132,255,0.4); }
+    .plan-radio:checked + .plan-card { border-color:var(--blue); background:rgba(10,132,255,0.04); }
+    .plan-radio:checked + .plan-card .plan-check { opacity:1; transform:scale(1); }
+    .plan-check {
+      position:absolute; top:9px; right:9px; width:18px; height:18px; border-radius:50%;
+      background:var(--blue); display:flex; align-items:center; justify-content:center;
+      opacity:0; transform:scale(0.5); transition:all .2s;
+    }
+    .plan-check svg { width:9px; height:9px; stroke:#fff; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; fill:none; }
+    .plan-name   { font-size:13px; font-weight:700; color:var(--text); margin-bottom:2px; }
+    .plan-price  { font-size:19px; font-weight:800; color:var(--blue); line-height:1; }
+    .plan-price span { font-size:11px; font-weight:500; color:var(--text-3); }
+    .plan-detail { font-size:11px; color:var(--text-3); margin-top:5px; line-height:1.4; }
+    .plan-badge  { display:inline-block; font-size:9px; font-weight:700; background:var(--blue); color:#fff; padding:2px 7px; border-radius:20px; margin-top:4px; }
+
+    /* Password */
+    .pwd-bars { display:flex; gap:4px; margin-top:6px; margin-bottom:3px; }
+    .pwd-bar  { flex:1; height:3px; border-radius:2px; background:var(--border); transition:background .3s; }
+    .pwd-bar.weak   { background:var(--danger); }
+    .pwd-bar.medium { background:var(--orange); }
+    .pwd-bar.strong { background:var(--green); }
+    .pwd-label { font-size:11px; color:var(--text-3); margin-bottom:10px; }
+
+    /* ── PAYMENT ── */
+    .pay-tabs { display:flex; gap:6px; margin-bottom:16px; }
+    .pay-tab {
+      flex:1; padding:10px 6px; border-radius:10px; border:1.5px solid var(--border);
+      background:transparent; font-family:inherit; font-size:12.5px; font-weight:600;
+      color:var(--text-3); cursor:pointer; text-align:center;
+      display:flex; flex-direction:column; align-items:center; gap:4px;
+      transition:all .18s;
+    }
+    .pay-tab svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .pay-tab.active { border-color:var(--blue); color:var(--blue); background:rgba(10,132,255,0.05); }
+
+    .card-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:11px; }
+    .card-brands { display:flex; gap:4px; position:absolute; right:12px; top:50%; transform:translateY(-50%); }
+    .cb { width:28px; height:18px; border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:7px; font-weight:800; }
+    .cb-visa { background:#1A1F71; color:#fff; }
+    .cb-mc   { background:linear-gradient(90deg,#EB001B,#FF5F00); color:#fff; }
+    .cb-amex { background:#2E77BC; color:#fff; }
+
+    .transfer-box { background:#f9fafb; border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:14px; }
+    .transfer-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); }
+    .transfer-row:last-child { border-bottom:none; }
+    .transfer-key { font-size:11.5px; color:var(--text-3); font-weight:500; }
+    .transfer-val { font-size:13px; font-weight:700; color:var(--text); }
+    .copy-btn {
+      background:none; border:none; cursor:pointer; color:var(--blue);
+      font-size:11px; font-weight:600; padding:2px 7px; border-radius:6px;
+      transition:background .15s; font-family:inherit;
+    }
+    .copy-btn:hover { background:rgba(10,132,255,0.08); }
+    .transfer-note { font-size:11.5px; color:var(--text-3); line-height:1.5; margin-top:4px; }
+
+    .paypal-box { text-align:center; padding:22px 0 10px; }
+    .paypal-btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:10px;
+      background:#FFC439; color:#003087; font-family:inherit; font-size:15px; font-weight:800;
+      border:none; border-radius:12px; padding:13px 28px; cursor:pointer;
+      width:100%; transition:background .18s; margin-bottom:12px;
+    }
+    .paypal-btn:hover { background:#f0b834; }
+    .paypal-note { font-size:11.5px; color:var(--text-3); }
+
+    .plan-summary {
+      background:#f9fafb; border:1px solid var(--border); border-radius:10px;
+      padding:12px 14px; display:flex; justify-content:space-between; align-items:center;
+      margin-bottom:14px;
+    }
+    .plan-sum-name { font-size:13px; font-weight:700; color:var(--text); }
+    .plan-sum-price { font-size:15px; font-weight:800; color:var(--blue); }
+    .plan-sum-note  { font-size:11px; color:var(--text-3); }
+
+    .secure-note { display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-3); margin-bottom:14px; }
+    .secure-note svg { width:13px; height:13px; stroke:var(--green); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+
+    /* Error / misc */
+    .error-msg { font-size:12px; font-weight:500; color:var(--danger); min-height:16px; margin-bottom:10px; opacity:0; transform:translateY(-2px); transition:opacity .2s,transform .2s; }
+    .error-msg.visible { opacity:1; transform:translateY(0); }
+
+    .btn-primary {
+      width:100%; height:46px; background:var(--blue); color:#fff; border:none;
+      border-radius:10px; font-size:15px; font-weight:700;
+      font-family:inherit; cursor:pointer; position:relative; overflow:hidden;
+      transition:background .18s,box-shadow .18s,transform .1s;
+      box-shadow:0 3px 14px rgba(10,132,255,0.3); margin-bottom:10px;
+      display:flex; align-items:center; justify-content:center; text-decoration:none;
+    }
+    .btn-primary:hover:not(:disabled) { background:var(--blue-d); box-shadow:0 4px 20px rgba(10,132,255,0.4); }
+    .btn-primary:active:not(:disabled) { transform:scale(.98); }
+    .btn-primary:disabled { opacity:.6; cursor:not-allowed; }
+    .btn-text { transition:opacity .2s; }
+    .spinner { position:absolute; inset:0; display:none; align-items:center; justify-content:center; }
+    .spinner::after { content:''; width:20px; height:20px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .btn-primary.loading .btn-text { opacity:0; }
+    .btn-primary.loading .spinner { display:flex; }
+
+    .btn-back {
+      width:100%; height:40px; background:transparent; color:var(--text-2);
+      border:1.5px solid var(--border); border-radius:10px;
+      font-size:14px; font-weight:600; font-family:inherit; cursor:pointer;
+      transition:all .18s; margin-bottom:12px;
+    }
+    .btn-back:hover { border-color:var(--text-3); color:var(--text); }
+
+    .link-btn { background:none; border:none; padding:0; font-family:inherit; font-size:inherit; color:var(--blue); cursor:pointer; font-weight:600; text-decoration:none; }
+    .link-btn:hover { color:var(--blue-d); text-decoration:underline; }
+    .form-footer { text-align:center; font-size:13px; color:var(--text-3); margin-top:auto; }
+
+    .checkbox-label { display:flex; align-items:flex-start; gap:8px; font-size:12.5px; color:var(--text-2); cursor:pointer; user-select:none; margin-bottom:14px; }
+    .checkbox-label input { display:none; }
+    .custom-check { width:16px; height:16px; border-radius:4px; border:1.5px solid #d1d5db; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background .15s,border-color .15s; margin-top:1px; }
+    .checkbox-label input:checked ~ .custom-check { background:var(--blue); border-color:var(--blue); }
+    .custom-check svg { width:9px; height:9px; stroke:#fff; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; fill:none; opacity:0; transition:opacity .15s; }
+    .checkbox-label input:checked ~ .custom-check svg { opacity:1; }
+
+    /* Success */
+    .success-screen { text-align:center; padding:16px 0; }
+    .success-icon { width:68px; height:68px; border-radius:50%; background:linear-gradient(145deg,var(--green),#15803d); display:inline-flex; align-items:center; justify-content:center; margin-bottom:16px; box-shadow:0 8px 28px rgba(34,197,94,0.3); animation:popIn .5s cubic-bezier(0.34,1.56,0.64,1) both .1s; }
+    @keyframes popIn { from{opacity:0;transform:scale(0.4)} to{opacity:1;transform:scale(1)} }
+    .success-icon svg { width:32px; height:32px; fill:none; stroke:#fff; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+    .success-title { font-size:22px; font-weight:800; color:var(--text); letter-spacing:-0.5px; margin-bottom:8px; }
+    .success-msg   { font-size:14px; color:var(--text-3); line-height:1.6; margin-bottom:20px; }
+    .success-detail { background:#f9fafb; border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:18px; text-align:left; }
+    .success-row   { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); }
+    .success-row:last-child { border-bottom:none; }
+    .success-key   { font-size:11.5px; color:var(--text-3); font-weight:500; }
+    .success-val   { font-size:12.5px; font-weight:700; color:var(--text); }
+
+    /* Visual side */
+    .visual-side {
+      background:linear-gradient(160deg,#0d1b3e 0%,#1a2f5e 100%);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:44px 36px; position:relative; overflow:hidden; gap:28px;
+    }
+    .visual-side::before { content:''; position:absolute; inset:0; background-image:radial-gradient(rgba(255,255,255,0.07) 1px,transparent 1px); background-size:24px 24px; pointer-events:none; }
+    .visual-side::after  { content:''; position:absolute; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle,rgba(10,132,255,0.25),transparent 70%); top:-80px; right:-60px; pointer-events:none; }
+    .mkup-wrap { position:relative; width:100%; max-width:280px; z-index:1; }
+    .mkup { background:#0a0f1e; border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,0.1); box-shadow:0 16px 48px rgba(0,0,0,0.5),0 1px 0 rgba(255,255,255,0.06) inset; }
+    .mkup-topbar { background:#111827; padding:9px 12px; display:flex; align-items:center; gap:8px; border-bottom:1px solid rgba(255,255,255,0.06); }
+    .mkup-dots { display:flex; gap:4px; }
+    .mkup-dots span { width:7px; height:7px; border-radius:50%; }
+    .mkup-dots span:nth-child(1){background:#ff5f57} .mkup-dots span:nth-child(2){background:#ffbd2e} .mkup-dots span:nth-child(3){background:#28c840}
+    .mkup-url { flex:1; background:rgba(255,255,255,0.05); border-radius:4px; height:18px; display:flex; align-items:center; padding:0 8px; font-size:8px; color:rgba(255,255,255,.3); font-family:monospace; }
+    .mkup-body { display:grid; grid-template-columns:36px 1fr; }
+    .mkup-sb { background:rgba(255,255,255,0.03); border-right:1px solid rgba(255,255,255,.05); padding:10px 4px; display:flex; flex-direction:column; gap:5px; }
+    .mkup-sb-i { width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; }
+    .mkup-sb-i.on { background:#0A84FF; }
+    .mkup-sb-i svg { width:12px; height:12px; stroke:rgba(255,255,255,.4); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .mkup-sb-i.on svg { stroke:#fff; }
+    .mkup-main { padding:10px; display:flex; flex-direction:column; gap:7px; }
+    .mkup-hello { font-size:8.5px; font-weight:600; color:rgba(255,255,255,.75); }
+    .mkup-date  { font-size:7px; color:rgba(255,255,255,.3); margin-top:1px; }
+    .mkup-kpis  { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+    .mkup-kpi   { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.06); border-radius:6px; padding:5px 6px; }
+    .mkup-kpi-l { font-size:6px; color:rgba(255,255,255,.35); margin-bottom:2px; }
+    .mkup-kpi-v { font-size:12px; font-weight:800; color:#fff; line-height:1; letter-spacing:-.3px; }
+    .mkup-kpi-d { font-size:5.5px; color:#22c55e; margin-top:1px; }
+    .mkup-chart { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.05); border-radius:6px; padding:6px 7px; }
+    .mkup-chart-ttl { font-size:6px; color:rgba(255,255,255,.3); font-weight:600; text-transform:uppercase; letter-spacing:.4px; margin-bottom:5px; }
+    .mkup-bars { display:flex; gap:3px; align-items:flex-end; height:30px; }
+    .mkup-bar  { flex:1; border-radius:2px 2px 0 0; }
+    .mkup-pill { position:absolute; bottom:-12px; left:-14px; background:#fff; border-radius:10px; padding:7px 12px; box-shadow:0 6px 20px rgba(0,0,0,0.18); display:flex; align-items:center; gap:7px; font-size:11px; font-weight:600; color:#111827; white-space:nowrap; z-index:2; }
+    .mkup-pill-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; box-shadow:0 0 6px #22c55e; flex-shrink:0; }
+    .visual-copy { position:relative; z-index:1; text-align:center; }
+    .visual-title { font-size:17px; font-weight:800; color:#fff; letter-spacing:-.4px; margin-bottom:7px; line-height:1.25; }
+    .visual-desc  { font-size:12.5px; color:rgba(255,255,255,.4); line-height:1.65; max-width:220px; margin:0 auto 20px; }
+    .visual-stats { display:flex; gap:20px; justify-content:center; }
+    .vstat        { text-align:center; }
+    .vstat-num    { font-size:18px; font-weight:900; color:#fff; letter-spacing:-.5px; }
+    .vstat-num span { color:#0A84FF; }
+    .vstat-label  { font-size:10px; color:rgba(255,255,255,.35); margin-top:2px; }
+
+    .toast { position:fixed; bottom:calc(20px + env(safe-area-inset-bottom,0px)); left:50%; transform:translateX(-50%) translateY(110px); background:rgba(15,17,23,.93); color:#fff; padding:11px 18px; border-radius:14px; font-size:13px; font-weight:500; backdrop-filter:blur(16px); display:flex; align-items:center; gap:7px; z-index:999; transition:transform .35s cubic-bezier(.34,1.42,.64,1); white-space:nowrap; max-width:calc(100vw - 32px); box-shadow:0 6px 20px rgba(0,0,0,.3); }
+    .toast.show { transform:translateX(-50%) translateY(0); }
+    .toast svg  { width:15px; height:15px; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; fill:none; flex-shrink:0; }
+    .page-footer { position:relative; z-index:1; margin-top:20px; font-size:12px; color:#aab0bc; text-align:center; }
+
+    @media(max-width:720px){ .card{grid-template-columns:1fr;} .visual-side{display:none;} .form-side{border-right:none;padding:32px 24px 28px;max-height:none;} }
+    @media(prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important;} }
+    *{-webkit-tap-highlight-color:transparent;}
+  </style>
+</head>
+<body>
+<div class="card">
+
+  <!-- ══ FORM ══ -->
+  <div class="form-side" id="formSide">
+    <div class="brand">
+      <div class="brand-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+      <span class="brand-name">Azyvion CRM</span>
+    </div>
+
+    <div class="steps-wrap" id="stepsWrap">
+      <div class="steps-bar">
+        <div class="step-dot active" id="sd1"><span>1</span></div>
+        <div class="step-line" id="sl1"></div>
+        <div class="step-dot" id="sd2"><span>2</span></div>
+        <div class="step-line" id="sl2"></div>
+        <div class="step-dot" id="sd3"><span>3</span></div>
+        <div class="step-line" id="sl3"></div>
+        <div class="step-dot" id="sd4"><span>4</span></div>
+      </div>
+      <div class="steps-labels">
+        <div class="step-label active" id="lbl1">Empresa</div>
+        <div class="step-label" id="lbl2">Cuenta</div>
+        <div class="step-label" id="lbl3">Plan</div>
+        <div class="step-label" id="lbl4">Pago</div>
+      </div>
+    </div>
+
+    <!-- STEP 1 -->
+    <div id="step1">
+      <h1 class="form-title">Tu empresa</h1>
+      <p class="form-sub">Información básica para configurar tu CRM.</p>
+
+      <div class="field-wrap">
+        <label class="field-label" for="f_empresa">Nombre de la empresa *</label>
+        <div class="field-inner"><input class="field-input" type="text" id="f_empresa" placeholder="Ej. Distribuidora Norte S.A." autocomplete="organization" /></div>
+      </div>
+
+      <div class="field-wrap">
+        <label class="field-label">País *</label>
+        <div class="country-picker" id="countryPicker">
+          <button type="button" class="country-btn" id="countryBtn" onclick="toggleCountry()" aria-haspopup="listbox">
+            <span class="placeholder" id="countryDisplay">Seleccionar país</span>
+            <span class="country-chevron"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+          </button>
+          <div class="country-dropdown" id="countryDropdown" role="listbox">
+            <div class="country-search-wrap">
+              <input class="country-search" type="text" id="countrySearch" placeholder="Buscar país..." oninput="filterCountries(this.value)" autocomplete="off" />
+            </div>
+            <div class="country-list" id="countryList"></div>
+          </div>
+        </div>
+        <input type="hidden" id="f_pais" />
+      </div>
+
+      <div class="field-grid">
+        <div class="field-wrap" style="margin-bottom:0">
+          <label class="field-label" for="f_sector">Industria *</label>
+          <div class="field-inner">
+            <select class="field-select" id="f_sector">
+              <option value="">Seleccionar...</option>
+              <option>Comercio y Retail</option><option>Tecnología y Software</option>
+              <option>Servicios Profesionales</option><option>Construcción y Bienes Raíces</option>
+              <option>Manufactura e Industria</option><option>Logística y Transporte</option>
+              <option>Salud y Medicina</option><option>Educación</option>
+              <option>Alimentos y Bebidas</option><option>Financiero y Seguros</option>
+              <option>Turismo y Hospitalidad</option><option>Agropecuario</option>
+              <option>Marketing y Publicidad</option><option>Otro</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap" style="margin-bottom:0">
+          <label class="field-label" for="f_tamano">Tamaño</label>
+          <div class="field-inner">
+            <select class="field-select" id="f_tamano">
+              <option value="">Empleados</option>
+              <option>1–5</option><option>6–20</option><option>21–50</option>
+              <option>51–200</option><option>+200</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-wrap" style="margin-top:11px">
+        <label class="field-label" for="f_correo_emp">Correo empresa *</label>
+        <div class="field-inner"><input class="field-input" type="email" id="f_correo_emp" placeholder="contacto@empresa.com" /></div>
+      </div>
+
+      <div class="error-msg" id="err1"></div>
+      <button class="btn-primary" onclick="nextStep(2)"><span class="btn-text">Continuar</span><div class="spinner"></div></button>
+      <p class="form-footer">¿Ya tienes cuenta? <a class="link-btn" href="login.html">Iniciar sesión</a></p>
+    </div>
+
+    <!-- STEP 2 -->
+    <div id="step2" style="display:none">
+      <h1 class="form-title">Tu cuenta</h1>
+      <p class="form-sub">Serás el administrador principal del CRM.</p>
+
+      <div class="field-grid">
+        <div class="field-wrap" style="margin-bottom:0">
+          <label class="field-label" for="f_nombre">Nombre completo *</label>
+          <div class="field-inner"><input class="field-input" type="text" id="f_nombre" placeholder="Tu nombre" autocomplete="name" /></div>
+        </div>
+        <div class="field-wrap" style="margin-bottom:0">
+          <label class="field-label" for="f_cargo">Cargo</label>
+          <div class="field-inner"><input class="field-input" type="text" id="f_cargo" placeholder="Ej. Director Comercial" /></div>
+        </div>
+      </div>
+      <div style="margin-bottom:11px"></div>
+
+      <div class="field-wrap">
+        <label class="field-label" for="f_correo">Correo electrónico *</label>
+        <div class="field-inner"><input class="field-input" type="email" id="f_correo" placeholder="tu@correo.com" autocomplete="email" /></div>
+      </div>
+
+      <div class="field-wrap">
+        <label class="field-label" for="f_pwd">Contraseña *</label>
+        <div class="field-inner">
+          <input class="field-input pad-r" type="password" id="f_pwd" placeholder="Mínimo 8 caracteres" autocomplete="new-password" oninput="checkPwd(this.value)" />
+          <button class="field-btn" onclick="togglePwd('f_pwd')" aria-label="Mostrar"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+        <div class="pwd-bars"><div class="pwd-bar" id="pb1"></div><div class="pwd-bar" id="pb2"></div><div class="pwd-bar" id="pb3"></div><div class="pwd-bar" id="pb4"></div></div>
+        <div class="pwd-label" id="pwdLabel">Mínimo 8 caracteres</div>
+      </div>
+
+      <div class="field-wrap">
+        <label class="field-label" for="f_pwd2">Confirmar contraseña *</label>
+        <div class="field-inner">
+          <input class="field-input pad-r" type="password" id="f_pwd2" placeholder="Repetir contraseña" autocomplete="new-password" />
+          <button class="field-btn" onclick="togglePwd('f_pwd2')" aria-label="Mostrar"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+      </div>
+
+      <div class="error-msg" id="err2"></div>
+      <button class="btn-primary" onclick="nextStep(3)"><span class="btn-text">Continuar</span><div class="spinner"></div></button>
+      <button class="btn-back" onclick="goBack(1)">← Anterior</button>
+    </div>
+
+    <!-- STEP 3 -->
+    <div id="step3" style="display:none">
+      <h1 class="form-title">Elige tu plan</h1>
+      <p class="form-sub">Comienza gratis y escala cuando lo necesites.</p>
+
+      <div class="plan-grid">
+        <label><input type="radio" name="plan" value="free" class="plan-radio" checked />
+          <div class="plan-card"><div class="plan-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="plan-name">Gratis</div><div class="plan-price">$0<span>/mes</span></div>
+            <div class="plan-detail">1 usuario · 500 contactos · 5 GB</div></div></label>
+        <label><input type="radio" name="plan" value="starter" class="plan-radio" />
+          <div class="plan-card"><div class="plan-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="plan-name">Starter</div><div class="plan-price">$29<span>/mes</span></div>
+            <div class="plan-detail">5 usuarios · 5,000 contactos · 25 GB</div></div></label>
+        <label><input type="radio" name="plan" value="pro" class="plan-radio" />
+          <div class="plan-card"><div class="plan-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="plan-name">Pro</div><div class="plan-price">$79<span>/mes</span></div>
+            <div class="plan-detail">20 usuarios · Ilimitados · 100 GB</div>
+            <div class="plan-badge">Más popular</div></div></label>
+        <label><input type="radio" name="plan" value="enterprise" class="plan-radio" />
+          <div class="plan-card"><div class="plan-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="plan-name">Enterprise</div>
+            <div class="plan-price" style="font-size:14px;padding-top:3px">A medida</div>
+            <div class="plan-detail">Ilimitado · Storage ilimitado</div></div></label>
+      </div>
+
+      <div class="error-msg" id="err3"></div>
+      <button class="btn-primary" onclick="nextStep(4)"><span class="btn-text">Continuar</span><div class="spinner"></div></button>
+      <button class="btn-back" onclick="goBack(2)">← Anterior</button>
+    </div>
+
+    <!-- STEP 4: PAGO -->
+    <div id="step4" style="display:none">
+      <h1 class="form-title" id="payTitle">Pago y confirmación</h1>
+      <p class="form-sub" id="paySubtitle">Activa tu plan y empieza a cerrar negocios hoy.</p>
+
+      <!-- Plan summary -->
+      <div class="plan-summary" id="planSummary">
+        <div>
+          <div class="plan-sum-name" id="sumName">Plan Gratis</div>
+          <div class="plan-sum-note" id="sumNote">Sin tarjeta de crédito</div>
+        </div>
+        <div class="plan-sum-price" id="sumPrice">$0/mes</div>
+      </div>
+
+      <!-- FREE: sin pago -->
+      <div id="freeSection">
+        <label class="checkbox-label">
+          <input type="checkbox" id="f_terms_free" />
+          <span class="custom-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
+          <span>Acepto los <a class="link-btn" href="#">Términos de uso</a> y la <a class="link-btn" href="#">Política de privacidad</a></span>
+        </label>
+        <div class="error-msg" id="err4_free"></div>
+        <button class="btn-primary" id="finalBtnFree" onclick="handleRegister('free')">
+          <span class="btn-text">Crear mi cuenta gratis</span><div class="spinner"></div>
+        </button>
+      </div>
+
+      <!-- PAID: tarjeta/transferencia/paypal -->
+      <div id="paidSection" style="display:none">
+        <div class="pay-tabs">
+          <button class="pay-tab active" id="tabCard" onclick="setPayTab('card')">
+            <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Tarjeta
+          </button>
+          <button class="pay-tab" id="tabTransfer" onclick="setPayTab('transfer')">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Transferencia
+          </button>
+          <button class="pay-tab" id="tabPaypal" onclick="setPayTab('paypal')">
+            <svg viewBox="0 0 24 24"><path d="M7 11l1-8h7a4 4 0 0 1 4 4c0 3-2 4-4 4H7z"/><path d="M6 16l1-5h5a3 3 0 0 1 3 3c0 2-1.5 3-3 3H6z"/></svg>
+            PayPal
+          </button>
+        </div>
+
+        <!-- Tarjeta -->
+        <div id="cardForm">
+          <div class="field-wrap">
+            <label class="field-label" for="f_card">Número de tarjeta *</label>
+            <div class="field-inner">
+              <input class="field-input" type="text" id="f_card" placeholder="0000 0000 0000 0000" maxlength="19" oninput="fmtCard(this)" autocomplete="cc-number" inputmode="numeric" />
+              <div class="card-brands">
+                <div class="cb cb-visa">VISA</div>
+                <div class="cb cb-mc">MC</div>
+              </div>
+            </div>
+          </div>
+          <div class="field-wrap">
+            <label class="field-label" for="f_name_card">Nombre en la tarjeta *</label>
+            <div class="field-inner"><input class="field-input" type="text" id="f_name_card" placeholder="Como aparece en la tarjeta" autocomplete="cc-name" /></div>
+          </div>
+          <div class="card-row">
+            <div class="field-wrap" style="margin-bottom:0">
+              <label class="field-label" for="f_exp">Vencimiento *</label>
+              <div class="field-inner"><input class="field-input" type="text" id="f_exp" placeholder="MM / AA" maxlength="7" oninput="fmtExp(this)" autocomplete="cc-exp" inputmode="numeric" /></div>
+            </div>
+            <div class="field-wrap" style="margin-bottom:0">
+              <label class="field-label" for="f_cvv">CVV *</label>
+              <div class="field-inner">
+                <input class="field-input pad-r" type="password" id="f_cvv" placeholder="•••" maxlength="4" autocomplete="cc-csc" inputmode="numeric" />
+                <button class="field-btn" onclick="togglePwd('f_cvv')" aria-label="Mostrar CVV"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+              </div>
+            </div>
+          </div>
+          <div style="margin-bottom:14px"></div>
+          <div class="secure-note"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Pago seguro cifrado con SSL. No almacenamos tus datos de tarjeta.</div>
+          <label class="checkbox-label">
+            <input type="checkbox" id="f_terms_card" />
+            <span class="custom-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
+            <span>Acepto los <a class="link-btn" href="#">Términos de uso</a> y la <a class="link-btn" href="#">Política de privacidad</a></span>
+          </label>
+          <div class="error-msg" id="err4_card"></div>
+          <button class="btn-primary" id="finalBtnCard" onclick="handleRegister('card')">
+            <span class="btn-text" id="finalCardText">Activar prueba de 14 días</span><div class="spinner"></div>
+          </button>
+        </div>
+
+        <!-- Transferencia -->
+        <div id="transferForm" style="display:none">
+          <div class="transfer-box">
+            <div class="transfer-row"><span class="transfer-key">Banco</span><span class="transfer-val">Banco Industrial</span></div>
+            <div class="transfer-row"><span class="transfer-key">Cuenta</span><span class="transfer-val">078-001234-5 <button class="copy-btn" onclick="copyText('078-001234-5')">Copiar</button></span></div>
+            <div class="transfer-row"><span class="transfer-key">CCI / CLABE</span><span class="transfer-val">00807800123450 <button class="copy-btn" onclick="copyText('00807800123450')">Copiar</button></span></div>
+            <div class="transfer-row"><span class="transfer-key">Beneficiario</span><span class="transfer-val">Azyvion S.A. de C.V.</span></div>
+            <div class="transfer-row"><span class="transfer-key">Monto</span><span class="transfer-val" id="transferAmount">$29 USD</span></div>
+          </div>
+          <p class="transfer-note">Realiza la transferencia y adjunta el número de referencia. Tu cuenta se activará en 24 h hábiles después de validar el pago.</p>
+          <div class="field-wrap" style="margin-top:12px">
+            <label class="field-label" for="f_ref">Número de referencia / comprobante *</label>
+            <div class="field-inner"><input class="field-input" type="text" id="f_ref" placeholder="Ej. TRF-20260929-001" /></div>
+          </div>
+          <label class="checkbox-label">
+            <input type="checkbox" id="f_terms_transfer" />
+            <span class="custom-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
+            <span>Acepto los <a class="link-btn" href="#">Términos de uso</a> y la <a class="link-btn" href="#">Política de privacidad</a></span>
+          </label>
+          <div class="error-msg" id="err4_transfer"></div>
+          <button class="btn-primary" id="finalBtnTransfer" onclick="handleRegister('transfer')">
+            <span class="btn-text">Enviar comprobante y crear cuenta</span><div class="spinner"></div>
+          </button>
+        </div>
+
+        <!-- PayPal -->
+        <div id="paypalForm" style="display:none">
+          <div class="paypal-box">
+            <button class="paypal-btn" onclick="handleRegister('paypal')">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M19.5 7C19.5 10.5 17 13 13.5 13H11L9.5 20H6L8.5 7H13C17 7 19.5 7 19.5 7Z" fill="#003087"/><path d="M20.5 4C20.5 7.5 18 10 14.5 10H12L10.5 17H7L9.5 4H14C18 4 20.5 4 20.5 4Z" fill="#009CDE"/></svg>
+              Pagar con PayPal
+            </button>
+            <p class="paypal-note">Serás redirigido a PayPal para completar el pago de forma segura.</p>
+          </div>
+          <label class="checkbox-label" style="margin-top:8px">
+            <input type="checkbox" id="f_terms_paypal" />
+            <span class="custom-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
+            <span>Acepto los <a class="link-btn" href="#">Términos de uso</a> y la <a class="link-btn" href="#">Política de privacidad</a></span>
+          </label>
+          <div class="error-msg" id="err4_paypal"></div>
+        </div>
+      </div>
+
+      <!-- ENTERPRISE -->
+      <div id="enterpriseSection" style="display:none">
+        <label class="checkbox-label">
+          <input type="checkbox" id="f_terms_ent" />
+          <span class="custom-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
+          <span>Acepto los <a class="link-btn" href="#">Términos de uso</a> y la <a class="link-btn" href="#">Política de privacidad</a></span>
+        </label>
+        <div class="error-msg" id="err4_ent"></div>
+        <button class="btn-primary" id="finalBtnEnt" onclick="handleRegister('enterprise')">
+          <span class="btn-text">Solicitar Enterprise</span><div class="spinner"></div>
+        </button>
+      </div>
+
+      <button class="btn-back" onclick="goBack(3)">← Anterior</button>
+    </div>
+
+    <!-- SUCCESS -->
+    <div id="stepSuccess" style="display:none">
+      <div class="success-screen">
+        <div class="success-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="success-title">¡Cuenta creada!</div>
+        <div class="success-msg" id="successMsg">Tu cuenta está lista. Revisa tu correo.</div>
+        <div class="success-detail" id="successDetail"></div>
+        <a href="login.html" class="btn-primary" style="margin-bottom:0">Ir al inicio de sesión</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VISUAL ══ -->
+  <div class="visual-side">
+    <div class="mkup-wrap">
+      <div class="mkup">
+        <div class="mkup-topbar">
+          <div class="mkup-dots"><span></span><span></span><span></span></div>
+          <div class="mkup-url">app.azyvion.com/dashboard</div>
+        </div>
+        <div class="mkup-body">
+          <div class="mkup-sb">
+            <div class="mkup-sb-i on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
+            <div class="mkup-sb-i"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+            <div class="mkup-sb-i"><svg viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></div>
+            <div class="mkup-sb-i"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div>
+          </div>
+          <div class="mkup-main">
+            <div><div class="mkup-hello">Bienvenido a Azyvion 👋</div><div class="mkup-date">Lunes 29 Sep 2026</div></div>
+            <div class="mkup-kpis">
+              <div class="mkup-kpi"><div class="mkup-kpi-l">Ingresos</div><div class="mkup-kpi-v">$84K</div><div class="mkup-kpi-d">↑ 18%</div></div>
+              <div class="mkup-kpi"><div class="mkup-kpi-l">Leads</div><div class="mkup-kpi-v">247</div><div class="mkup-kpi-d">↑ 32</div></div>
+              <div class="mkup-kpi"><div class="mkup-kpi-l">Cierre</div><div class="mkup-kpi-v">68%</div><div class="mkup-kpi-d">↑ 5 pts</div></div>
+            </div>
+            <div class="mkup-chart">
+              <div class="mkup-chart-ttl">Ingresos · 6 meses</div>
+              <div class="mkup-bars">
+                <div class="mkup-bar" style="height:38%;background:rgba(10,132,255,.35)"></div>
+                <div class="mkup-bar" style="height:52%;background:rgba(10,132,255,.42)"></div>
+                <div class="mkup-bar" style="height:46%;background:rgba(10,132,255,.48)"></div>
+                <div class="mkup-bar" style="height:68%;background:rgba(10,132,255,.55)"></div>
+                <div class="mkup-bar" style="height:78%;background:rgba(10,132,255,.65)"></div>
+                <div class="mkup-bar" style="height:100%;background:#0A84FF"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mkup-pill"><div class="mkup-pill-dot"></div>Cuenta creada · Acceso inmediato</div>
+    </div>
+    <div class="visual-copy">
+      <div class="visual-title">Empieza a cerrar<br>más negocios hoy</div>
+      <div class="visual-desc">Más de 1,200 equipos en Latinoamérica confían en Azyvion para gestionar su pipeline.</div>
+      <div class="visual-stats">
+        <div class="vstat"><div class="vstat-num">38<span>%</span></div><div class="vstat-label">más cierres</div></div>
+        <div class="vstat"><div class="vstat-num">4<span>.8</span></div><div class="vstat-label">calificación</div></div>
+        <div class="vstat"><div class="vstat-num">1<span>K+</span></div><div class="vstat-label">equipos activos</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<p class="page-footer">© 2026 Azyvion. Todos los derechos reservados.</p>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  var SUPABASE_URL = 'https://dwtykzporgjjvdustjfq.supabase.co';
+  var ANON_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3dHlrenBvcmdqanZkdXN0amZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5MjM2MjIsImV4cCI6MjEwNTQ5OTYyMn0.0SXLE5HhIjHbHz2k0cgyat9bvCper_sjAiiCrkOSmF8';
+  var REGISTER_URL = SUPABASE_URL + '/functions/v1/register-crm';
+  var LOGIN_URL    = SUPABASE_URL + '/functions/v1/login-crm';
+  var SESSION_KEY  = 'azyvion_session';
+
+  var currentStep  = 1;
+  var activePayTab = 'card';
+
+  // ── COUNTRIES ──────────────────────────────────
+  var COUNTRIES = [
+    {f:'🇦🇷',n:'Argentina'},{f:'🇧🇴',n:'Bolivia'},{f:'🇧🇷',n:'Brasil'},
+    {f:'🇨🇱',n:'Chile'},{f:'🇨🇴',n:'Colombia'},{f:'🇨🇷',n:'Costa Rica'},
+    {f:'🇨🇺',n:'Cuba'},{f:'🇩🇴',n:'República Dominicana'},{f:'🇪🇨',n:'Ecuador'},
+    {f:'🇸🇻',n:'El Salvador'},{f:'🇬🇹',n:'Guatemala'},{f:'🇭🇳',n:'Honduras'},
+    {f:'🇲🇽',n:'México'},{f:'🇳🇮',n:'Nicaragua'},{f:'🇵🇦',n:'Panamá'},
+    {f:'🇵🇾',n:'Paraguay'},{f:'🇵🇪',n:'Perú'},{f:'🇵🇷',n:'Puerto Rico'},
+    {f:'🇺🇾',n:'Uruguay'},{f:'🇻🇪',n:'Venezuela'},
+    {f:'🇺🇸',n:'Estados Unidos'},{f:'🇪🇸',n:'España'},
+    {f:'🇦🇩',n:'Andorra'},{f:'🇦🇴',n:'Angola'},{f:'🇩🇪',n:'Alemania'},
+    {f:'🇫🇷',n:'Francia'},{f:'🇬🇧',n:'Reino Unido'},{f:'🇮🇹',n:'Italia'},
+    {f:'🇵🇹',n:'Portugal'},{f:'🇯🇵',n:'Japón'},{f:'🇨🇳',n:'China'},
+    {f:'🇮🇳',n:'India'},{f:'🇦🇺',n:'Australia'},{f:'🇨🇦',n:'Canadá'},
+    {f:'🌎',n:'Otro'}
+  ];
+  var selectedCountry = null;
+
+  function renderCountries(list) {
+    var ul = document.getElementById('countryList');
+    if (!list.length) { ul.innerHTML = '<div class="country-empty">Sin resultados</div>'; return; }
+    ul.innerHTML = list.map(function(c) {
+      var sel = selectedCountry && selectedCountry.n === c.n ? ' selected' : '';
+      return '<div class="country-option'+sel+'" onclick="selectCountry(\''+c.f+'\',\''+c.n+'\')" role="option"><span class="flag">'+c.f+'</span>'+c.n+'</div>';
+    }).join('');
+  }
+
+  window.filterCountries = function(q) {
+    var filtered = COUNTRIES.filter(function(c){ return c.n.toLowerCase().indexOf(q.toLowerCase()) !== -1; });
+    renderCountries(filtered);
+  };
+
+  window.selectCountry = function(flag, name) {
+    selectedCountry = {f: flag, n: name};
+    document.getElementById('f_pais').value = name;
+    var btn = document.getElementById('countryBtn');
+    btn.innerHTML = '<span class="country-flag">'+flag+'</span><span class="country-name-txt">'+name+'</span><span class="country-chevron"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>';
+    btn.classList.remove('open');
+    document.getElementById('countryDropdown').classList.remove('open');
+    renderCountries(COUNTRIES);
+  };
+
+  window.toggleCountry = function() {
+    var btn = document.getElementById('countryBtn');
+    var dd  = document.getElementById('countryDropdown');
+    var open = dd.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    if (open) {
+      renderCountries(COUNTRIES);
+      setTimeout(function(){ document.getElementById('countrySearch').focus(); }, 80);
+    }
+  };
+
+  document.addEventListener('click', function(e) {
+    if (!document.getElementById('countryPicker').contains(e.target)) {
+      document.getElementById('countryBtn').classList.remove('open');
+      document.getElementById('countryDropdown').classList.remove('open');
+    }
+  });
+
+  renderCountries(COUNTRIES);
+
+  // Pre-select plan from URL
+  try {
+    var p = new URLSearchParams(window.location.search).get('plan');
+    if (p) { var r = document.querySelector('input[name="plan"][value="'+p+'"]'); if(r) r.checked = true; }
+  } catch(e) {}
+
+  // ── STEP NAVIGATION ──────────────────────────
+  function setStep(n) {
+    for (var i = 1; i <= 4; i++) {
+      var el = document.getElementById('step' + i);
+      if (el) el.style.display = i === n ? '' : 'none';
+      var dot = document.getElementById('sd' + i);
+      var lbl = document.getElementById('lbl' + i);
+      if (dot) dot.className = 'step-dot' + (i < n ? ' done' : i === n ? ' active' : '');
+      if (lbl) lbl.className = 'step-label' + (i < n ? ' done' : i === n ? ' active' : '');
+      if (i < 4) { var ln = document.getElementById('sl' + i); if(ln) ln.className = 'step-line' + (i < n ? ' done' : ''); }
+    }
+    currentStep = n;
+    try { document.getElementById('formSide').scrollTop = 0; } catch(e) {}
+  }
+
+  function g(id)  { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+  function e(id, msg) { var el = document.getElementById(id); if(!el) return; el.textContent = msg; el.classList.toggle('visible', !!msg); }
+
+  window.nextStep = function(n) {
+    if (n === 2) {
+      if (!g('f_empresa'))                            { e('err1','Ingresa el nombre de tu empresa.'); return; }
+      if (!g('f_pais'))                               { e('err1','Selecciona tu país.'); return; }
+      if (!g('f_sector'))                             { e('err1','Selecciona la industria.'); return; }
+      if (!g('f_correo_emp')||!g('f_correo_emp').includes('@')) { e('err1','Ingresa un correo de empresa válido.'); return; }
+      e('err1',''); setStep(2);
+    } else if (n === 3) {
+      if (!g('f_nombre'))                             { e('err2','Ingresa tu nombre completo.'); return; }
+      var co = g('f_correo');
+      if (!co||!co.includes('@')||!co.includes('.')) { e('err2','Correo electrónico inválido.'); return; }
+      if (g('f_pwd').length < 8)                      { e('err2','La contraseña debe tener al menos 8 caracteres.'); return; }
+      if (g('f_pwd') !== g('f_pwd2'))                 { e('err2','Las contraseñas no coinciden.'); return; }
+      e('err2',''); setStep(3);
+    } else if (n === 4) {
+      e('err3','');
+      setupPayStep();
+      setStep(4);
+    }
+  };
+
+  window.goBack = function(n) { setStep(n); };
+
+  function setupPayStep() {
+    var plan = (document.querySelector('input[name="plan"]:checked')||{}).value||'free';
+    var names  = {free:'Gratis',starter:'Starter',pro:'Pro',enterprise:'Enterprise'};
+    var prices = {free:'$0/mes',starter:'$29/mes',pro:'$79/mes',enterprise:'A medida'};
+    var notes  = {free:'Sin tarjeta de crédito',starter:'14 días gratis, luego $29/mes',pro:'14 días gratis, luego $79/mes',enterprise:'Contacto personalizado'};
+    var amounts= {starter:'$29 USD',pro:'$79 USD'};
+
+    document.getElementById('sumName').textContent  = 'Plan ' + names[plan];
+    document.getElementById('sumPrice').textContent = prices[plan];
+    document.getElementById('sumNote').textContent  = notes[plan];
+
+    document.getElementById('freeSection').style.display      = plan === 'free' ? '' : 'none';
+    document.getElementById('paidSection').style.display      = (plan==='starter'||plan==='pro') ? '' : 'none';
+    document.getElementById('enterpriseSection').style.display = plan === 'enterprise' ? '' : 'none';
+
+    if (plan === 'starter' || plan === 'pro') {
+      document.getElementById('transferAmount').textContent = amounts[plan] || '';
+      document.getElementById('finalCardText').textContent = 'Activar prueba de 14 días · '+prices[plan];
+    }
+  }
+
+  window.setPayTab = function(tab) {
+    activePayTab = tab;
+    ['card','transfer','paypal'].forEach(function(t) {
+      document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('active', t===tab);
+      document.getElementById(t+'Form').style.display = t===tab ? '' : 'none';
+    });
+  };
+
+  // ── REGISTER ─────────────────────────────────
+  window.handleRegister = function(method) {
+    var plan = (document.querySelector('input[name="plan"]:checked')||{}).value||'free';
+
+    // Validate terms
+    var termsMap = {free:'f_terms_free', card:'f_terms_card', transfer:'f_terms_transfer', paypal:'f_terms_paypal', enterprise:'f_terms_ent'};
+    var errMap   = {free:'err4_free', card:'err4_card', transfer:'err4_transfer', paypal:'err4_paypal', enterprise:'err4_ent'};
+    var termKey = termsMap[method] || 'f_terms_free';
+    var errKey  = errMap[method]  || 'err4_free';
+
+    if (!document.getElementById(termKey).checked) {
+      e(errKey, 'Acepta los términos para continuar.'); return;
+    }
+
+    // Card validation
+    if (method === 'card') {
+      if (!g('f_card') || g('f_card').replace(/\s/g,'').length < 16) { e(errKey,'Ingresa el número de tarjeta completo.'); return; }
+      if (!g('f_name_card'))                                           { e(errKey,'Ingresa el nombre en la tarjeta.'); return; }
+      if (!g('f_exp') || g('f_exp').length < 5)                       { e(errKey,'Ingresa la fecha de vencimiento.'); return; }
+      if (!g('f_cvv') || g('f_cvv').length < 3)                       { e(errKey,'Ingresa el CVV.'); return; }
+    }
+
+    // Transfer validation
+    if (method === 'transfer') {
+      if (!g('f_ref')) { e(errKey,'Ingresa el número de referencia de la transferencia.'); return; }
+    }
+
+    // PayPal: check terms already validated above
+    e(errKey,'');
+
+    var btnIds = {free:'finalBtnFree', card:'finalBtnCard', transfer:'finalBtnTransfer', enterprise:'finalBtnEnt'};
+    var btn = document.getElementById(btnIds[method]);
+    if (btn) { btn.classList.add('loading'); btn.disabled = true; }
+
+    var payload = {
+      empresa: { nombre: g('f_empresa'), correo: g('f_correo_emp'), pais: g('f_pais'), sector: g('f_sector'), tamano: g('f_tamano') },
+      usuario: { nombre: g('f_nombre'), cargo: g('f_cargo'), correo: g('f_correo'), contrasena: g('f_pwd') },
+      plan: plan,
+      pago: {
+        metodo: method,
+        referencia: g('f_ref') || '',
+        cardLast4: method === 'card' ? g('f_card').replace(/\s/g,'').slice(-4) : ''
+      }
+    };
+
+    fetch(REGISTER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY },
+      body: JSON.stringify(payload)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res) {
+      if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+      if (!res.ok) { e(errKey, res.error || 'Error al crear la cuenta. Intenta de nuevo.'); return; }
+      // Auto-login con el correo recién registrado
+      var correo   = g('f_correo');
+      var password = g('f_pwd');
+      fetch(LOGIN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ correo: correo, contrasena: password })
+      })
+      .then(function(lr){ return lr.json(); })
+      .then(function(lres) {
+        if (lres.ok && lres.session) {
+          var expira = new Date(lres.session.expires_at * 1000).toISOString();
+          var sesion = {
+            token: lres.session.access_token,
+            refresh_token: lres.session.refresh_token,
+            nombre: lres.nombre, usuario: lres.usuario,
+            rol: lres.rol, expira: expira,
+            fotoUrl: lres.fotoUrl || '',
+            preferencias: lres.preferencias || {}
+          };
+          try { localStorage.setItem(SESSION_KEY, JSON.stringify(sesion)); } catch(e2) {}
+          showSuccess(plan);
+        } else {
+          // El registro fue ok pero el auto-login falló; igual mostrar éxito
+          showSuccess(plan);
+        }
+      })
+      .catch(function() { showSuccess(plan); });
+    })
+    .catch(function() {
+      if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+      e(errKey, 'Error de conexión. Intenta de nuevo.');
+    });
+  };
+
+  function showSuccess(plan) {
+    document.getElementById('stepsWrap').style.display = 'none';
+    for (var i = 1; i <= 4; i++) { var el=document.getElementById('step'+i); if(el) el.style.display='none'; }
+    document.getElementById('stepSuccess').style.display = '';
+    // Si hay sesión guardada, redirigir al dashboard tras 2.5 s
+    try {
+      if (localStorage.getItem(SESSION_KEY)) {
+        setTimeout(function(){ window.location.href = 'dashboard.html'; }, 2500);
+      }
+    } catch(e) {}
+    var msgs = {free:'Tu cuenta gratuita está lista. Revisa tu correo para confirmar el acceso.',starter:'Tu prueba de 14 días ha comenzado. Revisa tu correo para activar tu cuenta.',pro:'Tu prueba de 14 días ha comenzado. Revisa tu correo para activar tu cuenta.',enterprise:'Recibimos tu solicitud. Un ejecutivo te contactará en menos de 24 horas.'};
+    document.getElementById('successMsg').textContent = msgs[plan] || msgs.free;
+    var names = {free:'Gratis',starter:'Starter ($29/mes)',pro:'Pro ($79/mes)',enterprise:'Enterprise'};
+    var html = '<div class="success-row"><span class="success-key">Empresa</span><span class="success-val">'+g('f_empresa')+'</span></div>';
+    html += '<div class="success-row"><span class="success-key">Administrador</span><span class="success-val">'+g('f_nombre')+'</span></div>';
+    html += '<div class="success-row"><span class="success-key">Correo</span><span class="success-val">'+g('f_correo')+'</span></div>';
+    html += '<div class="success-row"><span class="success-key">Plan</span><span class="success-val">'+(names[plan]||plan)+'</span></div>';
+    document.getElementById('successDetail').innerHTML = html;
+  }
+
+  // ── PASSWORD ─────────────────────────────────
+  window.checkPwd = function(val) {
+    var score = 0;
+    if (val.length >= 8) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    var cls = score <= 1 ? 'weak' : score <= 2 ? 'medium' : 'strong';
+    ['pb1','pb2','pb3','pb4'].forEach(function(id,i){ var el=document.getElementById(id); if(el) el.className='pwd-bar'+(i<score?' '+cls:''); });
+    var lbl = document.getElementById('pwdLabel');
+    if (lbl) lbl.textContent = val.length === 0 ? 'Mínimo 8 caracteres' : ['','Débil','Regular','Buena','Muy segura'][score]||'';
+  };
+
+  window.togglePwd = function(id) { var el=document.getElementById(id); if(el) el.type=el.type==='password'?'text':'password'; };
+
+  // ── CARD FORMATTERS ──────────────────────────
+  window.fmtCard = function(el) {
+    var v = el.value.replace(/\D/g,'').substring(0,16);
+    el.value = v.replace(/(.{4})/g,'$1 ').trim();
+  };
+  window.fmtExp = function(el) {
+    var v = el.value.replace(/\D/g,'');
+    if (v.length >= 2) v = v.substring(0,2) + ' / ' + v.substring(2,4);
+    el.value = v;
+  };
+
+  // ── COPY ─────────────────────────────────────
+  window.copyText = function(txt) {
+    try { navigator.clipboard.writeText(txt).then(function(){ showToast('Copiado al portapapeles'); }); } catch(e) { showToast('Copia: ' + txt); }
+  };
+
+  // ── TOAST ────────────────────────────────────
+  function showToast(msg, color) {
+    var t = document.getElementById('toast');
+    t.innerHTML = '<svg viewBox="0 0 24 24" style="stroke:'+(color||'#22c55e')+'"><polyline points="20 6 9 17 4 12"/></svg> ' + msg;
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 2800);
+  }
+
+  // ── ENTER KEY ────────────────────────────────
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && currentStep < 4) window.nextStep(currentStep + 1);
+  });
+
+})();
+</script>
+</body>
+</html>
