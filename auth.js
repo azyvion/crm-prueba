@@ -1458,25 +1458,34 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if (navOv) navOv.style.display = puedeOv ? 'flex' : 'none';
             if (bnOv) bnOv.style.display = puedeOv ? 'flex' : 'none';
 
-            // 2. Si hay submenús definidos explícitamente en permisos
-            if (sess.permisos && Array.isArray(sess.permisos.submenus)) {
-                var permitidos = new Set(sess.permisos.submenus);
-                var mapeo = {
-                    'pos': ['nav-pos', 'bn-pos'],
-                    'clientes': ['nav-clientes', 'bn-clientes'],
-                    'prospectos': ['nav-prospectos', 'bn-prospectos'],
-                    'cotizaciones': ['nav-cotizaciones', 'bn-cotizaciones'],
-                    'inventario': ['nav-inventario'],
-                    'crear-producto': ['nav-crear-producto'],
-                    'encuestas': ['nav-encuestas'],
-                    'contabilidad': ['nav-contabilidad', 'nav-section-contabilidad'],
-                    'usuarios': ['nav-usuarios'],
-                    'perfil': ['nav-perfil']
-                };
+            // 2. Mostrar ítems de nav según rol y permisos
+            var mapeo = {
+                'pos': ['nav-pos', 'bn-pos'],
+                'clientes': ['nav-clientes', 'bn-clientes'],
+                'prospectos': ['nav-prospectos', 'bn-prospectos'],
+                'cotizaciones': ['nav-cotizaciones', 'bn-cotizaciones'],
+                'inventario': ['nav-inventario'],
+                'crear-producto': ['nav-crear-producto'],
+                'encuestas': ['nav-encuestas'],
+                'contabilidad': ['nav-contabilidad', 'nav-section-contabilidad'],
+                'usuarios': ['nav-usuarios'],
+                'perfil': ['nav-perfil']
+            };
+
+            if (esSA || esAdm) {
+                // SUPER_ADMIN y ADMIN ven todo sin restricciones
                 Object.keys(mapeo).forEach(function(sm) {
-                    var visible = permitidos.has(sm) || (esSA && sm !== 'overview');
-                    // Solo admin puede ver usuarios
-                    if (sm === 'usuarios' && !esAdm) visible = false;
+                    mapeo[sm].forEach(function(elemId) {
+                        var el = document.getElementById(elemId);
+                        if (el) el.style.display = '';
+                    });
+                });
+            } else if (sess.permisos && Array.isArray(sess.permisos.submenus)) {
+                // Usuarios con submenús explícitamente asignados
+                var permitidos = new Set(sess.permisos.submenus);
+                Object.keys(mapeo).forEach(function(sm) {
+                    var visible = permitidos.has(sm);
+                    if (sm === 'usuarios') visible = false; // solo admin puede ver usuarios
                     mapeo[sm].forEach(function(elemId) {
                         var el = document.getElementById(elemId);
                         if (el) el.style.display = visible ? '' : 'none';
