@@ -1468,6 +1468,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 'crear-producto': ['nav-crear-producto'],
                 'encuestas': ['nav-encuestas'],
                 'contabilidad': ['nav-contabilidad', 'nav-section-contabilidad'],
+                'empleados': ['nav-empleados'],
                 'usuarios': ['nav-usuarios'],
                 'perfil': ['nav-perfil']
             };
@@ -1563,7 +1564,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             // ── VENDEDOR: ocultar secciones no permitidas del sidebar ──────────
             if (esVendedor()) {
                 var _vendedorHiddenNavs = [
-                    'nav-overview','nav-prospectos','nav-cotizaciones',
+                    'nav-overview','nav-prospectos','nav-cotizaciones','nav-empleados',
                     'nav-inventario','nav-encuestas','nav-contabilidad',
                     'nav-usuarios','nav-suscripciones','nav-section-suscripciones',
                     'nav-section-contabilidad','nav-section-config'
