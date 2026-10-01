@@ -2764,7 +2764,7 @@
             else if (window.CATALOGO_POR_PAGE && CATALOGO_POR_PAGE[_currentPage]) nuevoCatalogo(CATALOGO_POR_PAGE[_currentPage]);
             else if (_currentPage === 'encuestas') newEncuesta();
             else if (_currentPage === 'usuarios') newUsuario();
-            else if (_currentPage === 'empleados') { if (typeof abrirModalNuevoEmpleado === 'function') abrirModalNuevoEmpleado(); }
+            else if (_currentPage === 'empleados') { if (typeof newEmpleado === 'function') newEmpleado(); }
             else if (_currentPage === 'contabilidad') openNuevaCuentaBancaria();
             else if (_currentPage === 'sub-empresas') _subNuevaEmpresa();
             else if (_currentPage === 'sub-planes') _subNuevoPlan();
