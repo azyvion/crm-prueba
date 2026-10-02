@@ -1192,16 +1192,36 @@
 
             <!-- ── PUNTO DE VENTA (POS) ── -->
             <div class="page" id="page-pos">
+                <!-- Barra de Estado de Caja (Apertura y Cierre) -->
+                <div class="pos-caja-bar" id="posCajaBar">
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <span class="tag tag-gray">Cargando estado de caja…</span>
+                    </div>
+                </div>
+
                 <div class="pos-layout">
                     <!-- Panel Izquierdo: Catálogo y Búsqueda -->
                     <div class="pos-catalog-panel">
-                        <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center">
+                        <!-- Barra de Búsqueda Superior -->
+                        <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
                             <div style="position:relative;flex:1">
-                                <input class="form-input" id="posSearchInput" placeholder="🔍 Buscar por nombre, código o SKU…" oninput="renderPosCatalogo()" style="padding-left:14px;height:38px;font-size:13.5px" />
+                                <input class="form-input" id="posSearchInput" placeholder="🔍 Buscar por código, SKU, nombre o descripción…" oninput="posFiltrarCatalogo()" style="padding-left:14px;height:38px;font-size:13.5px" />
                             </div>
+                            <button class="topbar-btn" id="posToggleViewBtn" onclick="posToggleViewMode()" title="Cambiar modo de vista" style="height:38px;padding:0 12px;font-size:12px">
+                                🖼️ Con fotos
+                            </button>
                             <button class="topbar-btn" onclick="loadPos()" title="Recargar productos" style="height:38px;padding:0 12px">
                                 <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                             </button>
+                        </div>
+
+                        <!-- Barra de Filtros Rápidos (Criterios de Búsqueda para >1000 productos) -->
+                        <div class="pos-filter-bar" id="posFilterBar">
+                            <button type="button" class="pos-filter-chip active" onclick="posSetTipoFiltro('todos', this)">🏷️ Todos</button>
+                            <button type="button" class="pos-filter-chip" onclick="posSetTipoFiltro('codigo', this)">🔢 Por Código / SKU</button>
+                            <button type="button" class="pos-filter-chip" onclick="posSetTipoFiltro('descripcion', this)">📝 Por Descripción</button>
+                            <button type="button" class="pos-filter-chip" onclick="posSetTipoFiltro('stock', this)">📦 Con Stock</button>
+                            <button type="button" class="pos-filter-chip" onclick="posSetTipoFiltro('servicios', this)">⭐ Servicios</button>
                         </div>
 
                         <!-- Filtro Categorías -->
@@ -1209,9 +1229,16 @@
                             <button class="filter-tab active">Todos</button>
                         </div>
 
-                        <!-- Grid de Productos -->
+                        <!-- Grid de Productos (1x1) -->
                         <div class="pos-grid" id="posProductCatalog">
                             <div style="text-align:center;padding:40px;color:var(--text-muted)">Cargando catálogo…</div>
+                        </div>
+
+                        <!-- Paginación / Carga por lotes para alto volumen -->
+                        <div id="posLoadMoreWrap" style="text-align:center;padding:10px 0;display:none">
+                            <button class="topbar-btn" id="posLoadMoreBtn" onclick="posCargarMasItems()" style="height:34px;font-size:12px;padding:0 16px;margin:0 auto">
+                                Cargar más productos…
+                            </button>
                         </div>
                     </div>
 
@@ -1224,6 +1251,21 @@
                                     <span class="badge" id="posCartCount" style="background:var(--accent);color:#fff">0</span>
                                 </div>
                                 <button class="btn-ghost" onclick="posVaciarCarrito()" style="font-size:11.5px;color:var(--danger);padding:4px 8px">Vaciar</button>
+                            </div>
+
+                            <!-- Consulta Rápida por NIT (Directa SAT / CRM sin salir del sistema) -->
+                            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:8px">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                                    <label class="form-label" style="font-size:10px;margin:0;font-weight:700">🔍 BÚSQUEDA RÁPIDA POR NIT (SAT / CRM)</label>
+                                    <span style="font-size:9.5px;color:var(--accent);cursor:pointer;font-weight:600" onclick="posLimpiarNitBusqueda()">Limpiar</span>
+                                </div>
+                                <div style="display:flex;gap:6px">
+                                    <input class="form-input" id="posNitSearchInput" placeholder="Ej. 12345678 o C/F" style="font-size:12px;height:32px;text-transform:uppercase" onkeydown="if(event.key==='Enter'){event.preventDefault();posBuscarClientePorNit();}" />
+                                    <button type="button" class="topbar-btn" onclick="posBuscarClientePorNit()" id="posNitSearchBtn" style="height:32px;padding:0 10px;font-size:11.5px;background:var(--accent);color:#fff;white-space:nowrap">
+                                        Buscar NIT
+                                    </button>
+                                </div>
+                                <div id="posNitResultMsg" style="font-size:11px;margin-top:4px;display:none;line-height:1.3"></div>
                             </div>
 
                             <!-- Selector de Cliente -->
@@ -1258,7 +1300,7 @@
                             </table>
                         </div>
 
-                        <!-- Footer / Totales / Botón Cobrar -->
+                        <!-- Footer / Totales / Botón Guardar / Cobrar -->
                         <div class="pos-cart-footer">
                             <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;color:var(--text-secondary)">
                                 <span>Subtotal</span>
@@ -1273,7 +1315,7 @@
                                 <span id="posTotalPagar" style="font-size:24px;font-weight:900;color:var(--accent)">Q 0.00</span>
                             </div>
                             <button class="topbar-btn" id="posBtnCobrar" onclick="posAbrirModalCobro()" disabled style="width:100%;height:44px;font-size:15px;font-weight:800;background:var(--success);color:#fff;justify-content:center;border-radius:10px;box-shadow:0 6px 16px rgba(48,209,88,.25)">
-                                COBRAR (Q 0.00)
+                                GUARDAR (Q 0.00)
                             </button>
                         </div>
                     </div>
@@ -1396,10 +1438,16 @@
                                 <button class="filter-tab" onclick="filtrarPlan('Ingreso',this)">Ingreso</button>
                                 <button class="filter-tab" onclick="filtrarPlan('Egreso',this)">Egreso</button>
                             </div>
-                            <button class="topbar-btn" onclick="openNuevaCuentaContable()" style="height:30px;font-size:12px">
-                                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                                Nueva cuenta
-                            </button>
+                            <div style="display:flex;gap:8px">
+                                <button class="topbar-btn" onclick="cargarNomenclaturaEstandarBtn()" title="Cargar catálogo y cuentas contables estándar para Guatemala/NIIF" style="height:30px;font-size:12px;background:var(--card);border:1px solid var(--border);color:var(--text-primary)">
+                                    <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                    Nomenclatura Estándar
+                                </button>
+                                <button class="topbar-btn" onclick="openNuevaCuentaContable()" style="height:30px;font-size:12px">
+                                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    Nueva cuenta
+                                </button>
+                            </div>
                         </div>
                         <div class="table-scroll">
                             <table>
@@ -2286,7 +2334,7 @@
         let _usuario = '';
 
         const PAGE_TITLES = {overview: 'Inicio', empleados: 'Empleados', pos: 'Punto de Venta (POS)', clientes: 'Clientes', prospectos: 'Prospectos', ficha: 'Ficha', cotizaciones: 'Cotizaciones', inventario: 'Inventario', 'crear-producto': 'Crear producto', categorias: 'Categorías', 'catalogo-marcas': 'Marcas', 'catalogo-lineas': 'Líneas', 'catalogo-familias': 'Familias', 'catalogo-unidades': 'Unidades de negocio', 'catalogo-tipos': 'Tipos de producto', encuestas: 'Encuestas', usuarios: 'Usuarios', contabilidad: 'Contabilidad', perfil: 'Ajustes', suscripciones: 'Suscripciones', 'sub-empresas': 'Empresas', 'sub-planes': 'Planes', 'sub-pagos': 'Pagos'};
-        const CTA_LABELS = {overview: 'Nuevo cliente', empleados: 'Nuevo empleado', pos: 'Cobrar orden', clientes: 'Nuevo cliente', prospectos: 'Nuevo prospecto', cotizaciones: 'Nueva cotización', inventario: 'Nuevo ítem', 'crear-producto': 'Nuevo producto', categorias: 'Nueva categoría', 'catalogo-marcas': 'Nueva marca', 'catalogo-lineas': 'Nueva línea', 'catalogo-familias': 'Nueva familia', 'catalogo-unidades': 'Nueva unidad de negocio', 'catalogo-tipos': 'Nuevo tipo de producto', encuestas: 'Nueva encuesta', usuarios: 'Nuevo usuario', contabilidad: 'Nueva cuenta bancaria', perfil: '', suscripciones: '', 'sub-empresas': 'Nueva empresa', 'sub-planes': 'Nuevo plan', 'sub-pagos': ''};
+        const CTA_LABELS = {overview: 'Nuevo cliente', empleados: 'Nuevo empleado', pos: 'Guardar venta', clientes: 'Nuevo cliente', prospectos: 'Nuevo prospecto', cotizaciones: 'Nueva cotización', inventario: 'Nuevo ítem', 'crear-producto': 'Nuevo producto', categorias: 'Nueva categoría', 'catalogo-marcas': 'Nueva marca', 'catalogo-lineas': 'Nueva línea', 'catalogo-familias': 'Nueva familia', 'catalogo-unidades': 'Nueva unidad de negocio', 'catalogo-tipos': 'Nuevo tipo de producto', encuestas: 'Nueva encuesta', usuarios: 'Nuevo usuario', contabilidad: 'Nueva cuenta bancaria', perfil: '', suscripciones: '', 'sub-empresas': 'Nueva empresa', 'sub-planes': 'Nuevo plan', 'sub-pagos': ''};
 
         const ETAPAS = ['Nuevo', 'Contactado', 'Calificado', 'Propuesta', 'Negociación', 'Perdido'];
         const ORIGENES = ['Referido', 'Sitio web', 'Llamada fría', 'Evento', 'Redes sociales', 'Otro'];
@@ -2432,6 +2480,23 @@
             if (_handleModalSaveFicha(m, saveBtn)) return;
             if (_handleModalSaveCatalogo(m, saveBtn)) return;
 
+            if (m.type === 'pos_checkout') {
+                if (typeof posConfirmarVentaActual === 'function') {
+                    posConfirmarVentaActual();
+                } else if (typeof posConfirmarVenta === 'function') {
+                    posConfirmarVenta();
+                }
+                return;
+            }
+            if (m.type === 'caja_apertura') {
+                if (typeof posConfirmarAperturaCaja === 'function') posConfirmarAperturaCaja();
+                return;
+            }
+            if (m.type === 'caja_cierre') {
+                if (typeof posConfirmarCierreCaja === 'function') posConfirmarCierreCaja();
+                return;
+            }
+
             if (m.type === 'cliente') {
                 if (m.action === 'delete') {
                     window.api.withSuccessHandler(res => {
@@ -2515,10 +2580,13 @@
                         sku: v('mSku'),
                         descripcion: v('mDesc'),
                         unidad: v('mUnidad'),
+                        imagen_url: (document.getElementById('mProdImgUrl') || {}).value || '',
                         activo: chkAct ? (chkAct.checked ? 'true' : 'false') : 'true',
                         unidades: esServ ? 0 : (v('mUnid') || 0),
                         stockMax: esServ ? 0 : (v('mStockMax') || 1),
-                        precioUnit: v('mPrecio') || 0
+                        precioUnit: v('mPrecio') || 0,
+                        precioPlata: v('mPrecioPlata') ? Number(v('mPrecioPlata')) : null,
+                        precioOro: v('mPrecioOro') ? Number(v('mPrecioOro')) : null
                     };
                     const fn = m.action === 'add'
                         ? (cb => window.api.withSuccessHandler(cb).addInventario(data))
@@ -2592,7 +2660,9 @@
             const btn = document.getElementById('modalSaveBtn');
             btn.textContent = 'Guardar';
             btn.style.background = '';
+            btn.style.display = '';
             btn.disabled = false;
+            btn.onclick = () => modalSave();
             document.getElementById('modal').classList.add('open');
         }
         function closeModal() {document.getElementById('modal').classList.remove('open');}

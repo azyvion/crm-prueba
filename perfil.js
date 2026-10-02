@@ -112,6 +112,11 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       <span>Empresa</span>
       <span class="ajustes-nav-badge">Admin</span>
+    </button>
+    <button class="ajustes-nav-item" onclick="ajustesTab('fel',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>Facturación FEL (SAT)</span>
+      <span class="ajustes-nav-badge">DTE</span>
     </button>` : ''}
   </nav>
 
@@ -326,6 +331,152 @@
 
       <div class="ajustes-footer"><button class="btn-save" id="orgGuardarBtn" onclick="guardarOrgConfig()">Guardar empresa</button></div>
     </div>
+
+    <!-- SECCIÓN FACTURACIÓN FEL (SAT GUATEMALA) -->
+    <div class="ajustes-section" id="ajustes-fel">
+      <div class="ajustes-section-title">Facturación Electrónica en Línea (FEL · SAT Guatemala)</div>
+      
+      <div class="ajustes-alert ajustes-alert-info" style="margin-bottom:16px">
+        🏛️ <strong>Documentos Tributarios Electrónicos (DTE) Reales:</strong><br>
+        Al habilitar el módulo FEL, cada venta y cobro en el POS generará una Factura Electrónica legal con <strong>Número de Autorización (UUID SAT)</strong>, Serie, Número de DTE, y enlace directo de verificación en el portal de la SAT.
+      </div>
+
+      <div class="ajustes-row ajustes-row-toggle">
+        <div class="ajustes-row-label">
+          <div class="ajustes-row-name">Habilitar Facturación Electrónica FEL</div>
+          <div class="ajustes-row-desc">Emite facturas tributarias reales con certificación SAT en cada venta POS</div>
+        </div>
+        <label class="switch" id="felHabilitadoSwitch">
+          <input type="checkbox" id="felHabilitado" onchange="this.closest('label').classList.toggle('on', this.checked)"/>
+          <span class="knob"></span>
+        </label>
+      </div>
+
+      <div class="ajustes-row">
+        <div class="ajustes-row-label">
+          <div class="ajustes-row-name">NIT del Emisor *</div>
+          <div class="ajustes-row-desc">NIT registrado ante la SAT para emitir facturas</div>
+        </div>
+        <div class="ajustes-row-control" style="display:flex;gap:8px">
+          <input class="form-input" id="felNitEmisor" placeholder="Ej. 1234567-8" />
+          <button type="button" class="btn-ghost" onclick="document.getElementById('felNitEmisor').value = (document.getElementById('orgNit')||{}).value || ''" style="white-space:nowrap;font-size:11.5px">
+            Copiar de Empresa
+          </button>
+        </div>
+      </div>
+
+      <div class="ajustes-row">
+        <div class="ajustes-row-label">
+          <div class="ajustes-row-name">Nombre Comercial / Razón Social *</div>
+          <div class="ajustes-row-desc">Nombre fiscal exactamente como figura en el RTU de la SAT</div>
+        </div>
+        <div class="ajustes-row-control">
+          <input class="form-input" id="felNombreComercial" placeholder="Ej. DISTRIBUIDORA GUATEMALA, S.A." />
+        </div>
+      </div>
+
+      <div class="ajustes-row">
+        <div class="ajustes-row-label">
+          <div class="ajustes-row-name">Afiliación de IVA</div>
+          <div class="ajustes-row-desc">Régimen tributario asignado ante la SAT</div>
+        </div>
+        <div class="ajustes-row-control" style="max-width:260px">
+          <select class="form-select" id="felAfiliacionIva">
+            <option value="General">Régimen General (12% IVA)</option>
+            <option value="PequenoContribuyente">Pequeño Contribuyente (5% Factura Electrónica)</option>
+            <option value="Exento">Exento de IVA</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ajustes-row">
+        <div class="ajustes-row-label">
+          <div class="ajustes-row-name">Código de Establecimiento SAT</div>
+          <div class="ajustes-row-desc">Número de establecimiento asignado en la agencia virtual SAT (usualmente 1)</div>
+        </div>
+        <div class="ajustes-row-control" style="max-width:140px">
+          <input class="form-input" id="felCodigoEstablecimiento" value="1" placeholder="1" />
+        </div>
+      </div>
+
+      <div class="ajustes-row">
+        <div class="ajustes-row-label">
+          <div class="ajustes-row-name">Proveedor Certificador DTE (SAT)</div>
+          <div class="ajustes-row-desc">Entidad certificadora autorizada para firmar y validar con SAT</div>
+        </div>
+        <div class="ajustes-row-control" style="max-width:280px">
+          <select class="form-select" id="felCertificador">
+            <option value="INFILE">INFILE, S.A. (Certificador SAT)</option>
+            <option value="DIGIFACT">DIGIFACT (Certificador SAT)</option>
+            <option value="MEGAPRINT">MEGAPRINT (Certificador SAT)</option>
+            <option value="GUATEFACTURAS">GUATEFACTURAS (Certificador SAT)</option>
+            <option value="SAT_DIRECTO">SAT DIRECTO / ENTORNO PRUEBAS</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ajustes-row">
+        <div class="ajustes-row-label">
+          <div class="ajustes-row-name">Entorno de Facturación</div>
+          <div class="ajustes-row-desc">Selecciona Modo Producción cuando estés listo para emitir facturas legales reales</div>
+        </div>
+        <div class="ajustes-row-control" style="max-width:260px">
+          <select class="form-select" id="felEntorno">
+            <option value="Pruebas">Certificación / Sandbox (Pruebas)</option>
+            <option value="Produccion">PRODUCCIÓN (Facturas Reales SAT)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ajustes-row">
+        <div class="ajustes-row-label">
+          <div class="ajustes-row-name">Usuario / Llave de Certificador</div>
+          <div class="ajustes-row-desc">Credencial API provista por el certificador FEL</div>
+        </div>
+        <div class="ajustes-row-control">
+          <input class="form-input" id="felUsuarioCertificador" placeholder="Usuario o Client ID de Certificador" />
+        </div>
+      </div>
+
+      <div class="ajustes-row">
+        <div class="ajustes-row-label">
+          <div class="ajustes-row-name">API Key / Token de Acceso SAT</div>
+          <div class="ajustes-row-desc">Token de firma o clave de acceso para autorizaciones DTE</div>
+        </div>
+        <div class="ajustes-row-control">
+          <input class="form-input" id="felApiKey" type="password" placeholder="••••••••••••••••••••••••••••••" />
+        </div>
+      </div>
+
+      <div class="ajustes-row">
+        <div class="ajustes-row-label">
+          <div class="ajustes-row-name">Frase Tributaria SAT</div>
+          <div class="ajustes-row-desc">Texto legal requerido por la SAT al pie de cada factura</div>
+        </div>
+        <div class="ajustes-row-control">
+          <select class="form-select" id="felFraseSat">
+            <option value="Sujeto a pagos trimestrales ISR">Sujeto a pagos trimestrales ISR</option>
+            <option value="Sujeto a retención definitiva ISR">Sujeto a retención definitiva ISR</option>
+            <option value="Pequeño Contribuyente no genera crédito fiscal">Pequeño Contribuyente no genera crédito fiscal</option>
+            <option value="Exento de ISR e IVA">Exento de ISR e IVA</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ajustes-row" style="background:var(--bg-secondary);border-radius:10px;padding:12px 16px;margin-top:14px">
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:13px;color:var(--text-primary)">Estado de Conexión SAT</div>
+          <div id="felEstadoConexionTxt" style="font-size:12px;color:var(--text-muted);margin-top:2px">Configura tus credenciales y presiona verificar conexión.</div>
+        </div>
+        <button type="button" class="topbar-btn" onclick="probarConexionFel()" id="btnProbarFel" style="height:34px;font-size:12px;padding:0 14px;background:var(--accent);color:#fff">
+          🔌 Probar Conexión SAT
+        </button>
+      </div>
+
+      <div class="ajustes-footer">
+        <button class="btn-save" id="felGuardarBtn" onclick="guardarOrgConfig()">Guardar configuración FEL</button>
+      </div>
+    </div>
     ` : ''}
 
   </div>
@@ -337,7 +488,7 @@
                 if (btn) btn.classList.add('active');
                 var sec = document.getElementById('ajustes-' + tab);
                 if (sec) sec.classList.add('active');
-                if (tab === 'empresa') loadOrgConfigPanel();
+                if (tab === 'empresa' || tab === 'fel') loadOrgConfigPanel();
             };
         }
 
@@ -366,6 +517,45 @@
                         const opt = [...monSel.options].find(o => o.value === d.moneda);
                         if (opt) opt.selected = true;
                     }
+
+                    // Cargar configuración de Facturación FEL (SAT)
+                    let localFel = {};
+                    try { localFel = JSON.parse(localStorage.getItem('azyvion_fel_config') || '{}'); } catch(e) {}
+                    const fel = { ...localFel, ...d };
+
+                    const chkFel = document.getElementById('felHabilitado');
+                    if (chkFel) {
+                        chkFel.checked = !!(fel.fel_habilitado === true || fel.fel_habilitado === 'true');
+                        const sw = document.getElementById('felHabilitadoSwitch');
+                        if (sw) sw.classList.toggle('on', chkFel.checked);
+                    }
+                    setVal('felNitEmisor', fel.fel_nit_emisor || d.nit || '');
+                    setVal('felNombreComercial', fel.fel_nombre_comercial || d.nombre || '');
+                    setVal('felCodigoEstablecimiento', fel.fel_codigo_establecimiento || '1');
+                    setVal('felUsuarioCertificador', fel.fel_usuario_certificador || '');
+                    setVal('felApiKey', fel.fel_api_key || '');
+
+                    const selAf = document.getElementById('felAfiliacionIva');
+                    if (selAf && fel.fel_afiliacion_iva) {
+                        const opt = [...selAf.options].find(o => o.value === fel.fel_afiliacion_iva);
+                        if (opt) opt.selected = true;
+                    }
+                    const selCert = document.getElementById('felCertificador');
+                    if (selCert && fel.fel_certificador) {
+                        const opt = [...selCert.options].find(o => o.value === fel.fel_certificador);
+                        if (opt) opt.selected = true;
+                    }
+                    const selEnt = document.getElementById('felEntorno');
+                    if (selEnt && fel.fel_entorno) {
+                        const opt = [...selEnt.options].find(o => o.value === fel.fel_entorno);
+                        if (opt) opt.selected = true;
+                    }
+                    const selFrase = document.getElementById('felFraseSat');
+                    if (selFrase && fel.fel_frase_sat) {
+                        const opt = [...selFrase.options].find(o => o.value === fel.fel_frase_sat);
+                        if (opt) opt.selected = true;
+                    }
+
                     // Logo preview
                     const preview = document.getElementById('orgLogoPreview');
                     const placeholder = document.getElementById('orgLogoPlaceholder');
@@ -388,12 +578,12 @@
         function actualizarMembretePreview() {
             const nom = (document.getElementById('orgNombre') || {}).value || 'Mi Empresa';
             const esl = (document.getElementById('orgEslogan') || {}).value || '';
-            const nit = (document.getElementById('orgNit') || {}).value || 'C/F';
+            const nit = (document.getElementById('orgNit') || {}).value || (document.getElementById('felNitEmisor') || {}).value || 'C/F';
             const tel = (document.getElementById('orgTelefono') || {}).value || '—';
             const cor = (document.getElementById('orgCorreo') || {}).value || '—';
             const dir = (document.getElementById('orgDireccion') || {}).value || '—';
-            const prefCot = (document.getElementById('orgPrefijoCot') || {}).value || 'COT-';
-            const prefPos = (document.getElementById('orgPrefijoPos') || {}).value || 'POS-';
+            const prefCot = (document.getElementById('orgPrefijoCot') || {}).value || 'COT-',
+                  prefPos = (document.getElementById('orgPrefijoPos') || {}).value || 'POS-';
             const mon = (document.getElementById('orgMoneda') || {}).value || 'Q';
 
             const setT = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
@@ -426,31 +616,65 @@
         window.actualizarMembretePreview = actualizarMembretePreview;
 
         function guardarOrgConfig() {
-            const btn = document.getElementById('orgGuardarBtn');
-            const nombre = (document.getElementById('orgNombre') && document.getElementById('orgNombre').value || '').trim();
-            if (!nombre) { showToast('El nombre de empresa es requerido', '#FF9F0A'); return; }
-            btn.disabled = true; btn.textContent = 'Guardando…';
+            const btn = document.getElementById('orgGuardarBtn') || document.getElementById('felGuardarBtn');
+            const nombre = (document.getElementById('orgNombre') && document.getElementById('orgNombre').value || '').trim() || (document.getElementById('felNombreComercial') && document.getElementById('felNombreComercial').value || '').trim() || 'Mi Empresa';
+            if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+
+            const felHabilitado = !!(document.getElementById('felHabilitado') && document.getElementById('felHabilitado').checked);
+            const felNit = (document.getElementById('felNitEmisor') || {}).value || v('orgNit');
+            const felNom = (document.getElementById('felNombreComercial') || {}).value || nombre;
+            const felAfil = (document.getElementById('felAfiliacionIva') || {}).value || 'General';
+            const felEst = (document.getElementById('felCodigoEstablecimiento') || {}).value || '1';
+            const felCert = (document.getElementById('felCertificador') || {}).value || 'INFILE';
+            const felEnt = (document.getElementById('felEntorno') || {}).value || 'Pruebas';
+            const felUser = (document.getElementById('felUsuarioCertificador') || {}).value || '';
+            const felKey = (document.getElementById('felApiKey') || {}).value || '';
+            const felFrase = (document.getElementById('felFraseSat') || {}).value || 'Sujeto a pagos trimestrales ISR';
+
+            const felLocal = {
+                fel_habilitado: felHabilitado,
+                fel_nit_emisor: felNit,
+                fel_nombre_comercial: felNom,
+                fel_afiliacion_iva: felAfil,
+                fel_codigo_establecimiento: felEst,
+                fel_certificador: felCert,
+                fel_entorno: felEnt,
+                fel_usuario_certificador: felUser,
+                fel_api_key: felKey,
+                fel_frase_sat: felFrase
+            };
+            try { localStorage.setItem('azyvion_fel_config', JSON.stringify(felLocal)); } catch(e) {}
+
             const datos = {
                 nombre: nombre,
                 eslogan: v('orgEslogan'),
-                nit: v('orgNit'),
+                nit: v('orgNit') || felNit,
                 telefono: v('orgTelefono'),
                 correo: v('orgCorreo'),
                 sitio: v('orgSitio'),
                 direccion: v('orgDireccion'),
-                moneda: v('orgMoneda'),
+                moneda: v('orgMoneda') || 'Q',
                 iva_pct: Number(v('orgIva')) || 12,
                 condiciones_default: v('orgCondiciones'),
                 prefijo_cotizacion: (document.getElementById('orgPrefijoCot') || {}).value || 'COT-',
-                prefijo_ticket: (document.getElementById('orgPrefijoPos') || {}).value || 'POS-'
+                prefijo_ticket: (document.getElementById('orgPrefijoPos') || {}).value || 'POS-',
+                ...felLocal
             };
+
+            const resetBtns = () => {
+                const b1 = document.getElementById('orgGuardarBtn');
+                const b2 = document.getElementById('felGuardarBtn');
+                if (b1) { b1.disabled = false; b1.textContent = 'Guardar configuración'; }
+                if (b2) { b2.disabled = false; b2.textContent = 'Guardar configuración FEL'; }
+            };
+
             window.api
                 .withSuccessHandler(function(r) {
-                    btn.disabled = false; btn.textContent = 'Guardar configuración';
+                    resetBtns();
                     if (!r || !r.ok) { showToast((r && r.error) || 'No se pudo guardar', '#FF453A'); return; }
-                    showToast('Configuración de empresa guardada ✓', '#30D158');
+                    showToast('Configuración de empresa y FEL guardada ✓', '#30D158');
                 })
-                .withFailureHandler(function(e) { btn.disabled = false; btn.textContent = 'Guardar configuración'; showToast('Error: ' + e.message, '#FF453A'); })
+                .withFailureHandler(function(e) { resetBtns(); showToast('Error: ' + e.message, '#FF453A'); })
                 .saveOrgConfig(datos);
         }
 

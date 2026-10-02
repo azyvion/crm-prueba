@@ -204,12 +204,44 @@
             return Array.from(cats).sort((a, b) => a === 'Otro' ? 1 : b === 'Otro' ? -1 : a.localeCompare(b, 'es'));
         }
 
+        function puedeVerFichaProducto() {
+            return typeof esAdmin === 'function' && esAdmin();
+        }
+        window.puedeVerFichaProducto = puedeVerFichaProducto;
+
         function _formInventario(i) {
             i = i || {};
             const esServicio = i.tipo === 'Servicio';
             const cat = i.categoria || 'Otro';
+            const imgUrl = i.imagen_url || i.imagen || '';
             return `
     ${_invFormEmpresa(i)}
+    
+    <!-- Imagen del Producto (Almacenamiento Cloud Supabase) -->
+    <div class="form-field" style="background:var(--bg-secondary);padding:12px;border-radius:10px;border:1px solid var(--border);margin-bottom:14px">
+      <label class="form-label" style="font-size:11px;font-weight:700">FOTOGRAFÍA / IMAGEN DEL PRODUCTO (EN LA NUBE)</label>
+      <div style="display:flex;gap:14px;align-items:center">
+        <div id="mProdImgPreview" style="width:72px;height:72px;border-radius:10px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;background:var(--card);overflow:hidden;flex-shrink:0">
+          ${imgUrl ? `<img src="${escAttr(imgUrl)}" style="width:100%;height:100%;object-fit:cover">` : `<span style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px">Sin foto</span>`}
+        </div>
+        <div style="flex:1">
+          <input type="hidden" id="mProdImgUrl" value="${escAttr(imgUrl)}" />
+          <input type="file" id="mProdImgFile" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="_subirFotoProducto(event)" />
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn-ghost" id="mProdImgUploadBtn" onclick="document.getElementById('mProdImgFile').click()" style="font-size:12px;padding:6px 14px">
+              📁 Subir imagen
+            </button>
+            <button type="button" class="btn-danger-sm" id="mProdImgDelBtn" onclick="_eliminarFotoProducto()" style="display:${imgUrl ? 'inline-block' : 'none'};font-size:12px">
+              Quitar
+            </button>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+            Se almacena en la nube (la BD solo guarda la URL, sin sobrecargar datos). JPG, PNG o WebP, máx. 3 MB.
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="switch-field">
       <div>
         <div class="sf-txt">Es un servicio</div>
@@ -260,39 +292,169 @@
   `;
         }
 
-        function toggleServicioCampos() {
-            const chk = document.getElementById('mEsServicio');
-            if (!chk) return;
-            const on = chk.checked;
-            const sw = document.getElementById('mServSwitch');
-            if (sw) sw.classList.toggle('on', on);
-            const wrap = document.getElementById('mStockWrap');
-            if (wrap) wrap.style.display = on ? 'none' : '';
-            const lbl = document.getElementById('mProdLabel');
-            if (lbl) lbl.textContent = on ? 'NOMBRE DEL SERVICIO *' : 'NOMBRE DEL PRODUCTO *';
-            const u = document.getElementById('mUnidad');
-            if (u && (u.value === 'Unidad' || u.value === 'Servicio' || !u.value.trim())) u.value = on ? 'Servicio' : 'Unidad';
-        }
-
-        function _syncCatInput(sel) {
-            const input = document.getElementById('mCat');
-            if (!input) return;
-            if (sel.value === '__nueva__') {
-                input.style.display = 'block';
-                input.value = '';
-                input.focus();
-            } else {
-                input.style.display = 'none';
-                input.value = sel.value; // keep in sync so modalSave can read it
+        /* ── Subida de foto de producto a la nube ── */
+        function _subirFotoProducto(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            if (file.size > 3 * 1024 * 1024) {
+                showToast('La imagen no debe superar 3 MB', '#FF9F0A');
+                return;
             }
+            const btn = document.getElementById('mProdImgUploadBtn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Subiendo a la nube…'; }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64 = e.target.result;
+                window.api
+                    .withSuccessHandler(function(r) {
+                        if (btn) { btn.disabled = false; btn.textContent = '📁 Subir imagen'; }
+                        if (!r || !r.ok) {
+                            showToast('Error al subir: ' + ((r && r.error) || 'Sin respuesta'), '#FF453A');
+                            return;
+                        }
+                        showToast('Imagen guardada en la nube ✓', '#30D158');
+                        const urlInput = document.getElementById('mProdImgUrl');
+                        if (urlInput) urlInput.value = r.imagenUrl;
+                        const preview = document.getElementById('mProdImgPreview');
+                        if (preview) preview.innerHTML = `<img src="${escAttr(r.imagenUrl)}" style="width:100%;height:100%;object-fit:cover">`;
+                        const delBtn = document.getElementById('mProdImgDelBtn');
+                        if (delBtn) delBtn.style.display = 'inline-block';
+                    })
+                    .withFailureHandler(function(err) {
+                        if (btn) { btn.disabled = false; btn.textContent = '📁 Subir imagen'; }
+                        showToast('Error de conexión: ' + (err.message || err), '#FF453A');
+                    })
+                    .uploadFotoProducto({ imagenBase64: base64, mimeType: file.type });
+            };
+            reader.readAsDataURL(file);
         }
+        window._subirFotoProducto = _subirFotoProducto;
+
+        function _eliminarFotoProducto() {
+            const urlInput = document.getElementById('mProdImgUrl');
+            if (urlInput) urlInput.value = '';
+            const preview = document.getElementById('mProdImgPreview');
+            if (preview) preview.innerHTML = `<span style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px">Sin foto</span>`;
+            const delBtn = document.getElementById('mProdImgDelBtn');
+            if (delBtn) delBtn.style.display = 'none';
+        }
+        window._eliminarFotoProducto = _eliminarFotoProducto;
+
+        /* ── Ficha Técnica del Producto (Solo Administradores) ── */
+        function verFichaProducto(id) {
+            if (!puedeVerFichaProducto()) {
+                showToast('🔒 Acceso denegado: Solo los administradores pueden ver las fichas del producto.', '#FF453A');
+                return;
+            }
+
+            const p = _inventario.find(x => String(x.id) === String(id)) || (_posProductos && _posProductos.find(x => String(x.id) === String(id)));
+            if (!p) {
+                showToast('Producto no encontrado', '#FF9F0A');
+                return;
+            }
+
+            const esServicio = p.tipo === 'Servicio';
+            const fQ = n => 'Q ' + Number(n || 0).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2});
+            const imgUrl = p.imagen_url || p.imagen || '';
+
+            const marca = catNombre ? catNombre('marcas', p.marca_id) : '';
+            const linea = catNombre ? catNombre('lineas', p.linea_id) : '';
+            const familia = catNombre ? catNombre('familias', p.familia_id) : '';
+            const unidadNeg = catNombre ? catNombre('unidades', p.unidad_negocio_id) : '';
+            const tipoProd = catNombre ? catNombre('tipos', p.tipo_producto_id) : '';
+
+            const html = `
+                <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+                    <div style="width:160px;height:160px;border-radius:14px;border:1px solid var(--border);background:var(--bg-secondary);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+                        ${imgUrl ? `<img src="${escAttr(imgUrl)}" style="width:100%;height:100%;object-fit:cover">` : `<div style="font-size:32px;font-weight:900;color:var(--accent)">${escHtml((p.producto||'?').charAt(0).toUpperCase())}</div>`}
+                    </div>
+                    <div style="flex:1;min-width:240px">
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+                            <span class="tag ${esServicio ? 'tag-servicio' : 'tag-producto'}">${esServicio ? 'Servicio' : 'Producto'}</span>
+                            <span class="tag tag-accent">${escHtml(p.categoria || 'General')}</span>
+                            ${(p.activo === false || String(p.activo).toLowerCase() === 'false') ? '<span class="tag tag-danger">Inactivo</span>' : '<span class="tag tag-success">Activo para venta</span>'}
+                        </div>
+                        <h2 style="font-size:20px;font-weight:800;color:var(--text-primary);margin:0 0 6px">${escHtml(p.producto)}</h2>
+                        <div style="font-size:12px;color:var(--text-muted);font-family:monospace;margin-bottom:12px">
+                            ${p.sku ? 'SKU: ' + escHtml(p.sku) : 'Sin código SKU'}
+                        </div>
+                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.5;background:var(--card);padding:10px 12px;border-radius:8px;border:1px solid var(--border)">
+                            ${escHtml(p.descripcion || 'Sin descripción detallada.')}
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:18px">
+                    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px">
+                        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px">LISTAS DE PRECIO</div>
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12.5px">
+                            <span>Público:</span><strong style="color:var(--accent)">${fQ(p.precioUnit || p.precio)}</strong>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12.5px">
+                            <span>Plata (Mayorista):</span><strong>${fQ(p.precioPlata || p.precioUnit)}</strong>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:12.5px">
+                            <span>Oro (Distribuidor):</span><strong>${fQ(p.precioOro || p.precioUnit)}</strong>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px">
+                        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px">EXISTENCIAS Y STOCK</div>
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12.5px">
+                            <span>Stock Actual:</span><strong>${esServicio ? 'No aplica' : (p.unidades || 0) + ' ' + (p.unidad || 'Unidades')}</strong>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12.5px">
+                            <span>Stock Máximo:</span><strong>${esServicio ? 'No aplica' : (p.stockMax || '—')}</strong>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:12.5px">
+                            <span>Estado:</span><strong>${p.estado || 'Normal'}</strong>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px">
+                        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px">CLASIFICACIÓN TÉCNICA</div>
+                        <div style="font-size:12px;color:var(--text-secondary);line-height:1.6">
+                            ${marca ? `<div><b>Marca:</b> ${escHtml(marca)}</div>` : ''}
+                            ${linea ? `<div><b>Línea:</b> ${escHtml(linea)}</div>` : ''}
+                            ${familia ? `<div><b>Familia:</b> ${escHtml(familia)}</div>` : ''}
+                            ${unidadNeg ? `<div><b>Unidad:</b> ${escHtml(unidadNeg)}</div>` : ''}
+                            ${tipoProd ? `<div><b>Tipo:</b> ${escHtml(tipoProd)}</div>` : ''}
+                            ${(!marca && !linea && !familia) ? '<div style="color:var(--text-muted)">Sin clasificación técnica asignada.</div>' : ''}
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
+                    <button class="topbar-btn" onclick="closeModal();editInv('${p.id}')" style="background:var(--accent);color:#fff;padding:0 18px;height:36px;font-size:12.5px">
+                        ✏️ Editar Ítem
+                    </button>
+                    <button class="topbar-btn" onclick="closeModal()" style="height:36px;padding:0 16px;font-size:12.5px">
+                        Cerrar
+                    </button>
+                </div>
+            `;
+
+            openModal('Ficha Técnica de Producto · ' + (p.producto || ''), html);
+            const sBtn = document.getElementById('modalSaveBtn');
+            if (sBtn) sBtn.style.display = 'none';
+        }
+        window.verFichaProducto = verFichaProducto;
 
         function newInv() {
+            if (!puedeVerFichaProducto()) {
+                showToast('🔒 Acceso denegado: Solo los administradores pueden crear productos o ver sus fichas.', '#FF453A');
+                return;
+            }
             _modalMode = {type: 'inventario', action: 'add', id: null};
             openModal('Nuevo ítem de inventario', _formInventario({}));
         }
 
         function editInv(id) {
+            if (!puedeVerFichaProducto()) {
+                showToast('🔒 Acceso denegado: Solo los administradores pueden ver o modificar las fichas del producto.', '#FF453A');
+                return;
+            }
             const i = _inventario.find(x => String(x.id) === String(id));
             if (!i) return;
             _modalMode = {type: 'inventario', action: 'edit', id};

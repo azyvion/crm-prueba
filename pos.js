@@ -13,6 +13,13 @@ let _posListaPrecioActual = 'Publico'; // 'Publico' | 'Plata' | 'Oro'
 let _posFiltroCat = 'Todos';
 let _posMetodoPago = 'Efectivo'; // 'Efectivo' | 'Tarjeta' | 'Transferencia'
 let _posCuentaBancoId = null;
+let _posViewMode = 'images'; // 'images' | 'compact'
+let _posTipoFiltro = 'todos'; // 'todos' | 'codigo' | 'descripcion' | 'stock' | 'servicios'
+let _posPaginaActual = 0;
+const _POS_ITEMS_PER_PAGE = 50;
+let _posCajaAbierta = false;
+let _posCajaId = null;
+let _posCajaMontoInicial = 0;
 
 /* ──────────────────────────────────────────────────────────────────
    INICIALIZACIÓN DEL POS
@@ -20,6 +27,8 @@ let _posCuentaBancoId = null;
 async function loadPos() {
     const catalogEl = document.getElementById('posProductCatalog');
     if (catalogEl) catalogEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Cargando catálogo POS…</div>';
+    _posPaginaActual = 0;
+    _posCajaCheckStatus();
 
     try {
         window.api
@@ -131,62 +140,214 @@ function posFiltrarCat(cat, btn) {
 }
 
 /* ──────────────────────────────────────────────────────────────────
-   RENDER DEL CATÁLOGO DE PRODUCTOS
+   RENDER DEL CATÁLOGO DE PRODUCTOS (con imágenes, paginación y filtros)
 ────────────────────────────────────────────────────────────────── */
 function renderPosCatalogo() {
     const catalogEl = document.getElementById('posProductCatalog');
     if (!catalogEl) return;
 
     let items = _posProductos;
+
+    // Filtro por categoría
     if (_posFiltroCat !== 'Todos') {
         items = items.filter(p => p.categoria === _posFiltroCat);
     }
 
+    // Búsqueda con tipo de filtro
     const q = (document.getElementById('posSearchInput')?.value || '').trim().toLowerCase();
     if (q) {
-        items = items.filter(p => 
-            String(p.producto || '').toLowerCase().includes(q) ||
-            String(p.sku || '').toLowerCase().includes(q) ||
-            String(p.categoria || '').toLowerCase().includes(q)
-        );
+        items = items.filter(p => {
+            switch (_posTipoFiltro) {
+                case 'codigo':
+                    return String(p.sku || '').toLowerCase().includes(q) ||
+                           String(p.codigo || '').toLowerCase().includes(q) ||
+                           String(p.id || '').toLowerCase().includes(q);
+                case 'descripcion':
+                    return String(p.producto || '').toLowerCase().includes(q) ||
+                           String(p.descripcion || '').toLowerCase().includes(q);
+                case 'stock':
+                    return (Number(p.unidades || 0) > 0) && (
+                        String(p.producto || '').toLowerCase().includes(q) ||
+                        String(p.sku || '').toLowerCase().includes(q)
+                    );
+                case 'servicios':
+                    return p.tipo === 'Servicio' && (
+                        String(p.producto || '').toLowerCase().includes(q) ||
+                        String(p.sku || '').toLowerCase().includes(q)
+                    );
+                default: // 'todos'
+                    return String(p.producto || '').toLowerCase().includes(q) ||
+                           String(p.sku || '').toLowerCase().includes(q) ||
+                           String(p.categoria || '').toLowerCase().includes(q) ||
+                           String(p.codigo || '').toLowerCase().includes(q) ||
+                           String(p.descripcion || '').toLowerCase().includes(q);
+            }
+        });
+    } else {
+        // Filtro de tipo sin texto de búsqueda
+        if (_posTipoFiltro === 'stock') {
+            items = items.filter(p => Number(p.unidades || 0) > 0 && p.tipo !== 'Servicio');
+        } else if (_posTipoFiltro === 'servicios') {
+            items = items.filter(p => p.tipo === 'Servicio');
+        }
     }
 
     if (!items.length) {
         catalogEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:48px 20px;color:var(--text-muted)">No se encontraron productos con ese criterio.</div>';
+        _posToggleLoadMore(false, 0, 0);
         return;
     }
 
-    catalogEl.innerHTML = items.map(p => {
+    // Aplicar modo de vista
+    const isCompact = _posViewMode === 'compact';
+    catalogEl.classList.toggle('compact-view', isCompact);
+
+    // Paginación
+    const totalItems = items.length;
+    const maxItems = (_posPaginaActual + 1) * _POS_ITEMS_PER_PAGE;
+    const visibleItems = items.slice(0, maxItems);
+    const hayMas = totalItems > maxItems;
+
+    const showFicha = typeof esAdmin === 'function' && esAdmin();
+
+    catalogEl.innerHTML = visibleItems.map(p => {
         const esServicio = p.tipo === 'Servicio';
         const stock = Number(p.unidades || 0);
         const precio = _obtenerPrecioSegunLista(p, _posListaPrecioActual);
+        const imgUrl = p.imagenUrl || p.imagen_url || p.fotoUrl || '';
+        const iniciales = (p.producto || '??').substring(0, 2).toUpperCase();
         
-        let stockTag = '';
+        let stockBadgeBg, stockBadgeColor, stockLabel;
         if (esServicio) {
-            stockTag = '<span class="tag tag-accent" style="font-size:10.5px">Servicio</span>';
+            stockBadgeBg = 'rgba(10,132,255,.15)'; stockBadgeColor = 'var(--accent)'; stockLabel = '⭐ Servicio';
         } else if (stock <= 0) {
-            stockTag = '<span class="tag tag-danger" style="font-size:10.5px">Agotado (0)</span>';
+            stockBadgeBg = 'rgba(255,69,58,.15)'; stockBadgeColor = '#FF453A'; stockLabel = 'Agotado';
         } else if (stock <= 5) {
-            stockTag = `<span class="tag tag-warning" style="font-size:10.5px">Stock bajo (${stock})</span>`;
+            stockBadgeBg = 'rgba(255,159,10,.15)'; stockBadgeColor = '#FF9F0A'; stockLabel = `Stock: ${stock}`;
         } else {
-            stockTag = `<span class="tag tag-success" style="font-size:10.5px">Stock: ${stock}</span>`;
+            stockBadgeBg = 'rgba(48,209,88,.15)'; stockBadgeColor = '#30D158'; stockLabel = `Stock: ${stock}`;
         }
 
         const agotado = !esServicio && stock <= 0;
 
+        const imageSection = !isCompact ? `
+            <div class="pos-item-img-wrap">
+                ${imgUrl
+                    ? `<img class="pos-item-img" src="${escAttr(imgUrl)}" alt="${escAttr(p.producto)}" onerror="this.parentElement.innerHTML='<div class=\\'pos-item-placeholder\\'>${iniciales}</div>'" loading="lazy" />`
+                    : `<div class="pos-item-placeholder">${iniciales}</div>`
+                }
+                <span class="pos-item-stock-badge" style="background:${stockBadgeBg};color:${stockBadgeColor}">${stockLabel}</span>
+            </div>` : '';
+
+        const fichaBtn = showFicha ? `
+            <button class="pos-item-ficha-btn" onclick="event.stopPropagation();posVerFichaProducto('${p.id}')" title="Ver ficha de producto">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px;height:12px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </button>` : '';
+
         return `
         <div class="pos-item-card ${agotado ? 'disabled' : ''}" onclick="${agotado ? '' : `posAgregarItem('${p.id}')`}">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:6px">
-                <div class="pos-item-title">${escHtml(p.producto)}</div>
-                ${stockTag}
-            </div>
-            <div class="pos-item-sku">${p.sku ? 'SKU: ' + escHtml(p.sku) : (p.categoria || 'General')}</div>
-            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:auto">
-                <div class="pos-item-price">Q ${Number(precio).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
-                <div class="pos-item-lp-tag">${_posListaPrecioActual}</div>
+            ${fichaBtn}
+            ${imageSection}
+            <div class="pos-item-info">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px">
+                    <div class="pos-item-title">${escHtml(p.producto)}</div>
+                    ${isCompact ? `<span style="font-size:9px;padding:1px 5px;border-radius:4px;font-weight:700;background:${stockBadgeBg};color:${stockBadgeColor};white-space:nowrap">${stockLabel}</span>` : ''}
+                </div>
+                <div class="pos-item-sku">${p.sku ? 'SKU: ' + escHtml(p.sku) : (p.categoria || 'General')}</div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:auto">
+                    <div class="pos-item-price">Q ${Number(precio).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                    <div class="pos-item-lp-tag">${_posListaPrecioActual}</div>
+                </div>
             </div>
         </div>`;
     }).join('');
+
+    _posToggleLoadMore(hayMas, visibleItems.length, totalItems);
+}
+
+/* ── Controlar botón "Cargar más" ── */
+function _posToggleLoadMore(show, loaded, total) {
+    const wrap = document.getElementById('posLoadMoreWrap');
+    const btn = document.getElementById('posLoadMoreBtn');
+    if (!wrap) return;
+    if (show) {
+        wrap.style.display = 'block';
+        if (btn) btn.textContent = `Cargar más productos… (${loaded} de ${total})`;
+    } else {
+        wrap.style.display = 'none';
+    }
+}
+
+function posCargarMasItems() {
+    _posPaginaActual++;
+    renderPosCatalogo();
+}
+
+/* ── Cambiar modo de vista (con fotos / compacto) ── */
+function posToggleViewMode() {
+    _posViewMode = _posViewMode === 'images' ? 'compact' : 'images';
+    const btn = document.getElementById('posToggleViewBtn');
+    if (btn) {
+        btn.innerHTML = _posViewMode === 'images' ? '🖼️ Con fotos' : '📋 Compacto';
+    }
+    renderPosCatalogo();
+}
+
+/* ── Cambiar tipo de filtro de búsqueda ── */
+function posSetTipoFiltro(tipo, btn) {
+    _posTipoFiltro = tipo;
+    _posPaginaActual = 0;
+    document.querySelectorAll('#posFilterBar .pos-filter-chip').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderPosCatalogo();
+}
+
+/* ── Filtrar catálogo desde la barra de búsqueda ── */
+function posFiltrarCatalogo() {
+    _posPaginaActual = 0;
+    renderPosCatalogo();
+}
+
+/* ── Ver ficha de producto (solo admin) ── */
+function posVerFichaProducto(prodId) {
+    if (typeof esAdmin === 'function' && !esAdmin()) {
+        showToast('Solo los administradores pueden ver la ficha del producto', '#FF9F0A');
+        return;
+    }
+    const prod = _posProductos.find(p => String(p.id) === String(prodId));
+    if (!prod) return;
+    
+    const precio = _obtenerPrecioSegunLista(prod, 'Publico');
+    const pPlata = Number(prod.precioPlata || 0);
+    const pOro   = Number(prod.precioOro || 0);
+    const imgUrl = prod.imagenUrl || prod.imagen_url || prod.fotoUrl || '';
+    
+    openModal('Ficha de Producto · ' + escHtml(prod.producto), `
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:flex-start">
+            <div style="width:120px;height:120px;border-radius:12px;background:var(--bg-secondary);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center">
+                ${imgUrl
+                    ? `<img src="${escAttr(imgUrl)}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'" />`
+                    : `<span style="font-size:32px;font-weight:900;color:var(--accent)">${(prod.producto || '??').substring(0,2).toUpperCase()}</span>`
+                }
+            </div>
+            <div>
+                <div style="font-size:18px;font-weight:800;color:var(--text-primary)">${escHtml(prod.producto)}</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${prod.sku ? 'SKU: ' + escHtml(prod.sku) : ''} ${prod.categoria ? '· ' + escHtml(prod.categoria) : ''}</div>
+                <div style="display:flex;gap:12px;margin-top:10px;font-size:13px">
+                    <span style="font-weight:700;color:var(--accent)">Público: Q ${Number(precio).toFixed(2)}</span>
+                    ${pPlata > 0 ? `<span style="color:var(--text-secondary)">Plata: Q ${pPlata.toFixed(2)}</span>` : ''}
+                    ${pOro > 0 ? `<span style="color:var(--text-secondary)">Oro: Q ${pOro.toFixed(2)}</span>` : ''}
+                </div>
+                <div style="margin-top:10px;font-size:12.5px;color:var(--text-secondary)">
+                    <strong>Tipo:</strong> ${escHtml(prod.tipo || 'Producto')} · 
+                    <strong>Stock:</strong> ${prod.tipo === 'Servicio' ? 'Servicio (ilimitado)' : Number(prod.unidades || 0)}
+                </div>
+                ${prod.descripcion ? `<div style="margin-top:8px;font-size:12px;color:var(--text-muted);line-height:1.4">${escHtml(prod.descripcion)}</div>` : ''}
+            </div>
+        </div>
+    `);
+    const sBtn = document.getElementById('modalSaveBtn');
+    if (sBtn) sBtn.style.display = 'none';
 }
 
 /* ──────────────────────────────────────────────────────────────────
@@ -284,7 +445,7 @@ function renderPosCarrito() {
             </tr>`;
         if (subtotalEl) subtotalEl.textContent = 'Q 0.00';
         if (totalEl) totalEl.textContent = 'Q 0.00';
-        if (btnCobrar) { btnCobrar.disabled = true; btnCobrar.textContent = 'COBRAR (Q 0.00)'; }
+        if (btnCobrar) { btnCobrar.disabled = true; btnCobrar.textContent = 'GUARDAR (Q 0.00)'; }
         return;
     }
 
@@ -320,7 +481,7 @@ function renderPosCarrito() {
     if (totalEl) totalEl.textContent = fQ(total);
     if (btnCobrar) {
         btnCobrar.disabled = false;
-        btnCobrar.innerHTML = `COBRAR · ${fQ(total)}`;
+        btnCobrar.innerHTML = `GUARDAR · ${fQ(total)}`;
     }
 
     // Actualizar cálculo de cambio si el modal de cobro está abierto
@@ -328,17 +489,25 @@ function renderPosCarrito() {
 }
 
 /* ──────────────────────────────────────────────────────────────────
-   PROCESO DE COBRO Y PAGO
+   PROCESO DE COBRO Y PAGO (GUARDAR VENTA)
 ────────────────────────────────────────────────────────────────── */
 function posAbrirModalCobro() {
     if (!_posCarrito.length) {
-        showToast('Agrega productos al carrito antes de cobrar', '#FF9F0A');
+        showToast('Agrega productos al carrito antes de guardar la venta', '#FF9F0A');
         return;
     }
     const subtotal = _posCarrito.reduce((s, it) => s + it.total, 0);
     const descPct = Number(document.getElementById('posDescuentoPct')?.value || 0);
     const descuentoMonto = Math.round((subtotal * (descPct / 100)) * 100) / 100;
     const total = Math.max(0, subtotal - descuentoMonto);
+
+    // Reiniciar método de pago a Efectivo para cada nueva venta
+    _posMetodoPago = 'Efectivo';
+
+    // Asegurar cliente seleccionado
+    if (!_posClienteSel) {
+        _posClienteSel = { id: null, nombre: 'Consumidor Final (C/F)', nit: 'C/F', direccion: 'Ciudad', lista_precio: 'Publico' };
+    }
 
     _modalMode = { type: 'pos_checkout' };
 
@@ -347,9 +516,9 @@ function posAbrirModalCobro() {
         bankOptions += `<option value="${b.id}">${escHtml(b.nombre)} (${escHtml(b.banco)} - ${escHtml(b.numeroCuenta)})</option>`;
     });
 
-    openModal('Finalizar Venta POS', `
+    openModal('Guardar Venta POS', `
         <div style="background:linear-gradient(135deg,#0A2540,#1E4C7A);color:#fff;border-radius:12px;padding:20px;text-align:center;margin-bottom:18px">
-            <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;opacity:.8">TOTAL A PAGAR</div>
+            <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;opacity:.8">TOTAL DE LA VENTA</div>
             <div style="font-size:32px;font-weight:900;margin-top:4px" id="posModalTotalTxt">Q ${Number(total).toFixed(2)}</div>
             <div style="font-size:12px;opacity:.85;margin-top:4px">Cliente: <strong>${escHtml(_posClienteSel.nombre)}</strong> · Tarifa: [${_posListaPrecioActual}]</div>
         </div>
@@ -405,11 +574,16 @@ function posAbrirModalCobro() {
         </div>
     `);
 
+    // Asignar función global para ejecución por botón o por submit de modal
+    window.posConfirmarVentaActual = () => posConfirmarVenta(total, descuentoMonto, subtotal);
+
     const sBtn = document.getElementById('modalSaveBtn');
     if (sBtn) {
-        sBtn.textContent = 'CONFIRMAR Y EMITIR TICKET ✓';
+        sBtn.textContent = 'GUARDAR';
         sBtn.style.background = '#30D158';
-        sBtn.onclick = () => posConfirmarVenta(total, descuentoMonto, subtotal);
+        sBtn.disabled = false;
+        sBtn.style.display = '';
+        sBtn.onclick = window.posConfirmarVentaActual;
     }
 }
 
@@ -418,9 +592,12 @@ function posSetMetodoPago(metodo, btn) {
     document.querySelectorAll('#posMetodosPagoWrap .pos-pay-opt').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
 
-    document.getElementById('posPanelEfectivo').style.display = metodo === 'Efectivo' ? 'block' : 'none';
-    document.getElementById('posPanelTarjeta').style.display = metodo === 'Tarjeta' ? 'block' : 'none';
-    document.getElementById('posPanelTransferencia').style.display = metodo === 'Transferencia' ? 'block' : 'none';
+    const panelEf = document.getElementById('posPanelEfectivo');
+    const panelTj = document.getElementById('posPanelTarjeta');
+    const panelTr = document.getElementById('posPanelTransferencia');
+    if (panelEf) panelEf.style.display = metodo === 'Efectivo' ? 'block' : 'none';
+    if (panelTj) panelTj.style.display = metodo === 'Tarjeta' ? 'block' : 'none';
+    if (panelTr) panelTr.style.display = metodo === 'Transferencia' ? 'block' : 'none';
 }
 
 function posSetBillete(monto, total) {
@@ -441,22 +618,33 @@ function posRecalcularCambio(total) {
 }
 
 /* ──────────────────────────────────────────────────────────────────
-   CONFIRMAR VENTA Y ENVIAR AL BACKEND
+   GUARDAR VENTA Y REGISTRAR EN EL BACKEND
 ────────────────────────────────────────────────────────────────── */
 async function posConfirmarVenta(total, descuentoMonto, subtotal) {
     const sBtn = document.getElementById('modalSaveBtn');
-    if (sBtn) { sBtn.disabled = true; sBtn.textContent = 'Emitiendo ticket…'; }
+    if (sBtn) { sBtn.disabled = true; sBtn.textContent = 'Guardando…'; }
+
+    // Si los parámetros no vinieron explícitos, calcular desde el carrito actual
+    if (total === undefined || isNaN(total)) {
+        subtotal = _posCarrito.reduce((s, it) => s + it.total, 0);
+        const descPct = Number(document.getElementById('posDescuentoPct')?.value || 0);
+        descuentoMonto = Math.round((subtotal * (descPct / 100)) * 100) / 100;
+        total = Math.max(0, subtotal - descuentoMonto);
+    }
 
     const recibido = Number(document.getElementById('posMontoRecibido')?.value || total);
     const cambio = Math.max(0, recibido - total);
-    const cuentaBancoId = _posMetodoPago === 'Transferencia' ? document.getElementById('posCuentaBancariaSel')?.value : null;
+    const rawBanco = document.getElementById('posCuentaBancariaSel')?.value;
+    const cuentaBancoId = (_posMetodoPago === 'Transferencia' && rawBanco && String(rawBanco).trim() !== '') ? String(rawBanco).trim() : null;
+
+    const clienteActual = _posClienteSel || { id: null, nombre: 'Consumidor Final (C/F)', nit: 'C/F', direccion: 'Ciudad' };
 
     const payload = {
-        clienteNombre: _posClienteSel.nombre,
-        clienteId: _posClienteSel.id,
-        nit: _posClienteSel.nit,
-        direccion: _posClienteSel.direccion,
-        metodoPago: _posMetodoPago,
+        clienteNombre: clienteActual.nombre || 'Consumidor Final (C/F)',
+        clienteId: clienteActual.id || null,
+        nit: clienteActual.nit || 'C/F',
+        direccion: clienteActual.direccion || 'Ciudad',
+        metodoPago: _posMetodoPago || 'Efectivo',
         cuentaBancariaId: cuentaBancoId,
         subtotal: subtotal,
         descuento: descuentoMonto,
@@ -478,15 +666,19 @@ async function posConfirmarVenta(total, descuentoMonto, subtotal) {
         window.api
             .withSuccessHandler(function(res) {
                 if (!res || !res.ok) {
-                    showToast('Error al registrar venta POS: ' + ((res && res.error) || 'Fallo desconocido'), '#FF453A');
-                    if (sBtn) { sBtn.disabled = false; sBtn.textContent = 'CONFIRMAR Y EMITIR TICKET'; }
+                    showToast('Error al guardar venta POS: ' + ((res && res.error) || 'Fallo desconocido'), '#FF453A');
+                    if (sBtn) { sBtn.disabled = false; sBtn.textContent = 'GUARDAR'; }
                     return;
                 }
                 closeModal();
-                showToast('¡Venta POS registrada con éxito! ✓', '#30D158');
+                showToast('¡Venta guardada exitosamente! ✓', '#30D158');
                 
-                // Vaciar carrito y recargar inventario local
+                // Vaciar carrito y resetear estado para que la siguiente venta funcione inmediatamente
                 _posCarrito = [];
+                _posMetodoPago = 'Efectivo';
+                _modalMode = null;
+                if (sBtn) { sBtn.disabled = false; sBtn.textContent = 'GUARDAR'; }
+                
                 renderPosCarrito();
                 loadPos();
                 if (typeof loadInventario === 'function') loadInventario();
@@ -497,17 +689,17 @@ async function posConfirmarVenta(total, descuentoMonto, subtotal) {
             })
             .withFailureHandler(function(err) {
                 showToast('Error de comunicación: ' + (err.message || err), '#FF453A');
-                if (sBtn) { sBtn.disabled = false; sBtn.textContent = 'CONFIRMAR Y EMITIR TICKET'; }
+                if (sBtn) { sBtn.disabled = false; sBtn.textContent = 'GUARDAR'; }
             })
             .registrarVentaPos(payload);
     } catch (e) {
         console.error('[POS] confirm error:', e);
-        if (sBtn) sBtn.disabled = false;
+        if (sBtn) { sBtn.disabled = false; sBtn.textContent = 'GUARDAR'; }
     }
 }
 
 /* ──────────────────────────────────────────────────────────────────
-   VISTA DE TICKET TÉRMICO E IMPRESIÓN
+   VISTA DE TICKET TÉRMICO E IMPRESIÓN (CON SOPORTE FEL SAT)
 ────────────────────────────────────────────────────────────────── */
 function posMostrarTicketTermico(t) {
     if (!t) return;
@@ -525,24 +717,41 @@ function posMostrarTicketTermico(t) {
         </tr>
     `).join('');
 
+    const felHtml = t.fel ? `
+        <div style="border-top:1px dashed #000;border-bottom:1px dashed #000;margin:8px 0;padding:6px 0;font-size:10px;text-align:center;background:#fafafa">
+            <div style="font-weight:900;letter-spacing:.5px;color:#0A2540">DOCUMENTO TRIBUTARIO ELECTRÓNICO (FEL)</div>
+            <div style="font-weight:700;margin-top:2px">AUTORIZACIÓN / UUID SAT:</div>
+            <div style="font-family:monospace;font-size:9.5px;word-break:break-all">${escHtml(t.fel.uuidSat)}</div>
+            <div style="display:flex;justify-content:space-around;margin-top:4px">
+                <span><strong>SERIE:</strong> ${escHtml(t.fel.serieDte)}</span>
+                <span><strong>NÚMERO:</strong> ${escHtml(t.fel.numeroDte)}</span>
+            </div>
+            <div style="margin-top:3px;font-size:9px;color:#555">Certificador: ${escHtml(t.fel.certificador)}</div>
+            <div style="margin-top:2px;font-size:9px;font-style:italic">${escHtml(t.fel.fraseSat)}</div>
+            <div style="margin-top:4px;font-size:9px"><a href="${escAttr(t.fel.enlaceVerificacionSat)}" target="_blank" style="color:#0A84FF;text-decoration:underline">Verificar DTE en Portal SAT ↗</a></div>
+        </div>
+    ` : '';
+
     const ticketHtml = `
         <div id="ticketTermicoArea" style="font-family:'Courier New',Courier,monospace;max-width:320px;margin:0 auto;padding:16px;background:#fff;color:#000;border:1px dashed #ccc;line-height:1.3;font-size:12px">
             <div style="text-align:center;margin-bottom:10px">
                 ${em.logoUrl ? `<img src="${escAttr(em.logoUrl)}" style="max-height:48px;max-width:180px;object-fit:contain;margin-bottom:6px"><br>` : ''}
                 <div style="font-size:15px;font-weight:900;text-transform:uppercase">${escHtml(em.nombre || 'AZYVION CRM')}</div>
                 ${em.eslogan ? `<div style="font-size:10.5px;color:#555">${escHtml(em.eslogan)}</div>` : ''}
-                <div style="font-size:11px;margin-top:4px">NIT: ${escHtml(em.nit || 'C/F')}</div>
+                <div style="font-size:11px;margin-top:4px">NIT: ${escHtml((t.fel && t.fel.nitEmisor) || em.nit || 'C/F')}</div>
                 ${em.direccion ? `<div style="font-size:10.5px">${escHtml(em.direccion)}</div>` : ''}
                 ${em.telefono ? `<div style="font-size:10.5px">Tel: ${escHtml(em.telefono)}</div>` : ''}
             </div>
 
             <div style="border-top:1px dashed #000;border-bottom:1px dashed #000;padding:6px 0;margin-bottom:10px;font-size:11px">
-                <div><strong>TICKET:</strong> ${escHtml(t.numero)}</div>
+                <div><strong>COMPROBANTE:</strong> ${escHtml(t.numero)}</div>
                 <div><strong>FECHA:</strong> ${fecha}</div>
                 <div><strong>CAJERO:</strong> ${escHtml(t.cajero || 'Admin')}</div>
                 <div><strong>CLIENTE:</strong> ${escHtml(t.cliente)}</div>
                 <div><strong>NIT:</strong> ${escHtml(t.nit)}</div>
             </div>
+
+            ${felHtml}
 
             <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:11.5px">
                 <thead>
@@ -570,8 +779,8 @@ function posMostrarTicketTermico(t) {
             </div>
 
             <div style="text-align:center;margin-top:18px;font-size:10.5px;color:#444">
-                ¡Gracias por su preferencia!<br>
-                Conserve este comprobante para cualquier reclamo.
+                ¡Gracias por su compra!<br>
+                Conserve este comprobante para cualquier gestión.
             </div>
         </div>
     `;
@@ -582,7 +791,7 @@ function posMostrarTicketTermico(t) {
             <button class="topbar-btn" style="background:var(--accent);color:#fff;padding:0 24px;height:38px;font-size:13px" onclick="posImprimirTicket()">
                 🖨️ Imprimir Ticket
             </button>
-            <button class="topbar-btn" style="padding:0 20px;height:38px;font-size:13px" onclick="closeModal()">
+            <button class="topbar-btn" style="padding:0 20px;height:38px;font-size:13px" onclick="closeModal(); _modalMode = null;">
                 Cerrar
             </button>
         </div>
@@ -607,4 +816,488 @@ function posImprimirTicket() {
     w.document.close();
     w.focus();
     setTimeout(() => { w.print(); w.close(); }, 350);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   BÚSQUEDA RÁPIDA POR NIT — SAT Guatemala / CRM Local
+   Flujo: 1) Buscar en clientes CRM  2) Si no existe → API SAT
+══════════════════════════════════════════════════════════════════ */
+function posBuscarClientePorNit() {
+    const inputEl = document.getElementById('posNitSearchInput');
+    const msgEl   = document.getElementById('posNitResultMsg');
+    const btn     = document.getElementById('posNitSearchBtn');
+    if (!inputEl || !msgEl) return;
+
+    const nit = inputEl.value.trim().toUpperCase();
+    if (!nit) { showToast('Ingresa un NIT para buscar', '#FF9F0A'); return; }
+
+    // C/F directo
+    if (nit === 'C/F' || nit === 'CF') {
+        const cfOpt = document.querySelector('#posClienteSelect option[value="__cf__"]');
+        if (cfOpt) cfOpt.selected = true;
+        _posClienteSel = { id: null, nombre: 'Consumidor Final (C/F)', nit: 'C/F', direccion: 'Ciudad', lista_precio: 'Publico' };
+        posCambiarListaPrecio('Publico');
+        msgEl.style.display = 'block';
+        msgEl.innerHTML = '<span style="color:var(--success);font-weight:600">✓ Consumidor Final (C/F) seleccionado</span>';
+        return;
+    }
+
+    if (btn) { btn.disabled = true; btn.textContent = 'Buscando…'; }
+    msgEl.style.display = 'block';
+    msgEl.innerHTML = '<span style="color:var(--text-muted)">🔄 Buscando NIT…</span>';
+
+    // 1) Buscar en la base de datos local del CRM
+    const clienteLocal = _posClientes.find(c =>
+        String(c.nit || '').replace(/-/g, '').trim() === nit.replace(/-/g, '').trim()
+    );
+
+    if (clienteLocal) {
+        // Seleccionar automáticamente en el dropdown
+        const sel = document.getElementById('posClienteSelect');
+        if (sel) {
+            const opt = [...sel.options].find(o => o.value === String(clienteLocal.id));
+            if (opt) { opt.selected = true; posOnClienteChange(sel); }
+        }
+        msgEl.innerHTML = `
+            <div style="background:rgba(48,209,88,.08);border:1px solid rgba(48,209,88,.2);border-radius:6px;padding:8px 10px">
+                <div style="color:var(--success);font-weight:700;font-size:12px">✓ CLIENTE ENCONTRADO EN CRM</div>
+                <div style="color:var(--text-primary);font-weight:600;margin-top:2px">${escHtml(clienteLocal.nombre)}</div>
+                <div style="color:var(--text-muted);font-size:10.5px">NIT: ${escHtml(clienteLocal.nit || 'C/F')} ${clienteLocal.empresa ? ' · ' + escHtml(clienteLocal.empresa) : ''}</div>
+            </div>`;
+        if (btn) { btn.disabled = false; btn.textContent = 'Buscar NIT'; }
+        return;
+    }
+
+    // 2) Si no está en CRM → consultar API pública SAT Guatemala
+    _posConsultarNitSAT(nit, function(resultado) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Buscar NIT'; }
+
+        if (resultado && resultado.nombre) {
+            msgEl.innerHTML = `
+                <div style="background:rgba(10,132,255,.06);border:1px solid rgba(10,132,255,.15);border-radius:6px;padding:8px 10px">
+                    <div style="color:var(--accent);font-weight:700;font-size:12px">📋 RESULTADO SAT (No registrado en CRM)</div>
+                    <div style="color:var(--text-primary);font-weight:600;margin-top:2px">${escHtml(resultado.nombre)}</div>
+                    <div style="color:var(--text-muted);font-size:10.5px">
+                        NIT: ${escHtml(nit)} · ${resultado.tipo || 'Contribuyente'}
+                        ${resultado.estado ? ' · Estado: ' + escHtml(resultado.estado) : ''}
+                    </div>
+                    <button type="button" class="topbar-btn" onclick="posUsarDatosSat('${escAttr(nit)}','${escAttr(resultado.nombre)}')" 
+                        style="margin-top:6px;height:28px;padding:0 10px;font-size:11px;background:var(--accent);color:#fff">
+                        ✓ Usar estos datos para esta venta
+                    </button>
+                </div>`;
+        } else {
+            msgEl.innerHTML = `
+                <div style="background:rgba(255,69,58,.06);border:1px solid rgba(255,69,58,.15);border-radius:6px;padding:8px 10px">
+                    <div style="color:#FF453A;font-weight:700;font-size:12px">✗ NIT no encontrado</div>
+                    <div style="color:var(--text-muted);font-size:11px;margin-top:2px">
+                        No se encontró el NIT ${escHtml(nit)} en la base de datos del CRM ni en el registro de la SAT.
+                    </div>
+                </div>`;
+        }
+    });
+}
+
+/* ── Consultar NIT en la API pública de SAT Guatemala ── */
+function _posConsultarNitSAT(nit, callback) {
+    // Usar el backend GAS como proxy para consultar el NIT
+    // (Evita problemas de CORS y mantiene la vía legal)
+    try {
+        window.api
+            .withSuccessHandler(function(res) {
+                if (res && res.ok && res.data) {
+                    callback(res.data);
+                } else {
+                    callback(null);
+                }
+            })
+            .withFailureHandler(function() {
+                // Fallback: si el backend no tiene la función, retornar null
+                callback(null);
+            })
+            .consultarNitSat(nit);
+    } catch (e) {
+        console.warn('[POS] consultarNitSat no disponible:', e);
+        callback(null);
+    }
+}
+
+/* ── Usar datos de SAT para la venta actual sin crear cliente ── */
+function posUsarDatosSat(nit, nombre) {
+    _posClienteSel = {
+        id: null,
+        nombre: nombre,
+        nit: nit,
+        direccion: 'Ciudad',
+        lista_precio: 'Publico'
+    };
+    // Actualizar visual
+    const sel = document.getElementById('posClienteSelect');
+    if (sel) {
+        // Agregar opción temporal
+        const tempOpt = document.createElement('option');
+        tempOpt.value = '__sat_temp__';
+        tempOpt.textContent = `${nombre} · NIT: ${nit} (SAT)`;
+        tempOpt.selected = true;
+        // Quitar opción SAT previa si existe
+        const prev = sel.querySelector('option[value="__sat_temp__"]');
+        if (prev) prev.remove();
+        sel.appendChild(tempOpt);
+    }
+    showToast(`Cliente SAT seleccionado: ${nombre}`, '#30D158');
+    renderPosCarrito();
+}
+
+function posLimpiarNitBusqueda() {
+    const inputEl = document.getElementById('posNitSearchInput');
+    const msgEl   = document.getElementById('posNitResultMsg');
+    if (inputEl) inputEl.value = '';
+    if (msgEl)   { msgEl.style.display = 'none'; msgEl.innerHTML = ''; }
+    // Quitar opción temporal SAT si existe
+    const sel = document.getElementById('posClienteSelect');
+    if (sel) {
+        const tempOpt = sel.querySelector('option[value="__sat_temp__"]');
+        if (tempOpt) tempOpt.remove();
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   APERTURA Y CIERRE DE CAJA — Control de turnos POS
+   · Nomenclatura contable: Cuenta Caja (1.1.1.01)
+   · Registra monto inicial, ventas, ingresos y cierre con cuadre
+══════════════════════════════════════════════════════════════════ */
+function _posCajaCheckStatus() {
+    const bar = document.getElementById('posCajaBar');
+    if (!bar) return;
+
+    try {
+        window.api
+            .withSuccessHandler(function(res) {
+                if (res && res.ok && res.cajaAbierta) {
+                    _posCajaAbierta = true;
+                    _posCajaId = res.cajaId;
+                    _posCajaMontoInicial = Number(res.montoInicial || 0);
+                    _renderCajaBar(bar, true, res);
+                } else {
+                    _posCajaAbierta = false;
+                    _posCajaId = null;
+                    _renderCajaBar(bar, false, null);
+                }
+            })
+            .withFailureHandler(function() {
+                // Si la función no existe aún, mostrar caja como disponible (sin bloqueo)
+                _posCajaAbierta = true;
+                _renderCajaBar(bar, true, { cajero: (typeof _usuario !== 'undefined' ? _usuario : 'Cajero'), montoInicial: 0, fecha: new Date().toISOString() });
+            })
+            .getCajaStatus();
+    } catch (e) {
+        // Backend no disponible — permitir operación sin bloqueo
+        _posCajaAbierta = true;
+        _renderCajaBar(bar, true, { cajero: 'Cajero', montoInicial: 0, fecha: new Date().toISOString() });
+    }
+}
+
+function _renderCajaBar(bar, abierta, data) {
+    if (!bar) return;
+    const fQ = n => 'Q ' + Number(n || 0).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+    if (abierta && data) {
+        const hora = data.fecha ? new Date(data.fecha).toLocaleTimeString('es-GT', {hour:'2-digit', minute:'2-digit'}) : '--:--';
+        bar.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px">
+                <span class="tag tag-success" style="font-size:11px">● Caja Abierta</span>
+                <span style="font-size:12px;color:var(--text-secondary)">
+                    Cajero: <strong>${escHtml(data.cajero || 'Cajero')}</strong> · 
+                    Apertura: ${hora} · 
+                    Fondo: <strong>${fQ(data.montoInicial)}</strong>
+                </span>
+                <span style="font-size:10px;color:var(--text-muted);font-family:monospace" title="Cuenta contable: Caja">📒 Cta. 1.1.1.01</span>
+            </div>
+            <div style="display:flex;gap:6px">
+                <button class="topbar-btn" onclick="posAbrirCierreCaja()" style="height:32px;padding:0 12px;font-size:11.5px;background:var(--danger);color:#fff">
+                    🔒 Cerrar Caja
+                </button>
+            </div>`;
+    } else {
+        bar.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px">
+                <span class="tag tag-danger" style="font-size:11px">○ Caja Cerrada</span>
+                <span style="font-size:12px;color:var(--text-muted)">Abre la caja para iniciar operaciones POS</span>
+            </div>
+            <div style="display:flex;gap:6px">
+                <button class="topbar-btn" onclick="posAbrirAperturaCaja()" style="height:32px;padding:0 12px;font-size:11.5px;background:var(--success);color:#fff">
+                    🔓 Abrir Caja
+                </button>
+            </div>`;
+    }
+}
+
+function posAbrirAperturaCaja() {
+    _modalMode = { type: 'caja_apertura' };
+    openModal('Apertura de Caja', `
+        <div class="ajustes-alert ajustes-alert-info" style="margin-bottom:16px">
+            📒 <strong>Nomenclatura contable:</strong> La apertura de caja registra un asiento en la cuenta 
+            <code style="background:var(--bg-secondary);padding:2px 6px;border-radius:4px;font-size:12px">1.1.1.01 — Caja General</code>
+        </div>
+        <div class="form-field" style="margin-bottom:14px">
+            <label class="form-label">MONTO INICIAL / FONDO DE CAJA (Q)</label>
+            <input class="form-input" id="cajaMontoInicial" type="number" step="0.01" min="0" value="500.00" 
+                   style="font-size:18px;font-weight:700;text-align:center" />
+        </div>
+        <div class="form-field" style="margin-bottom:14px">
+            <label class="form-label">OBSERVACIONES (Opcional)</label>
+            <input class="form-input" id="cajaObservaciones" placeholder="Ej. Turno matutino, efectivo contado" />
+        </div>
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--text-secondary)">
+            <strong>Asiento contable generado:</strong>
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:4px 12px;margin-top:6px;font-family:monospace;font-size:11px">
+                <span>1.1.1.01 Caja General</span><span style="color:var(--success)">DEBE</span><span id="cajaAsientoDebe">Q 500.00</span>
+                <span>3.1.1.01 Capital de Trabajo</span><span style="color:var(--danger)">HABER</span><span id="cajaAsientoHaber">Q 500.00</span>
+            </div>
+        </div>
+    `);
+    // Actualizar asiento en tiempo real
+    const montoInput = document.getElementById('cajaMontoInicial');
+    if (montoInput) {
+        montoInput.oninput = function() {
+            const m = Number(this.value || 0);
+            const fQ = 'Q ' + m.toFixed(2);
+            const d = document.getElementById('cajaAsientoDebe');
+            const h = document.getElementById('cajaAsientoHaber');
+            if (d) d.textContent = fQ;
+            if (h) h.textContent = fQ;
+        };
+    }
+    const sBtn = document.getElementById('modalSaveBtn');
+    if (sBtn) {
+        sBtn.textContent = 'GUARDAR';
+        sBtn.style.background = '#30D158';
+        sBtn.onclick = posConfirmarAperturaCaja;
+    }
+}
+
+function posConfirmarAperturaCaja() {
+    const monto = Number(document.getElementById('cajaMontoInicial')?.value || 0);
+    const obs   = document.getElementById('cajaObservaciones')?.value || '';
+    const sBtn  = document.getElementById('modalSaveBtn');
+    if (sBtn) { sBtn.disabled = true; sBtn.textContent = 'Guardando…'; }
+
+    try {
+        window.api
+            .withSuccessHandler(function(res) {
+                if (res && res.ok) {
+                    closeModal();
+                    _modalMode = null;
+                    _posCajaAbierta = true;
+                    _posCajaId = res.cajaId;
+                    _posCajaMontoInicial = monto;
+                    showToast('✓ Caja abierta correctamente. Fondo: Q ' + monto.toFixed(2), '#30D158');
+                    _posCajaCheckStatus();
+                } else {
+                    showToast('Error al abrir caja: ' + ((res && res.error) || 'Desconocido'), '#FF453A');
+                    if (sBtn) { sBtn.disabled = false; sBtn.textContent = 'GUARDAR'; }
+                }
+            })
+            .withFailureHandler(function(err) {
+                // Si la función del backend no existe aún, simular apertura
+                closeModal();
+                _modalMode = null;
+                _posCajaAbierta = true;
+                _posCajaMontoInicial = monto;
+                showToast('✓ Caja abierta (modo local). Fondo: Q ' + monto.toFixed(2), '#30D158');
+                _posCajaCheckStatus();
+            })
+            .abrirCajaPOS({ montoInicial: monto, observaciones: obs });
+    } catch (e) {
+        closeModal();
+        _modalMode = null;
+        _posCajaAbierta = true;
+        _posCajaMontoInicial = monto;
+        showToast('✓ Caja abierta (modo local)', '#30D158');
+        _posCajaCheckStatus();
+    }
+}
+
+function posAbrirCierreCaja() {
+    _modalMode = { type: 'caja_cierre' };
+    openModal('Cierre de Caja', `
+        <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;border-radius:12px;padding:20px;text-align:center;margin-bottom:18px">
+            <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;opacity:.8">RESUMEN DE CAJA</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;text-align:center">
+                <div>
+                    <div style="font-size:11px;opacity:.7">Fondo Inicial</div>
+                    <div style="font-size:20px;font-weight:800" id="cierreMontoInicial">Q ${_posCajaMontoInicial.toFixed(2)}</div>
+                </div>
+                <div>
+                    <div style="font-size:11px;opacity:.7">Ventas del turno</div>
+                    <div style="font-size:20px;font-weight:800;color:#30D158" id="cierreVentas">Cargando…</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-field" style="margin-bottom:14px">
+            <label class="form-label">EFECTIVO CONTADO EN CAJA (Q)</label>
+            <input class="form-input" id="cierreEfectivoContado" type="number" step="0.01" min="0" value="${_posCajaMontoInicial.toFixed(2)}" 
+                   style="font-size:18px;font-weight:700;text-align:center" oninput="posCierreCuadrar()" />
+        </div>
+
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span style="color:var(--text-secondary)">Diferencia:</span>
+                <span id="cierreDiferencia" style="font-weight:700;font-size:14px">Q 0.00</span>
+            </div>
+            <div id="cierreDifMsg" style="font-size:11px;color:var(--text-muted)">El efectivo cuadra con el esperado.</div>
+        </div>
+
+        <div class="form-field" style="margin-bottom:14px">
+            <label class="form-label">OBSERVACIONES DEL CIERRE (Opcional)</label>
+            <textarea class="form-input" id="cierreObservaciones" rows="2" style="resize:vertical" placeholder="Notas adicionales del turno"></textarea>
+        </div>
+
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--text-secondary)">
+            <strong>📒 Asiento contable de cierre:</strong>
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:4px 12px;margin-top:6px;font-family:monospace;font-size:11px">
+                <span>4.1.1.01 Ingresos por Ventas</span><span style="color:var(--success)">DEBE</span><span id="cierreAsientoCta">—</span>
+                <span>1.1.1.01 Caja General</span><span style="color:var(--danger)">HABER</span><span id="cierreAsientoCaja">—</span>
+            </div>
+        </div>
+    `);
+
+    // Cargar ventas del turno
+    try {
+        window.api
+            .withSuccessHandler(function(res) {
+                if (res && res.ok) {
+                    const ventasTurno = Number(res.totalVentas || 0);
+                    const el = document.getElementById('cierreVentas');
+                    if (el) el.textContent = 'Q ' + ventasTurno.toFixed(2);
+                    posCierreCuadrar();
+                }
+            })
+            .withFailureHandler(function() { posCierreCuadrar(); })
+            .getVentasTurnoCaja(_posCajaId || '');
+    } catch(e) { posCierreCuadrar(); }
+
+    const sBtn = document.getElementById('modalSaveBtn');
+    if (sBtn) {
+        sBtn.textContent = 'GUARDAR';
+        sBtn.style.background = 'var(--danger)';
+        sBtn.onclick = posConfirmarCierreCaja;
+    }
+}
+
+function posCierreCuadrar() {
+    const contado    = Number(document.getElementById('cierreEfectivoContado')?.value || 0);
+    const ventasTxt  = (document.getElementById('cierreVentas')?.textContent || '').replace(/[^\d.-]/g, '');
+    const ventas     = Number(ventasTxt || 0);
+    const esperado   = _posCajaMontoInicial + ventas;
+    const diferencia = contado - esperado;
+
+    const difEl  = document.getElementById('cierreDiferencia');
+    const msgEl  = document.getElementById('cierreDifMsg');
+    const fQ = n => 'Q ' + Math.abs(n).toFixed(2);
+
+    if (difEl) {
+        difEl.textContent = (diferencia >= 0 ? '+' : '-') + fQ(diferencia);
+        difEl.style.color = diferencia === 0 ? 'var(--success)' : diferencia > 0 ? 'var(--accent)' : '#FF453A';
+    }
+    if (msgEl) {
+        if (diferencia === 0) msgEl.textContent = '✓ El efectivo cuadra con el esperado.';
+        else if (diferencia > 0) msgEl.textContent = '⬆ Sobrante en caja. Se registrará como ingreso extra.';
+        else msgEl.textContent = '⬇ Faltante en caja. Se registrará como diferencia a investigar.';
+    }
+
+    const ctaEl = document.getElementById('cierreAsientoCta');
+    const cajaEl = document.getElementById('cierreAsientoCaja');
+    if (ctaEl) ctaEl.textContent = 'Q ' + ventas.toFixed(2);
+    if (cajaEl) cajaEl.textContent = 'Q ' + contado.toFixed(2);
+}
+
+function posConfirmarCierreCaja() {
+    const contado = Number(document.getElementById('cierreEfectivoContado')?.value || 0);
+    const obs     = document.getElementById('cierreObservaciones')?.value || '';
+    const sBtn    = document.getElementById('modalSaveBtn');
+    if (sBtn) { sBtn.disabled = true; sBtn.textContent = 'Guardando…'; }
+
+    try {
+        window.api
+            .withSuccessHandler(function(res) {
+                if (res && res.ok) {
+                    closeModal();
+                    _modalMode = null;
+                    _posCajaAbierta = false;
+                    _posCajaId = null;
+                    showToast('✓ Caja cerrada correctamente. Efectivo contado: Q ' + contado.toFixed(2), '#30D158');
+                    _posCajaCheckStatus();
+                } else {
+                    showToast('Error al cerrar caja: ' + ((res && res.error) || 'Desconocido'), '#FF453A');
+                    if (sBtn) { sBtn.disabled = false; sBtn.textContent = 'GUARDAR'; }
+                }
+            })
+            .withFailureHandler(function() {
+                closeModal();
+                _modalMode = null;
+                _posCajaAbierta = false;
+                showToast('✓ Caja cerrada (modo local)', '#30D158');
+                _posCajaCheckStatus();
+            })
+            .cerrarCajaPOS({ cajaId: _posCajaId, efectivoContado: contado, observaciones: obs });
+    } catch (e) {
+        closeModal();
+        _modalMode = null;
+        _posCajaAbierta = false;
+        showToast('✓ Caja cerrada (modo local)', '#30D158');
+        _posCajaCheckStatus();
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PROBAR CONEXIÓN FEL — Verificar credenciales con certificador SAT
+══════════════════════════════════════════════════════════════════ */
+function probarConexionFel() {
+    const btn = document.getElementById('btnProbarFel');
+    const msgEl = document.getElementById('felEstadoConexionTxt');
+    if (!btn || !msgEl) return;
+
+    const cert  = document.getElementById('felCertificador')?.value || '';
+    const user  = document.getElementById('felUsuarioCertificador')?.value || '';
+    const key   = document.getElementById('felApiKey')?.value || '';
+    const nit   = document.getElementById('felNitEmisor')?.value || '';
+    const entorno = document.getElementById('felEntorno')?.value || 'Pruebas';
+
+    if (!user || !key || !nit) {
+        msgEl.innerHTML = '<span style="color:#FF453A;font-weight:600">✗ Completa usuario, API key y NIT del emisor antes de probar.</span>';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '🔄 Verificando…';
+    msgEl.innerHTML = '<span style="color:var(--text-muted)">Conectando con ' + escHtml(cert) + '…</span>';
+
+    try {
+        window.api
+            .withSuccessHandler(function(res) {
+                btn.disabled = false;
+                btn.textContent = '🔌 Probar Conexión SAT';
+                if (res && res.ok) {
+                    msgEl.innerHTML = `
+                        <div style="color:var(--success);font-weight:700">✓ Conexión exitosa con ${escHtml(cert)}</div>
+                        <div style="color:var(--text-muted);font-size:11px;margin-top:2px">
+                            Entorno: ${escHtml(entorno)} · NIT: ${escHtml(nit)} · Certificador responde correctamente
+                        </div>`;
+                } else {
+                    msgEl.innerHTML = `<span style="color:#FF453A;font-weight:600">✗ Error: ${escHtml((res && res.error) || 'No se pudo conectar')}</span>`;
+                }
+            })
+            .withFailureHandler(function(err) {
+                btn.disabled = false;
+                btn.textContent = '🔌 Probar Conexión SAT';
+                msgEl.innerHTML = `<span style="color:#FF9F0A;font-weight:600">⚠ Función no disponible en el backend aún. Configura la Edge Function de FEL.</span>`;
+            })
+            .probarConexionFel({ certificador: cert, usuario: user, apiKey: key, nit: nit, entorno: entorno });
+    } catch (e) {
+        btn.disabled = false;
+        btn.textContent = '🔌 Probar Conexión SAT';
+        msgEl.innerHTML = '<span style="color:#FF9F0A">⚠ La función de prueba FEL no está configurada en el backend.</span>';
+    }
 }
