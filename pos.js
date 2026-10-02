@@ -229,8 +229,9 @@ function renderPosCatalogo() {
         }
 
         const agotado = !esServicio && stock <= 0;
+        const mostrarFotos = typeof EMPRESA === 'undefined' || EMPRESA.catalogoFotosHabilitado !== false;
 
-        const imageSection = !isCompact ? `
+        const imageSection = (!isCompact && mostrarFotos) ? `
             <div class="pos-item-img-wrap">
                 ${imgUrl
                     ? `<img class="pos-item-img" src="${escAttr(imgUrl)}" alt="${escAttr(p.producto)}" onerror="this.parentElement.innerHTML='<div class=\\'pos-item-placeholder\\'>${iniciales}</div>'" loading="lazy" />`
@@ -785,20 +786,66 @@ function posMostrarTicketTermico(t) {
         </div>
     `;
 
+    window._ultimoTicket = t;
     openModal('Comprobante de Venta · ' + t.numero, `
         ${ticketHtml}
-        <div style="display:flex;gap:10px;margin-top:16px;justify-content:center">
-            <button class="topbar-btn" style="background:var(--accent);color:#fff;padding:0 24px;height:38px;font-size:13px" onclick="posImprimirTicket()">
+        
+        <!-- Enviar por correo electrónico -->
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--text-primary);margin-bottom:6px">✉️ ENVIAR COMPROBANTE POR CORREO</div>
+            <div style="display:flex;gap:6px">
+                <input class="form-input" id="posTicketCorreoDestino" type="email" placeholder="correo@cliente.com" style="height:34px;font-size:12px;background:var(--card)" value="${escAttr(t.clienteEmail || '')}" />
+                <button type="button" class="topbar-btn" onclick="posEnviarTicketPorCorreo()" id="posBtnEnviarCorreo" style="height:34px;padding:0 14px;font-size:11.5px;background:var(--accent);color:#fff;font-weight:600;white-space:nowrap">
+                    Enviar
+                </button>
+            </div>
+            <div id="posTicketCorreoStatus" style="font-size:11px;margin-top:6px;display:none;line-height:1.3"></div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:14px;justify-content:center">
+            <button class="topbar-btn" style="background:var(--accent);color:#fff;padding:0 24px;height:38px;font-size:13px;font-weight:700" onclick="posImprimirTicket()">
                 🖨️ Imprimir Ticket
             </button>
             <button class="topbar-btn" style="padding:0 20px;height:38px;font-size:13px" onclick="closeModal(); _modalMode = null;">
-                Cerrar
+                Listo / Cerrar
             </button>
         </div>
     `);
 
     const sBtn = document.getElementById('modalSaveBtn');
     if (sBtn) sBtn.style.display = 'none';
+}
+
+function posEnviarTicketPorCorreo() {
+    const input = document.getElementById('posTicketCorreoDestino');
+    const statusEl = document.getElementById('posTicketCorreoStatus');
+    const btn = document.getElementById('posBtnEnviarCorreo');
+    const email = (input && input.value.trim()) || '';
+    if (!email || !email.includes('@')) {
+        showToast('Ingresa un correo electrónico válido', '#FF9F0A');
+        return;
+    }
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = 'Enviando comprobante…'; statusEl.style.color = 'var(--text-muted)'; }
+
+    window.api
+        .withSuccessHandler(function(res) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Enviar'; }
+            if (res && res.ok) {
+                if (statusEl) {
+                    statusEl.innerHTML = `<span style="color:var(--success);font-weight:600">✓ ${escHtml(res.mensaje || 'Enviado')}</span>`;
+                }
+                showToast('✓ Comprobante enviado a ' + email, '#30D158');
+            } else {
+                if (statusEl) statusEl.innerHTML = `<span style="color:#FF453A">${escHtml((res && res.error) || 'Fallo al enviar')}</span>`;
+                showToast('Error enviando correo', '#FF453A');
+            }
+        })
+        .withFailureHandler(function(err) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Enviar'; }
+            if (statusEl) statusEl.innerHTML = `<span style="color:#FF453A">Error: ${escHtml(err.message || err)}</span>`;
+        })
+        .enviarTicketCorreo({ correo: email, ticket: window._ultimoTicket });
 }
 
 function posImprimirTicket() {
@@ -868,34 +915,68 @@ function posBuscarClientePorNit() {
         return;
     }
 
-    // 2) Si no está en CRM → consultar API pública SAT Guatemala
+    // 2) Si no está en CRM → consultar validador / API
     _posConsultarNitSAT(nit, function(resultado) {
         if (btn) { btn.disabled = false; btn.textContent = 'Buscar NIT'; }
 
-        if (resultado && resultado.nombre) {
-            msgEl.innerHTML = `
-                <div style="background:rgba(10,132,255,.06);border:1px solid rgba(10,132,255,.15);border-radius:6px;padding:8px 10px">
-                    <div style="color:var(--accent);font-weight:700;font-size:12px">📋 RESULTADO SAT (No registrado en CRM)</div>
-                    <div style="color:var(--text-primary);font-weight:600;margin-top:2px">${escHtml(resultado.nombre)}</div>
-                    <div style="color:var(--text-muted);font-size:10.5px">
-                        NIT: ${escHtml(nit)} · ${resultado.tipo || 'Contribuyente'}
-                        ${resultado.estado ? ' · Estado: ' + escHtml(resultado.estado) : ''}
-                    </div>
-                    <button type="button" class="topbar-btn" onclick="posUsarDatosSat('${escAttr(nit)}','${escAttr(resultado.nombre)}')" 
-                        style="margin-top:6px;height:28px;padding:0 10px;font-size:11px;background:var(--accent);color:#fff">
-                        ✓ Usar estos datos para esta venta
+        const defaultNombre = (resultado && resultado.nombre && !resultado.noRegistrado) ? resultado.nombre : '';
+        const tipoDoc = (resultado && resultado.tipo) ? resultado.tipo : 'Documento Fiscal';
+
+        msgEl.innerHTML = `
+            <div style="background:rgba(10,132,255,.06);border:1px solid rgba(10,132,255,.18);border-radius:8px;padding:10px 12px;margin-top:4px">
+                <div style="color:var(--accent);font-weight:700;font-size:11.5px;margin-bottom:4px">
+                    📝 CLIENTE NO REGISTRADO · ${escHtml(tipoDoc)}: ${escHtml(nit)}
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">
+                    Ingresa los datos del cliente. Se asociará a esta venta y se guardará automáticamente en el CRM al cobrar.
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <input class="form-input" id="posNitNuevoNombre" placeholder="Nombre completo o Razón Social *" style="height:32px;font-size:12px;background:var(--card)" value="${escAttr(defaultNombre)}" />
+                    <input class="form-input" id="posNitNuevaDireccion" placeholder="Ciudad o Dirección (ej. Ciudad de Guatemala)" style="height:32px;font-size:12px;background:var(--card)" value="Ciudad" />
+                    <button type="button" class="topbar-btn" onclick="posConfirmarClienteNuevo('${escAttr(nit)}')" 
+                        style="height:30px;font-size:11.5px;background:var(--success);color:#fff;justify-content:center;font-weight:700;border-radius:6px;box-shadow:0 2px 6px rgba(48,209,88,.25)">
+                        ✓ Usar y auto-registrar en CRM al cobrar
                     </button>
-                </div>`;
-        } else {
-            msgEl.innerHTML = `
-                <div style="background:rgba(255,69,58,.06);border:1px solid rgba(255,69,58,.15);border-radius:6px;padding:8px 10px">
-                    <div style="color:#FF453A;font-weight:700;font-size:12px">✗ NIT no encontrado</div>
-                    <div style="color:var(--text-muted);font-size:11px;margin-top:2px">
-                        No se encontró el NIT ${escHtml(nit)} en la base de datos del CRM ni en el registro de la SAT.
-                    </div>
-                </div>`;
-        }
+                </div>
+            </div>`;
     });
+}
+
+function posConfirmarClienteNuevo(nit) {
+    const nomEl = document.getElementById('posNitNuevoNombre');
+    const dirEl = document.getElementById('posNitNuevaDireccion');
+    const nombre = (nomEl && nomEl.value.trim()) || ('Cliente NIT ' + nit);
+    const direccion = (dirEl && dirEl.value.trim()) || 'Ciudad';
+
+    _posClienteSel = {
+        id: null,
+        nombre: nombre,
+        nit: nit,
+        direccion: direccion,
+        lista_precio: 'Publico',
+        clienteNuevo: true
+    };
+
+    const sel = document.getElementById('posClienteSelect');
+    if (sel) {
+        let opt = sel.querySelector('option[value="__sat_temp__"]');
+        if (!opt) {
+            opt = document.createElement('option');
+            opt.value = '__sat_temp__';
+            sel.appendChild(opt);
+        }
+        opt.textContent = `${nombre} (NIT: ${nit}) [Nuevo]`;
+        opt.selected = true;
+    }
+
+    const msgEl = document.getElementById('posNitResultMsg');
+    if (msgEl) {
+        msgEl.innerHTML = `<div style="background:rgba(48,209,88,.08);border:1px solid rgba(48,209,88,.2);border-radius:6px;padding:6px 10px;color:var(--success);font-size:11.5px;font-weight:600">
+            ✓ Cliente preparado: <strong>${escHtml(nombre)}</strong>. Se guardará en la base de datos al facturar.
+        </div>`;
+    }
+    showToast('Cliente listo para facturar ✓', '#30D158');
+    renderPosCarrito();
 }
 
 /* ── Consultar NIT en la API pública de SAT Guatemala ── */
@@ -1229,6 +1310,7 @@ function posConfirmarCierreCaja() {
                     _posCajaId = null;
                     showToast('✓ Caja cerrada correctamente. Efectivo contado: Q ' + contado.toFixed(2), '#30D158');
                     _posCajaCheckStatus();
+                    posMostrarResumenCierre(res);
                 } else {
                     showToast('Error al cerrar caja: ' + ((res && res.error) || 'Desconocido'), '#FF453A');
                     if (sBtn) { sBtn.disabled = false; sBtn.textContent = 'GUARDAR'; }
@@ -1249,6 +1331,151 @@ function posConfirmarCierreCaja() {
         showToast('✓ Caja cerrada (modo local)', '#30D158');
         _posCajaCheckStatus();
     }
+}
+
+function posMostrarResumenCierre(d) {
+    if (!d) return;
+    window._ultimoCierreCaja = d;
+    const fQ = n => 'Q ' + Number(n || 0).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2});
+    const fFecha = iso => iso ? new Date(iso).toLocaleString('es-GT', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '—';
+    const dif = Number(d.diferencia || 0);
+
+    openModal('Resumen de Cierre de Caja · ' + (d.cajaId || ''), `
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+                <div>
+                    <span class="tag tag-gray">${escHtml(d.cajaId || 'TURNO')}</span>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Cajero: <strong>${escHtml(d.cajero || 'Cajero')}</strong></div>
+                </div>
+                <div style="text-align:right;font-size:11px;color:var(--text-secondary)">
+                    <div>Apertura: ${fFecha(d.fechaApertura)}</div>
+                    <div>Cierre: ${fFecha(d.fechaCierre)}</div>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+                <div style="background:var(--card);padding:10px 12px;border-radius:8px;border:1px solid var(--border)">
+                    <div style="font-size:11px;color:var(--text-muted)">Fondo Inicial</div>
+                    <div style="font-size:16px;font-weight:800;color:var(--text-primary)">${fQ(d.montoInicial)}</div>
+                </div>
+                <div style="background:var(--card);padding:10px 12px;border-radius:8px;border:1px solid var(--border)">
+                    <div style="font-size:11px;color:var(--text-muted)">Ventas Efectivo</div>
+                    <div style="font-size:16px;font-weight:800;color:var(--success)">${fQ(d.ventasEfectivo)}</div>
+                </div>
+                <div style="background:var(--card);padding:10px 12px;border-radius:8px;border:1px solid var(--border)">
+                    <div style="font-size:11px;color:var(--text-muted)">Ventas Electrónicas</div>
+                    <div style="font-size:16px;font-weight:800;color:var(--accent)">${fQ((Number(d.ventasTarjeta || 0) + Number(d.ventasTransferencia || 0) + Number(d.ventasOtros || 0)))}</div>
+                </div>
+                <div style="background:var(--card);padding:10px 12px;border-radius:8px;border:1px solid var(--border)">
+                    <div style="font-size:11px;color:var(--text-muted)">Total Ventas Turno</div>
+                    <div style="font-size:16px;font-weight:800;color:var(--text-primary)">${fQ(d.totalVentas)}</div>
+                </div>
+            </div>
+
+            <div style="background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+                    <span style="color:var(--text-secondary)">Total Esperado en Caja:</span>
+                    <strong style="color:var(--text-primary)">${fQ(d.esperado)}</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+                    <span style="color:var(--text-secondary)">Efectivo Físico Contado:</span>
+                    <strong style="color:var(--text-primary)">${fQ(d.contado)}</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:14px;padding-top:6px;border-top:1px dashed var(--border)">
+                    <span style="font-weight:700">Diferencia de Cuadre:</span>
+                    <strong style="font-weight:900;color:${dif === 0 ? 'var(--success)' : dif > 0 ? 'var(--accent)' : '#FF453A'}">
+                        ${dif >= 0 ? '+' : ''}${fQ(dif)}
+                    </strong>
+                </div>
+            </div>
+            ${d.observaciones ? `<div style="font-size:11.5px;color:var(--text-muted);font-style:italic">Notas: ${escHtml(d.observaciones)}</div>` : ''}
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:center">
+            <button class="topbar-btn" style="background:var(--accent);color:#fff;padding:0 20px;height:38px;font-size:13px;font-weight:700" onclick="posImprimirCorteCaja()">
+                🖨️ Imprimir Corte de Caja (PDF)
+            </button>
+            <button class="topbar-btn" style="padding:0 20px;height:38px;font-size:13px" onclick="closeModal(); _modalMode = null;">
+                Cerrar
+            </button>
+        </div>
+    `);
+    const sBtn = document.getElementById('modalSaveBtn');
+    if (sBtn) sBtn.style.display = 'none';
+}
+
+function posImprimirCorteCaja(cierreData) {
+    const d = cierreData || window._ultimoCierreCaja;
+    if (!d) { showToast('No hay datos de cierre disponibles para imprimir', '#FF9F0A'); return; }
+    const fQ = n => 'Q ' + Number(n || 0).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2});
+    const fFecha = iso => iso ? new Date(iso).toLocaleString('es-GT', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '—';
+    const em = (typeof EMPRESA !== 'undefined' ? EMPRESA : {}) || {};
+    const dif = Number(d.diferencia || 0);
+
+    const w = window.open('', '_blank', 'width=420,height=680');
+    w.document.write(`
+        <!DOCTYPE html><html><head><meta charset="utf-8"><title>Corte de Caja - ${escHtml(d.cajaId || '')}</title>
+        <style>
+            @page { margin: 8mm; size: 80mm auto; }
+            body { font-family: 'Courier New', Courier, monospace; margin: 0; padding: 10px; font-size: 12px; color: #000; line-height: 1.35; }
+            .center { text-align: center; }
+            .bold { font-weight: bold; }
+            .sep { border-top: 1px dashed #000; margin: 8px 0; }
+            .row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+            .title { font-size: 14px; font-weight: 900; text-transform: uppercase; }
+            .firmas { margin-top: 36px; display: flex; justify-content: space-between; }
+            .firma-box { width: 45%; text-align: center; border-top: 1px solid #000; padding-top: 4px; font-size: 10px; }
+        </style>
+        </head><body>
+            <div class="center">
+                <div class="title">${escHtml(em.nombre || 'AZYVION CRM')}</div>
+                ${em.eslogan ? `<div style="font-size:10px">${escHtml(em.eslogan)}</div>` : ''}
+                <div style="font-size:11px;margin-top:2px">NIT: ${escHtml(em.nit || 'C/F')}</div>
+                <div class="sep"></div>
+                <div class="bold" style="font-size:13px">CORTE Y CIERRE DE CAJA (ARQUEO)</div>
+                <div style="font-size:10px;margin-top:2px">ID: ${escHtml(d.cajaId || '')}</div>
+            </div>
+
+            <div class="sep"></div>
+            <div class="row"><span>CAJERO:</span><span class="bold">${escHtml(d.cajero || 'Cajero')}</span></div>
+            <div class="row"><span>APERTURA:</span><span>${fFecha(d.fechaApertura)}</span></div>
+            <div class="row"><span>CIERRE:</span><span>${fFecha(d.fechaCierre)}</span></div>
+            <div class="sep"></div>
+
+            <div class="row"><span>FONDO INICIAL:</span><span class="bold">${fQ(d.montoInicial)}</span></div>
+            <div class="row"><span>VENTAS EFECTIVO:</span><span>${fQ(d.ventasEfectivo)}</span></div>
+            <div class="row"><span>VENTAS TARJETA:</span><span>${fQ(d.ventasTarjeta)}</span></div>
+            <div class="row"><span>VENTAS TRANSFER:</span><span>${fQ(d.ventasTransferencia)}</span></div>
+            <div class="row"><span>VENTAS OTROS:</span><span>${fQ(d.ventasOtros)}</span></div>
+            <div class="sep"></div>
+            <div class="row bold" style="font-size:13px"><span>TOTAL VENTAS:</span><span>${fQ(d.totalVentas)}</span></div>
+            <div class="sep"></div>
+
+            <div class="row"><span>TOTAL ESPERADO:</span><span class="bold">${fQ(d.esperado)}</span></div>
+            <div class="row"><span>EFECTIVO CONTADO:</span><span class="bold">${fQ(d.contado)}</span></div>
+            <div class="row bold" style="font-size:13px;margin-top:4px">
+                <span>DIFERENCIA:</span>
+                <span>${dif >= 0 ? '+' : ''}${fQ(dif)}</span>
+            </div>
+            <div style="font-size:10px;text-align:right;font-style:italic">
+                ${dif === 0 ? '(Efectivo cuadrado)' : dif > 0 ? '(Sobrante en caja)' : '(Faltante en caja)'}
+            </div>
+
+            ${d.observaciones ? `<div class="sep"></div><div style="font-size:10px"><strong>OBS:</strong> ${escHtml(d.observaciones)}</div>` : ''}
+
+            <div class="firmas">
+                <div class="firma-box">Firma Cajero</div>
+                <div class="firma-box">Firma Supervisor</div>
+            </div>
+
+            <div class="center" style="margin-top:20px;font-size:9px;color:#666">
+                Generado por Sistema POS Azyvion · ${new Date().toLocaleString('es-GT')}
+            </div>
+        </body></html>
+    `);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); w.close(); }, 350);
 }
 
 /* ══════════════════════════════════════════════════════════════════

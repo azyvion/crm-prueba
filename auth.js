@@ -472,10 +472,13 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             const{data,error}=await _sb.functions.invoke('admin-user-manager',{body:{action:'createUser',usuario:p.usuario.trim(),nombre:p.nombre.trim(),email:p.correo.trim(),password:p.contrasena,rol:p.rol,organization_id:org,permisos:p.permisos||null}});
             if(error)return{ok:false,error:error.message};
             if(data&&data.error)return{ok:false,error:data.error};
-            // Guardar permisos en tabla Usuarios si data.id o usuario existe
-            if (p.permisos) {
+            // Guardar permisos y sucursal en tabla Usuarios si data.id o usuario existe
+            if (p.permisos || p.sucursal_id) {
                 try {
-                    let uQ = _sb.from('Usuarios').update({permisos: p.permisos}).eq('usuario', p.usuario.trim());
+                    const upFields = {};
+                    if (p.permisos) upFields.permisos = p.permisos;
+                    if (p.sucursal_id !== undefined) upFields.sucursal_id = p.sucursal_id || null;
+                    let uQ = _sb.from('Usuarios').update(upFields).eq('usuario', p.usuario.trim());
                     if (org) uQ = uQ.eq('organization_id', org);
                     await uQ;
                 } catch(e){}
@@ -489,6 +492,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if(p.rol!==undefined)up.rol=p.rol;
             if(p.activo!==undefined)up.activo=p.activo==='true'||p.activo===true;
             if(p.permisos!==undefined)up.permisos=p.permisos;
+            if(p.sucursal_id!==undefined)up.sucursal_id=p.sucursal_id||null;
             const uObj=(_usuarios||[]).find(u=>String(u.id)===String(id));
             const authUid=uObj&&uObj.auth_uid;
             if(p.nuevaContrasena&&p.nuevaContrasena.trim()){
@@ -610,6 +614,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             let q=_sb.from('Transacciones').select('*');
             if(org)q=q.eq('organization_id',org);
             if(f&&f.cuentaBancariaId)q=q.eq('cuentaBancariaId',f.cuentaBancariaId);
+            if(f&&f.sucursal_id)q=q.eq('sucursal_id',f.sucursal_id);
             if(f&&f.tipo)q=q.eq('tipo',f.tipo);
             if(f&&f.desde)q=q.gte('fecha',f.desde);
             if(f&&f.hasta)q=q.lte('fecha',f.hasta);
@@ -686,7 +691,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
         }
 
         /* ── Config de organización (se carga desde Supabase la primera vez) ── */
-        const _EMPRESA_DEFAULT={nombre:'Mi Empresa',eslogan:'',nit:'C/F',direccion:'',telefono:'',correo:'',sitio:'',logoUrl:'',moneda:'Q',ivaPct:12,condicionesDefault:'Precios expresados en quetzales (GTQ). Tiempo de entrega sujeto a disponibilidad. Esta cotización no constituye una factura.',prefijoCotizacion:'COT-',prefijoTicket:'POS-'};
+        const _EMPRESA_DEFAULT={nombre:'Mi Empresa',eslogan:'',nit:'C/F',direccion:'',telefono:'',correo:'',sitio:'',logoUrl:'',moneda:'Q',ivaPct:12,condicionesDefault:'Precios expresados en quetzales (GTQ). Tiempo de entrega sujeto a disponibilidad. Esta cotización no constituye una factura.',prefijoCotizacion:'COT-',prefijoTicket:'POS-',paisCodigo:'GT',tipoDocumentoFiscal:'NIT',catalogoFotosHabilitado:true,webhookCorreoFacturas:''};
         let EMPRESA = Object.assign({}, _EMPRESA_DEFAULT);
         let _orgConfigCargada = false;
 
@@ -708,7 +713,11 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                         ivaPct: Number(data.iva_pct) || 12,
                         condicionesDefault: data.condiciones_default || _EMPRESA_DEFAULT.condicionesDefault,
                         prefijoCotizacion: data.prefijo_cotizacion || 'COT-',
-                        prefijoTicket: data.prefijo_ticket || 'POS-'
+                        prefijoTicket: data.prefijo_ticket || 'POS-',
+                        paisCodigo: data.pais_codigo || 'GT',
+                        tipoDocumentoFiscal: data.tipo_documento_fiscal || 'NIT',
+                        catalogoFotosHabilitado: data.catalogo_fotos_habilitado !== false,
+                        webhookCorreoFacturas: data.webhook_correo_facturas || ''
                     };
                 }
             } catch(e) { /* tabla aún no existe, usar defaults */ }
@@ -739,6 +748,10 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if (p.condiciones_default !== undefined) up.condiciones_default = String(p.condiciones_default).trim();
             if (p.prefijo_cotizacion !== undefined) up.prefijo_cotizacion = String(p.prefijo_cotizacion).trim();
             if (p.prefijo_ticket !== undefined) up.prefijo_ticket = String(p.prefijo_ticket).trim();
+            if (p.pais_codigo !== undefined) up.pais_codigo = String(p.pais_codigo).trim();
+            if (p.tipo_documento_fiscal !== undefined) up.tipo_documento_fiscal = String(p.tipo_documento_fiscal).trim();
+            if (p.catalogo_fotos_habilitado !== undefined) up.catalogo_fotos_habilitado = !!p.catalogo_fotos_habilitado;
+            if (p.webhook_correo_facturas !== undefined) up.webhook_correo_facturas = String(p.webhook_correo_facturas).trim();
             if (p.fel_habilitado !== undefined) up.fel_habilitado = !!p.fel_habilitado;
             if (p.fel_nit_emisor !== undefined) up.fel_nit_emisor = String(p.fel_nit_emisor).trim();
             if (p.fel_nombre_comercial !== undefined) up.fel_nombre_comercial = String(p.fel_nombre_comercial).trim();
@@ -1156,6 +1169,36 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             const clienteNombre = p.clienteNombre || 'Consumidor Final (C/F)';
             const nit = p.nit || 'C/F';
             const ctaBanco = p.cuentaBancariaId && String(p.cuentaBancariaId).trim() !== '' ? String(p.cuentaBancariaId).trim() : null;
+            const sucursalId = p.sucursal_id || p.sucursalId || null;
+            const cajaTurnoId = p.cajaTurnoId || p.cajaId || null;
+
+            // Auto-crear cliente en CRM si no es C/F y se especificó que es nuevo o no existía
+            if (nit !== 'C/F' && p.clienteNombre) {
+                try {
+                    let qExCli = _sb.from('Clientes').select('id, nombre, nit');
+                    if (orgId) qExCli = qExCli.eq('organization_id', orgId);
+                    const { data: exClis } = await qExCli;
+                    const yaExiste = (exClis || []).some(c => String(c.nit || '').toUpperCase().replace(/[-\s]/g, '') === String(nit).toUpperCase().replace(/[-\s]/g, ''));
+                    if (!yaExiste) {
+                        await _sb.from('Clientes').insert({
+                            id: _uuid(),
+                            nombre: p.clienteNombre,
+                            empresa: p.clienteEmpresa || '',
+                            nit: nit,
+                            direccion: p.direccion || 'Ciudad',
+                            telefono: p.telefono || '',
+                            correo: p.correo || '',
+                            lista_precio: 'Publico',
+                            organization_id: orgId,
+                            sucursal_id: sucursalId,
+                            creadoPor: u,
+                            fechaReg: new Date().toISOString()
+                        });
+                    }
+                } catch(e) {
+                    console.warn('[Azyvion POS] Auto-creación cliente:', e);
+                }
+            }
 
             // 4. Descontar inventario
             for (const item of p.items) {
@@ -1190,7 +1233,9 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                     descripcion: trxDesc,
                     creadoPor: u,
                     fechaReg: new Date().toISOString(),
-                    organization_id: orgId
+                    organization_id: orgId,
+                    sucursal_id: sucursalId,
+                    caja_turno_id: cajaTurnoId
                 });
             } catch(e) {
                 console.warn('[POS] Inserción Transacciones:', e);
@@ -1208,7 +1253,9 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                     cuentaBancariaId: ctaBanco,
                     creadoPor: u,
                     fechaReg: new Date().toISOString(),
-                    organization_id: orgId
+                    organization_id: orgId,
+                    sucursal_id: sucursalId,
+                    caja_turno_id: cajaTurnoId
                 });
             } catch(e) {}
 
@@ -1277,18 +1324,19 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
         }
 
         /* ─── API CONSULTA LEGAL NIT SAT / CRM ─────────────────────────── */
+        /* ─── API CONSULTA LEGAL NIT SAT / CRM ─────────────────────────── */
         async function _consultarNitSat(nit, u) {
             const raw = String(nit || '').toUpperCase().trim();
             const limpio = raw.replace(/[-\s]/g, '');
-            if (!limpio) return { ok: false, error: 'NIT requerido.' };
+            if (!limpio) return { ok: false, error: 'NIT o documento requerido.' };
             if (limpio === 'CF' || limpio === 'C/F') {
-                return { ok: true, data: { nit: 'C/F', nombre: 'Consumidor Final (C/F)', tipo: 'Consumidor Final', estado: 'ACTIVO' } };
+                return { ok: true, data: { nit: 'C/F', nombre: 'Consumidor Final (C/F)', tipo: 'Consumidor Final', estado: 'ACTIVO', registrado: true } };
             }
 
             // 1. Buscar en la base de clientes del CRM
             try {
                 const orgId = _getEffectiveOrgId();
-                let q = _sb.from('Clientes').select('id, nombre, empresa, nit, direccion, lista_precio');
+                let q = _sb.from('Clientes').select('id, nombre, empresa, nit, direccion, lista_precio, sucursal_id');
                 if (orgId) q = q.eq('organization_id', orgId);
                 const { data: clis } = await q;
                 const encontrado = (clis || []).find(c => String(c.nit || '').toUpperCase().replace(/[-\s]/g, '') === limpio);
@@ -1298,8 +1346,9 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                         data: {
                             nit: encontrado.nit || raw,
                             nombre: encontrado.nombre + (encontrado.empresa ? ' (' + encontrado.empresa + ')' : ''),
-                            tipo: 'Cliente CRM',
+                            tipo: 'Cliente CRM Registrado',
                             estado: 'ACTIVO',
+                            registrado: true,
                             id: encontrado.id,
                             direccion: encontrado.direccion || 'Ciudad',
                             lista_precio: encontrado.lista_precio || 'Publico'
@@ -1334,20 +1383,45 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 ok: true,
                 data: {
                     nit: nitFormateado,
-                    nombre: 'Contribuyente NIT ' + nitFormateado,
-                    tipo: esValidoSat ? 'Contribuyente Validado SAT (Módulo 11)' : 'Contribuyente Registrado SAT',
+                    nombre: '',
+                    noRegistrado: true,
+                    registrado: false,
+                    tipo: esValidoSat ? 'Contribuyente Validado SAT (Módulo 11)' : 'Documento Fiscal / Internacional',
                     estado: 'ACTIVO',
                     validoSat: esValidoSat
                 }
             };
         }
 
-        /* ─── API CONTROL DE CAJA POS (APERTURA Y CIERRE) ──────────────── */
+        /* ─── API CONTROL DE CAJA POS (APERTURA Y CIERRE CON HISTORIAL) ─── */
         let _cajaMemoria = null;
 
         async function _getCajaStatus(p, sess) {
             const orgId = _getEffectiveOrgId();
-            const storageKey = 'pos_caja_activa_' + (orgId || 'global');
+            const sucursalId = p?.sucursal_id || p?.sucursalId || sess?.sucursal_id || null;
+            
+            // 1. Intentar consultar en base de datos tabla Cajas_Turnos
+            try {
+                let q = _sb.from('Cajas_Turnos').select('*').eq('estado', 'ABIERTA');
+                if (orgId) q = q.eq('organization_id', orgId);
+                if (sucursalId) q = q.eq('sucursal_id', sucursalId);
+                const { data, error } = await q.order('fecha_apertura', { ascending: false }).limit(1);
+                if (!error && data && data.length > 0) {
+                    const c = data[0];
+                    return {
+                        ok: true,
+                        cajaAbierta: true,
+                        cajaId: c.id,
+                        montoInicial: Number(c.monto_inicial || 0),
+                        fecha: c.fecha_apertura,
+                        cajero: c.cajero || sess?.usuario || 'Cajero',
+                        sucursalId: c.sucursal_id
+                    };
+                }
+            } catch(e) {}
+
+            // 2. Respaldo en localStorage / memoria
+            const storageKey = 'pos_caja_activa_' + (orgId || 'global') + (sucursalId ? '_' + sucursalId : '');
             let estado = null;
             try { estado = JSON.parse(localStorage.getItem(storageKey) || 'null'); } catch(e) {}
             if (!estado && _cajaMemoria && _cajaMemoria.orgId === orgId) estado = _cajaMemoria;
@@ -1357,9 +1431,10 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                     ok: true,
                     cajaAbierta: true,
                     cajaId: estado.id,
-                    montoInicial: estado.montoInicial || 0,
+                    montoInicial: Number(estado.montoInicial || 0),
                     fecha: estado.fecha,
-                    cajero: estado.cajero || sess?.usuario || 'Cajero'
+                    cajero: estado.cajero || sess?.usuario || 'Cajero',
+                    sucursalId: estado.sucursalId || null
                 };
             }
             return { ok: true, cajaAbierta: false };
@@ -1367,35 +1442,55 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
 
         async function _abrirCajaPOS(p, sess) {
             const orgId = _getEffectiveOrgId();
+            const sucursalId = p.sucursalId || p.sucursal_id || sess?.sucursal_id || null;
             const y = new Date().getFullYear();
             const monto = Number(p.montoInicial || 0);
             const u = sess?.usuario || 'Cajero';
             const cajaId = 'CAJA-' + y + '-' + Date.now();
+            const fechaApertura = new Date().toISOString();
             const cajaObj = {
                 id: cajaId,
                 orgId: orgId,
+                sucursalId: sucursalId,
                 abierta: true,
                 montoInicial: monto,
                 observaciones: p.observaciones || '',
-                fecha: new Date().toISOString(),
+                fecha: fechaApertura,
                 cajero: u
             };
             _cajaMemoria = cajaObj;
-            try { localStorage.setItem('pos_caja_activa_' + (orgId || 'global'), JSON.stringify(cajaObj)); } catch(e) {}
+            const storageKey = 'pos_caja_activa_' + (orgId || 'global') + (sucursalId ? '_' + sucursalId : '');
+            try { localStorage.setItem(storageKey, JSON.stringify(cajaObj)); } catch(e) {}
 
-            // Asiento contable de apertura en Transacciones: 1.1.1.01 Caja General
+            // Guardar en tabla Cajas_Turnos en Supabase
+            try {
+                await _sb.from('Cajas_Turnos').insert({
+                    id: cajaId,
+                    organization_id: orgId,
+                    sucursal_id: sucursalId,
+                    cajero: u,
+                    monto_inicial: monto,
+                    fecha_apertura: fechaApertura,
+                    estado: 'ABIERTA',
+                    observaciones: p.observaciones || ''
+                });
+            } catch(e) {}
+
+            // Asiento contable de apertura en Transacciones: 1.1.1.01 Fondo de Caja
             try {
                 await _sb.from('Transacciones').insert({
                     id: _uuid(),
-                    fecha: new Date().toISOString().slice(0, 10),
+                    fecha: fechaApertura.slice(0, 10),
                     tipo: 'Ajuste',
                     concepto: 'Apertura de Caja POS · Fondo Inicial (' + cajaId + ')',
                     monto: monto,
                     referencia: cajaId,
                     descripcion: 'Apertura de caja por ' + u + '. Fondo inicial en efectivo: Q ' + monto.toFixed(2),
                     creadoPor: u,
-                    fechaReg: new Date().toISOString(),
-                    organization_id: orgId
+                    fechaReg: fechaApertura,
+                    organization_id: orgId,
+                    sucursal_id: sucursalId,
+                    caja_turno_id: cajaId
                 });
             } catch(e) {}
 
@@ -1404,60 +1499,130 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
 
         async function _cerrarCajaPOS(p, sess) {
             const orgId = _getEffectiveOrgId();
+            const sucursalId = p.sucursalId || p.sucursal_id || sess?.sucursal_id || null;
             const u = sess?.usuario || 'Cajero';
             const contado = Number(p.efectivoContado || 0);
-            const storageKey = 'pos_caja_activa_' + (orgId || 'global');
+            const storageKey = 'pos_caja_activa_' + (orgId || 'global') + (sucursalId ? '_' + sucursalId : '');
             let estado = null;
             try { estado = JSON.parse(localStorage.getItem(storageKey) || 'null'); } catch(e) {}
-            const cajaId = (estado && estado.id) || p.cajaId || ('CAJA-CIERRE-' + Date.now());
-            const montoInicial = Number((estado && estado.montoInicial) || 0);
-
-            // Calcular ventas del turno
-            let ventasEfectivo = 0;
-            const hoy = new Date().toISOString().slice(0, 10);
+            
+            // Buscar turno en DB si no está en local
+            let dbTurno = null;
             try {
-                let q = _sb.from('Transacciones').select('monto, descripcion').gte('fecha', hoy);
+                const { data } = await _sb.from('Cajas_Turnos').select('*').eq('id', p.cajaId || (estado && estado.id)).maybeSingle();
+                dbTurno = data;
+            } catch(e) {}
+
+            const cajaId = (dbTurno && dbTurno.id) || (estado && estado.id) || p.cajaId || ('CAJA-CIERRE-' + Date.now());
+            const montoInicial = Number((dbTurno && dbTurno.monto_inicial) || (estado && estado.montoInicial) || 0);
+            const fechaApertura = (dbTurno && dbTurno.fecha_apertura) || (estado && estado.fecha) || new Date(Date.now() - 86400000).toISOString();
+            const fechaCierre = new Date().toISOString();
+
+            // Calcular ventas del turno (desde fechaApertura hasta AHORA - sin límite de día/24h)
+            let ventasEfectivo = 0;
+            let ventasTarjeta = 0;
+            let ventasTransferencia = 0;
+            let ventasOtros = 0;
+            let cantidadTickets = 0;
+
+            try {
+                let q = _sb.from('Transacciones').select('monto, concepto, descripcion, referencia, fechaReg, caja_turno_id');
                 if (orgId) q = q.eq('organization_id', orgId);
+                q = q.gte('fechaReg', fechaApertura);
                 const { data } = await q;
                 (data || []).forEach(t => {
-                    if (String(t.descripcion || '').includes('Pago: Efectivo')) {
-                        ventasEfectivo += Number(t.monto || 0);
+                    const desc = String(t.descripcion || '');
+                    const conc = String(t.concepto || '');
+                    if (conc.includes('Venta POS') || desc.includes('Ticket POS-') || t.caja_turno_id === cajaId) {
+                        cantidadTickets++;
+                        const m = Number(t.monto || 0);
+                        if (desc.includes('Pago: Efectivo')) {
+                            ventasEfectivo += m;
+                        } else if (desc.includes('Pago: Tarjeta')) {
+                            ventasTarjeta += m;
+                        } else if (desc.includes('Pago: Transferencia') || desc.includes('Pago: Depósito')) {
+                            ventasTransferencia += m;
+                        } else {
+                            ventasOtros += m;
+                        }
                     }
                 });
             } catch(e) {}
 
+            const totalVentas = ventasEfectivo + ventasTarjeta + ventasTransferencia + ventasOtros;
             const esperado = montoInicial + ventasEfectivo;
             const diferencia = Math.round((contado - esperado) * 100) / 100;
 
-            // Asiento contable de cierre con cuadre en Transacciones
+            // 1. Actualizar turno en Cajas_Turnos
+            try {
+                await _sb.from('Cajas_Turnos').update({
+                    fecha_cierre: fechaCierre,
+                    ventas_efectivo: ventasEfectivo,
+                    ventas_tarjeta: ventasTarjeta,
+                    ventas_transferencia: ventasTransferencia,
+                    ventas_otros: ventasOtros,
+                    total_esperado: esperado,
+                    efectivo_contado: contado,
+                    diferencia: diferencia,
+                    estado: 'CERRADA',
+                    observaciones: p.observaciones || ''
+                }).eq('id', cajaId);
+            } catch(e) {}
+
+            // 2. Asiento contable de cierre con cuadre en Transacciones
             try {
                 await _sb.from('Transacciones').insert({
                     id: _uuid(),
-                    fecha: hoy,
+                    fecha: fechaCierre.slice(0, 10),
                     tipo: diferencia >= 0 ? 'Ajuste' : 'Egreso',
                     concepto: 'Cierre de Caja POS · ' + cajaId,
                     monto: Math.abs(diferencia),
                     referencia: 'CIERRE-' + cajaId,
                     descripcion: 'Cierre de caja por ' + u + '. Efectivo contado: Q ' + contado.toFixed(2) + ' · Esperado: Q ' + esperado.toFixed(2) + ' · Diferencia: Q ' + diferencia.toFixed(2) + (p.observaciones ? ' · Obs: ' + p.observaciones : ''),
                     creadoPor: u,
-                    fechaReg: new Date().toISOString(),
-                    organization_id: orgId
+                    fechaReg: fechaCierre,
+                    organization_id: orgId,
+                    sucursal_id: sucursalId,
+                    caja_turno_id: cajaId
                 });
             } catch(e) {}
 
-            // Limpiar caja activa
+            // Limpiar caja activa local
             _cajaMemoria = null;
             try { localStorage.removeItem(storageKey); } catch(e) {}
 
-            return { ok: true, diferencia: diferencia, esperado: esperado, contado: contado };
+            return {
+                ok: true,
+                cajaId: cajaId,
+                diferencia: diferencia,
+                esperado: esperado,
+                contado: contado,
+                montoInicial: montoInicial,
+                ventasEfectivo: ventasEfectivo,
+                ventasTarjeta: ventasTarjeta,
+                ventasTransferencia: ventasTransferencia,
+                ventasOtros: ventasOtros,
+                totalVentas: totalVentas,
+                cantidadTickets: cantidadTickets,
+                fechaApertura: fechaApertura,
+                fechaCierre: fechaCierre,
+                cajero: u,
+                observaciones: p.observaciones || ''
+            };
         }
 
         async function _getVentasTurnoCaja(cajaId, sess) {
             const orgId = _getEffectiveOrgId();
             let total = 0;
-            const hoy = new Date().toISOString().slice(0, 10);
             try {
-                let q = _sb.from('Transacciones').select('monto, concepto, descripcion').gte('fecha', hoy);
+                // Obtener fecha de apertura de la caja
+                let fechaApertura = new Date().toISOString().slice(0, 10);
+                try {
+                    const { data: cData } = await _sb.from('Cajas_Turnos').select('fecha_apertura').eq('id', cajaId).maybeSingle();
+                    if (cData && cData.fecha_apertura) fechaApertura = cData.fecha_apertura;
+                } catch(e) {}
+
+                let q = _sb.from('Transacciones').select('monto, concepto, descripcion').gte('fechaReg', fechaApertura);
                 if (orgId) q = q.eq('organization_id', orgId);
                 const { data } = await q;
                 (data || []).forEach(t => {
@@ -1468,6 +1633,215 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 });
             } catch(e) {}
             return { ok: true, totalVentas: total };
+        }
+
+        async function _getCierresCaja(p) {
+            const orgId = _getEffectiveOrgId();
+            try {
+                let q = _sb.from('Cajas_Turnos').select('*').order('fecha_apertura', { ascending: false });
+                if (orgId) q = q.eq('organization_id', orgId);
+                if (p && p.sucursal_id) q = q.eq('sucursal_id', p.sucursal_id);
+                if (p && p.desde) q = q.gte('fecha_apertura', p.desde);
+                if (p && p.hasta) q = q.lte('fecha_apertura', p.hasta + 'T23:59:59');
+                const { data, error } = await q.limit(100);
+                if (!error && data) return { ok: true, data: data };
+            } catch(e) {}
+            return { ok: true, data: [] };
+        }
+
+        /* ─── API GESTIÓN DE SUCURSALES (MULTI-TIENDA) ─────────────────── */
+        async function _getSucursales(p) {
+            const orgId = _getEffectiveOrgId();
+            try {
+                let q = _sb.from('Sucursales').select('*').order('es_central', { ascending: false }).order('nombre');
+                if (orgId) q = q.eq('organization_id', orgId);
+                const { data, error } = await q;
+                if (!error && data && data.length > 0) {
+                    return { ok: true, data: data };
+                }
+                // Si no hay sucursales, auto-crear la sucursal Central por defecto
+                if (orgId) {
+                    const central = {
+                        id: 'SUC-CENTRAL-' + orgId.substring(0, 8),
+                        organization_id: orgId,
+                        nombre: 'Central',
+                        codigo: '001',
+                        direccion: 'Sede Principal',
+                        telefono: '',
+                        es_central: true,
+                        activa: true,
+                        creado_en: new Date().toISOString()
+                    };
+                    await _sb.from('Sucursales').insert(central);
+                    return { ok: true, data: [central] };
+                }
+            } catch(e) {}
+            return { ok: true, data: [{ id: 'central', nombre: 'Central', es_central: true, activa: true }] };
+        }
+
+        async function _addSucursal(p, u) {
+            const orgId = _getEffectiveOrgId();
+            if (!p.nombre) return { ok: false, error: 'El nombre de la sucursal es requerido.' };
+            const id = 'SUC-' + Date.now();
+            const r = {
+                id: id,
+                organization_id: orgId,
+                nombre: String(p.nombre).trim(),
+                codigo: p.codigo ? String(p.codigo).trim() : '',
+                direccion: p.direccion ? String(p.direccion).trim() : '',
+                telefono: p.telefono ? String(p.telefono).trim() : '',
+                es_central: !!p.es_central,
+                activa: p.activa !== false,
+                creado_en: new Date().toISOString()
+            };
+            try {
+                const { error } = await _sb.from('Sucursales').insert(r);
+                if (error) return { ok: false, error: error.message };
+                return { ok: true, data: r };
+            } catch(e) { return { ok: false, error: e.message }; }
+        }
+
+        async function _updateSucursal(id, p, u) {
+            const orgId = _getEffectiveOrgId();
+            const up = {};
+            if (p.nombre !== undefined) up.nombre = String(p.nombre).trim();
+            if (p.codigo !== undefined) up.codigo = String(p.codigo).trim();
+            if (p.direccion !== undefined) up.direccion = String(p.direccion).trim();
+            if (p.telefono !== undefined) up.telefono = String(p.telefono).trim();
+            if (p.es_central !== undefined) up.es_central = !!p.es_central;
+            if (p.activa !== undefined) up.activa = !!p.activa;
+            try {
+                let q = _sb.from('Sucursales').update(up).eq('id', id);
+                if (orgId) q = q.eq('organization_id', orgId);
+                const { error } = await q;
+                if (error) return { ok: false, error: error.message };
+                return { ok: true };
+            } catch(e) { return { ok: false, error: e.message }; }
+        }
+
+        async function _deleteSucursal(p, u) {
+            const orgId = _getEffectiveOrgId();
+            try {
+                let q = _sb.from('Sucursales').delete().eq('id', p.id);
+                if (orgId) q = q.eq('organization_id', orgId);
+                const { error } = await q;
+                if (error) return { ok: false, error: error.message };
+                return { ok: true };
+            } catch(e) { return { ok: false, error: e.message }; }
+        }
+
+        /* ─── REPORTE DE VENTAS POR SUCURSAL ───────────────────────────── */
+        async function _getReporteVentasSucursal(p) {
+            const orgId = _getEffectiveOrgId();
+            try {
+                const rSuc = await _getSucursales();
+                const sucursales = rSuc.data || [];
+                
+                let q = _sb.from('Transacciones').select('*').eq('tipo', 'Ingreso');
+                if (orgId) q = q.eq('organization_id', orgId);
+                if (p && p.desde) q = q.gte('fecha', p.desde);
+                if (p && p.hasta) q = q.lte('fecha', p.hasta);
+                const { data: trx } = await q;
+
+                const sucMap = {};
+                sucursales.forEach(s => {
+                    sucMap[s.id] = {
+                        id: s.id,
+                        nombre: s.nombre,
+                        codigo: s.codigo || '',
+                        direccion: s.direccion || '',
+                        telefono: s.telefono || '',
+                        es_central: !!s.es_central,
+                        totalVentas: 0,
+                        cantidadTransacciones: 0,
+                        efectivo: 0,
+                        tarjeta: 0,
+                        transferencia: 0,
+                        otros: 0
+                    };
+                });
+
+                const sinSucursal = {
+                    id: 'sin_sucursal',
+                    nombre: 'Sede Principal / Sin Asignar',
+                    codigo: '—',
+                    direccion: '—',
+                    telefono: '—',
+                    es_central: false,
+                    totalVentas: 0,
+                    cantidadTransacciones: 0,
+                    efectivo: 0,
+                    tarjeta: 0,
+                    transferencia: 0,
+                    otros: 0
+                };
+
+                (trx || []).forEach(t => {
+                    const m = Number(t.monto || 0);
+                    const sId = t.sucursal_id;
+                    const dest = (sId && sucMap[sId]) ? sucMap[sId] : sinSucursal;
+                    dest.totalVentas += m;
+                    dest.cantidadTransacciones += 1;
+                    const c = (t.concepto || '').toLowerCase();
+                    if (c.includes('tarjeta') || c.includes('pos tarjeta') || c.includes('visa') || c.includes('card')) {
+                        dest.tarjeta += m;
+                    } else if (c.includes('transferencia') || c.includes('depósito') || c.includes('banc')) {
+                        dest.transferencia += m;
+                    } else if (c.includes('efectivo') || c.includes('pos efectivo') || c.includes('caja')) {
+                        dest.efectivo += m;
+                    } else {
+                        dest.otros += m;
+                    }
+                });
+
+                const lista = Object.values(sucMap);
+                if (sinSucursal.cantidadTransacciones > 0) {
+                    lista.push(sinSucursal);
+                }
+                return { ok: true, data: lista };
+            } catch(e) {
+                return { ok: false, error: e.message };
+            }
+        }
+
+        /* ─── ENVÍO DE COMPROBANTE POR CORREO (WEBHOOK / EMAIL) ────────── */
+        async function _enviarTicketCorreo(p, sess) {
+            const email = String(p.correo || '').trim();
+            if (!email || !email.includes('@')) return { ok: false, error: 'Dirección de correo electrónico inválida.' };
+            await _loadOrgConfig();
+            const orgId = _getEffectiveOrgId();
+            
+            let webhookUrl = EMPRESA && EMPRESA.webhookCorreoFacturas;
+            if (!webhookUrl) {
+                try {
+                    const { data } = await _sb.from('Organizations').select('webhook_correo_facturas').eq('id', orgId).maybeSingle();
+                    if (data) webhookUrl = data.webhook_correo_facturas;
+                } catch(e) {}
+            }
+
+            const ticket = p.ticket || {};
+            if (webhookUrl && webhookUrl.startsWith('http')) {
+                try {
+                    const resp = await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            para: email,
+                            asunto: 'Comprobante de Pago ' + (ticket.numero || '') + ' - ' + (EMPRESA.nombre || 'Azyvion'),
+                            empresa: EMPRESA,
+                            ticket: ticket
+                        })
+                    });
+                    if (resp.ok) return { ok: true, mensaje: 'Comprobante enviado a ' + email + ' exitosamente.' };
+                } catch(e) {
+                    console.warn('[Azyvion Correo Webhook]', e);
+                }
+            }
+
+            return {
+                ok: true,
+                mensaje: 'Comprobante generado para ' + email + '. ' + (webhookUrl ? 'Envío procesado.' : 'Para despacho automático configure el Webhook en Ajustes.')
+            };
         }
 
         /* ─── SUBIR FOTO DE PRODUCTO (CLOUD STORAGE) ───────────────────── */
@@ -1815,6 +2189,13 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 case 'getVentasTurnoCaja':return await _getVentasTurnoCaja(args[0],sess);
                 case 'uploadFotoProducto':return await _uploadFotoProducto(args[0],sess);
                 case 'probarConexionFel':return await _probarConexionFel(args[0],sess);
+                case 'getCierresCaja':return await _getCierresCaja(args[0]);
+                case 'getSucursales':return await _getSucursales(args[0]);
+                case 'addSucursal':return await _addSucursal(args[0],usuario);
+                case 'updateSucursal':return await _updateSucursal(args[0],args[1],usuario);
+                case 'deleteSucursal':return await _deleteSucursal(args[0],usuario);
+                case 'enviarTicketCorreo':return await _enviarTicketCorreo(args[0],sess);
+                case 'getReporteVentasSucursal':return await _getReporteVentasSucursal(args[0]);
                 default:return{ok:false,error:'Acción no implementada: '+name};
             }
         }
@@ -1825,7 +2206,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 withSuccessHandler:fn=>api(fn,onFailure),
                 withFailureHandler:fn=>api(onSuccess,fn)
             };
-            const METHODS=['logout','getResumen','getActividad','getClientes','addCliente','updateCliente','deleteCliente','getProspectos','addProspecto','updateProspecto','deleteProspecto','convertirProspecto','getInventario','addInventario','updateInventario','deleteInventario','getCategorias','addCategoria','updateCategoria','deleteCategoria','getEncuestas','addEncuesta','updateEncuesta','deleteEncuesta','getUsuarios','addUsuario','updateUsuario','deleteUsuario','getCuentasBancarias','addCuentaBancaria','updateCuentaBancaria','deleteCuentaBancaria','getPlanCuentas','addCuentaContable','updateCuentaContable','deleteCuentaContable','getTransacciones','addTransaccion','deleteTransaccion','getResumenContable','getCotizaciones','getCotizacion','getCotizacionHtml','addCotizacion','updateCotizacion','updateEstadoCotizacion','deleteCotizacion','duplicarCotizacion','convertirCotizacionAVenta','enviarCotizacion','getResumenCotizaciones','getPosInit','registrarVentaPos','getLibroDiario','getEstadoResultados','getFicha','addContacto','updateContacto','deleteContacto','addNotaCRM','deleteNotaCRM','addActividadCRM','deleteActividadCRM','getPerfil','updatePerfil','updatePreferencias','changePasswordPropio','uploadFotoPerfil','deleteFotoPerfil','getDashboardInit','getOrgConfig','saveOrgConfig','uploadLogoOrg','deleteLogoOrg','consultarNitSat','getCajaStatus','abrirCajaPOS','cerrarCajaPOS','getVentasTurnoCaja','uploadFotoProducto','probarConexionFel'];
+            const METHODS=['logout','getResumen','getActividad','getClientes','addCliente','updateCliente','deleteCliente','getProspectos','addProspecto','updateProspecto','deleteProspecto','convertirProspecto','getInventario','addInventario','updateInventario','deleteInventario','getCategorias','addCategoria','updateCategoria','deleteCategoria','getEncuestas','addEncuesta','updateEncuesta','deleteEncuesta','getUsuarios','addUsuario','updateUsuario','deleteUsuario','getCuentasBancarias','addCuentaBancaria','updateCuentaBancaria','deleteCuentaBancaria','getPlanCuentas','addCuentaContable','updateCuentaContable','deleteCuentaContable','getTransacciones','addTransaccion','deleteTransaccion','getResumenContable','getCotizaciones','getCotizacion','getCotizacionHtml','addCotizacion','updateCotizacion','updateEstadoCotizacion','deleteCotizacion','duplicarCotizacion','convertirCotizacionAVenta','enviarCotizacion','getResumenCotizaciones','getPosInit','registrarVentaPos','getLibroDiario','getEstadoResultados','getFicha','addContacto','updateContacto','deleteContacto','addNotaCRM','deleteNotaCRM','addActividadCRM','deleteActividadCRM','getPerfil','updatePerfil','updatePreferencias','changePasswordPropio','uploadFotoPerfil','deleteFotoPerfil','getDashboardInit','getOrgConfig','saveOrgConfig','uploadLogoOrg','deleteLogoOrg','consultarNitSat','getCajaStatus','abrirCajaPOS','cerrarCajaPOS','getVentasTurnoCaja','uploadFotoProducto','probarConexionFel','getCierresCaja','getSucursales','addSucursal','updateSucursal','deleteSucursal','enviarTicketCorreo','getReporteVentasSucursal'];
             METHODS.forEach(name=>{
                 runner[name]=function(){
                     const args=Array.from(arguments);
@@ -1845,6 +2226,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
 
         function esAdmin()    { return String(_rol).trim().toLowerCase() === 'admin' || _currentUserRole === 'ADMIN' || _currentUserRole === 'SUPER_ADMIN'; }
         window.esVendedor = function esVendedor() { return String(_rol).trim().toLowerCase() === 'vendedor' || _currentUserRole === 'VENDEDOR'; };
+        window.esCajero = function esCajero() { return String(_rol).trim().toLowerCase() === 'cajero' || String(_rol).trim().toUpperCase() === 'POS' || _currentUserRole === 'CAJERO'; };
 
         // Función para aplicar permisos de submenús independientes y control de Dashboard
         window.aplicarPermisosUsuario = function aplicarPermisosUsuario(sess) {
@@ -1852,14 +2234,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             var esSA = window._esSuperAdmin === true || (sess && sess.rol === 'SUPER_ADMIN');
             var esAdm = sess.rol === 'Admin' || sess.rol === 'ADMIN' || esSA;
             
-            // 1. Control del Dashboard / Overview
-            var puedeOv = puedeVerDashboard();
-            var navOv = document.getElementById('nav-overview');
-            var bnOv = document.getElementById('bn-overview');
-            if (navOv) navOv.style.display = puedeOv ? 'flex' : 'none';
-            if (bnOv) bnOv.style.display = puedeOv ? 'flex' : 'none';
-
-            // 2. Mostrar ítems de nav según rol y permisos
+            // 0. Rol Cajero exclusivo: Solo POS
             var mapeo = {
                 'pos': ['nav-pos', 'bn-pos'],
                 'clientes': ['nav-clientes', 'bn-clientes'],
@@ -1874,6 +2249,37 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 'perfil': ['nav-perfil']
             };
 
+            if (window.esCajero()) {
+                document.querySelectorAll('.sidebar .nav-item').forEach(function(el) {
+                    if (el.id !== 'nav-pos') el.style.display = 'none';
+                    else el.style.display = 'flex';
+                });
+                document.querySelectorAll('.sidebar .nav-section').forEach(function(el) {
+                    el.style.display = 'none';
+                });
+                document.querySelectorAll('.sidebar .nav-subgroup').forEach(function(el) {
+                    el.style.display = 'none';
+                });
+                document.querySelectorAll('.bottom-nav .bn-item, .bottom-nav .bn-more-item').forEach(function(el) {
+                    if (el.id !== 'bn-pos') el.style.display = 'none';
+                    else el.style.display = 'flex';
+                });
+                var ovNav = document.getElementById('nav-overview'); if (ovNav) ovNav.style.display = 'none';
+                var ovBn = document.getElementById('bn-overview'); if (ovBn) ovBn.style.display = 'none';
+                var secCob = document.getElementById('nav-section-contabilidad'); if (secCob) secCob.style.display = 'none';
+                var secSub = document.getElementById('nav-section-suscripciones'); if (secSub) secSub.style.display = 'none';
+                var secCfg = document.getElementById('nav-section-config'); if (secCfg) secCfg.style.display = 'none';
+                return;
+            }
+
+            // 1. Control del Dashboard / Overview
+            var puedeOv = puedeVerDashboard();
+            var navOv = document.getElementById('nav-overview');
+            var bnOv = document.getElementById('bn-overview');
+            if (navOv) navOv.style.display = puedeOv ? 'flex' : 'none';
+            if (bnOv) bnOv.style.display = puedeOv ? 'flex' : 'none';
+
+            // 2. Mostrar ítems de nav según rol y permisos
             if (esSA || esAdm) {
                 // SUPER_ADMIN y ADMIN ven todo sin restricciones
                 Object.keys(mapeo).forEach(function(sm) {
@@ -1942,7 +2348,10 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 'Agente':      'AGENTE',
                 'AGENTE':      'AGENTE',
                 'Vendedor':    'VENDEDOR',
-                'VENDEDOR':    'VENDEDOR'
+                'VENDEDOR':    'VENDEDOR',
+                'Cajero':      'CAJERO',
+                'CAJERO':      'CAJERO',
+                'POS':         'CAJERO'
             }[_rol] || 'AGENTE';
 
             var elName   = document.getElementById('userName');
@@ -2015,8 +2424,14 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                             })
                             .catch(function() { loadAll(); });
 
-                        // Si el usuario no puede ver Dashboard, forzar inicio en clientes
-                        if (!puedeVerDashboard() || esVendedor()) {
+                        // Si el rol es Cajero, forzar apertura en POS
+                        if (window.esCajero()) {
+                            setTimeout(function() {
+                                if (typeof showPage === 'function') {
+                                    showPage('pos', document.getElementById('nav-pos'));
+                                }
+                            }, 50);
+                        } else if (!puedeVerDashboard() || esVendedor()) {
                             setTimeout(function() {
                                 if (typeof showPage === 'function') {
                                     showPage('clientes', document.getElementById('nav-clientes'));

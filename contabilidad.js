@@ -50,6 +50,8 @@
             if (panel) panel.classList.add('active');
             if (tab === 'diario') loadLibroDiario();
             if (tab === 'pnl') loadEstadoResultados();
+            if (tab === 'cierres-caja') loadCierresCajaContab();
+            if (tab === 'ventas-sucursal') loadVentasPorSucursal();
         }
         
         /* ═══════════════════════════════════════════════════════════
@@ -991,3 +993,212 @@
             }
             return false; // no era contabilidad, dejar que maneje el resto
         }
+
+        /* ═══════════════════════════════════════════════════════════
+           CIERRES DE CAJA Y REPORTES POR SUCURSAL
+        ═══════════════════════════════════════════════════════════ */
+        let _cierresCajaList = [];
+
+        function loadCierresCajaContab() {
+            const tbody = document.getElementById('cierresCajaTbody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="11" class="empty-cell">Cargando historial de cierres de caja…</td></tr>';
+            const desde = (document.getElementById('cierresDesde') || {}).value || null;
+            const hasta = (document.getElementById('cierresHasta') || {}).value || null;
+
+            window.api
+                .withSuccessHandler(function(r) {
+                    if (!r || !r.ok) {
+                        if (tbody) tbody.innerHTML = `<tr><td colspan="11" class="empty-cell" style="color:var(--danger)">Error al cargar cierres: ${escHtml((r && r.error) || 'Desconocido')}</td></tr>`;
+                        return;
+                    }
+                    _cierresCajaList = r.data || [];
+                    renderCierresCaja();
+                })
+                .withFailureHandler(function(e) {
+                    if (tbody) tbody.innerHTML = `<tr><td colspan="11" class="empty-cell" style="color:var(--danger)">Error de conexión: ${escHtml(e.message)}</td></tr>`;
+                })
+                .getCierresCaja({ desde: desde, hasta: hasta });
+        }
+        window.loadCierresCajaContab = loadCierresCajaContab;
+
+        function renderCierresCaja() {
+            const tbody = document.getElementById('cierresCajaTbody');
+            const foot = document.getElementById('cierresCajaFoot');
+            if (!tbody) return;
+
+            if (!_cierresCajaList.length) {
+                tbody.innerHTML = '<tr><td colspan="11" class="empty-cell">No se encontraron turnos de caja en este período</td></tr>';
+                if (foot) foot.innerHTML = '';
+                return;
+            }
+
+            const fQ = n => 'Q ' + Number(n || 0).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2});
+            const fF = iso => iso ? new Date(iso).toLocaleString('es-GT', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '—';
+
+            let totFondo = 0, totVentasEf = 0, totEsperado = 0, totContado = 0, totDif = 0;
+
+            tbody.innerHTML = _cierresCajaList.map(function(c, idx) {
+                const fondo = Number(c.monto_inicial || 0);
+                const vEf = Number(c.ventas_efectivo || 0);
+                const esp = Number(c.total_esperado || 0);
+                const cont = Number(c.efectivo_contado || 0);
+                const dif = Number(c.diferencia || 0);
+                const abierta = c.estado === 'ABIERTA';
+
+                totFondo += fondo;
+                totVentasEf += vEf;
+                totEsperado += esp;
+                totContado += cont;
+                totDif += dif;
+
+                const difColor = dif === 0 ? 'var(--success)' : dif > 0 ? 'var(--accent)' : '#FF453A';
+                const difTxt = (dif >= 0 ? '+' : '') + fQ(dif);
+
+                return `<tr>
+                    <td style="font-weight:600">${escHtml(c.cajero || '—')}</td>
+                    <td>${escHtml(c.sucursales ? c.sucursales.nombre : 'Central')}</td>
+                    <td style="font-size:12px;color:var(--text-secondary)">${fF(c.fecha_apertura)}</td>
+                    <td style="font-size:12px;color:var(--text-secondary)">${fF(c.fecha_cierre)}</td>
+                    <td class="cell-num">${fQ(fondo)}</td>
+                    <td class="cell-num font-mono" style="font-weight:600">${fQ(vEf)}</td>
+                    <td class="cell-num font-mono">${fQ(esp)}</td>
+                    <td class="cell-num font-mono">${abierta ? '—' : fQ(cont)}</td>
+                    <td class="cell-num font-mono" style="font-weight:700;color:${abierta ? 'inherit' : difColor}">${abierta ? '—' : difTxt}</td>
+                    <td>
+                        <span class="tag ${abierta ? 'tag-accent' : 'tag-success'}" style="font-size:10.5px">
+                            ${abierta ? '● ABIERTA' : '✓ CERRADA'}
+                        </span>
+                    </td>
+                    <td style="text-align:right">
+                        ${!abierta ? `
+                        <button class="topbar-btn" style="height:28px;padding:0 8px;font-size:11px" onclick="imprimirCierreFromContab(${idx})" title="Imprimir comprobante">
+                            🖨️ Ticket
+                        </button>` : ''}
+                    </td>
+                </tr>`;
+            }).join('');
+
+            if (foot) {
+                foot.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;padding:10px 16px;background:var(--card-subtle);font-weight:700;font-size:13px;border-top:1.5px solid var(--border)">
+                        <span>Total de turnos: ${_cierresCajaList.length}</span>
+                        <div style="display:flex;gap:24px">
+                            <span>Ventas Efectivo: ${fQ(totVentasEf)}</span>
+                            <span>Efectivo Contado: ${fQ(totContado)}</span>
+                            <span>Diferencia Total: <span style="color:${totDif >= 0 ? 'var(--success)' : '#FF453A'}">${(totDif >= 0 ? '+' : '') + fQ(totDif)}</span></span>
+                        </div>
+                    </div>`;
+            }
+        }
+
+        function imprimirCierreFromContab(idx) {
+            const c = _cierresCajaList[idx];
+            if (!c) return;
+            const data = {
+                cajaId: c.id,
+                cajero: c.cajero,
+                montoInicial: c.monto_inicial,
+                fechaApertura: c.fecha_apertura,
+                fechaCierre: c.fecha_cierre,
+                ventasEfectivo: c.ventas_efectivo,
+                ventasTarjeta: c.ventas_tarjeta,
+                ventasTransferencia: c.ventas_transferencia,
+                ventasOtros: c.ventas_otros,
+                totalVentas: Number(c.ventas_efectivo || 0) + Number(c.ventas_tarjeta || 0) + Number(c.ventas_transferencia || 0) + Number(c.ventas_otros || 0),
+                esperado: c.total_esperado,
+                contado: c.efectivo_contado,
+                diferencia: c.diferencia,
+                observaciones: c.observaciones
+            };
+            if (typeof posImprimirCorteCaja === 'function') {
+                posImprimirCorteCaja(data);
+            } else {
+                showToast('Módulo de impresión POS no disponible', '#FF9F0A');
+            }
+        }
+        window.imprimirCierreFromContab = imprimirCierreFromContab;
+
+        /* ── Reporte Ventas por Sucursal ── */
+        function loadVentasPorSucursal() {
+            const tbody = document.getElementById('ventasSucTbody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="empty-cell">Consolidando ventas por sucursal…</td></tr>';
+            const desde = (document.getElementById('ventasSucDesde') || {}).value || null;
+            const hasta = (document.getElementById('ventasSucHasta') || {}).value || null;
+
+            window.api
+                .withSuccessHandler(function(r) {
+                    if (!r || !r.ok) {
+                        if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="empty-cell" style="color:var(--danger)">Error al cargar reporte: ${escHtml((r && r.error) || 'Desconocido')}</td></tr>`;
+                        return;
+                    }
+                    const fQ = n => 'Q ' + Number(n || 0).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2});
+                    const d = r.data || [];
+                    const granTotal = Number(r.granTotal || 0);
+
+                    const elTot = document.getElementById('ventasSucTotal');
+                    if (elTot) elTot.textContent = fQ(granTotal);
+                    const elCount = document.getElementById('ventasSucCount');
+                    if (elCount) elCount.textContent = d.length;
+
+                    if (!d.length) {
+                        if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="empty-cell">No hay transacciones de ventas en este período</td></tr>';
+                        const foot = document.getElementById('ventasSucFoot');
+                        if (foot) foot.innerHTML = '';
+                        return;
+                    }
+
+                    let totTrx = 0, totEf = 0, totTar = 0, totTrans = 0, totOtr = 0;
+
+                    if (tbody) {
+                        tbody.innerHTML = d.map(function(s) {
+                            totTrx += s.transacciones;
+                            totEf += s.efectivo;
+                            totTar += s.tarjeta;
+                            totTrans += s.transferencia;
+                            totOtr += s.otros;
+
+                            const pct = granTotal > 0 ? ((s.total / granTotal) * 100).toFixed(1) : '0.0';
+
+                            return `<tr>
+                                <td style="font-weight:700">
+                                    ${escHtml(s.nombre)}
+                                    ${s.es_central ? '<span class="tag tag-accent" style="margin-left:6px;font-size:10px">Central</span>' : ''}
+                                </td>
+                                <td style="font-size:12px;color:var(--text-secondary)">${escHtml(s.codigo || '—')}</td>
+                                <td class="cell-num">${s.transacciones}</td>
+                                <td class="cell-num font-mono">${fQ(s.efectivo)}</td>
+                                <td class="cell-num font-mono">${fQ(s.tarjeta)}</td>
+                                <td class="cell-num font-mono">${fQ(s.transferencia)}</td>
+                                <td class="cell-num font-mono">${fQ(s.otros)}</td>
+                                <td class="cell-num font-mono" style="font-weight:800;color:var(--text-primary)">${fQ(s.total)}</td>
+                                <td>
+                                    <div style="display:flex;align-items:center;gap:8px">
+                                        <div style="flex:1;background:var(--border);height:8px;border-radius:4px;overflow:hidden">
+                                            <div style="width:${pct}%;background:var(--accent);height:100%"></div>
+                                        </div>
+                                        <span style="font-size:11.5px;font-weight:600;min-width:38px">${pct}%</span>
+                                    </div>
+                                </td>
+                            </tr>`;
+                        }).join('');
+                    }
+
+                    const foot = document.getElementById('ventasSucFoot');
+                    if (foot) {
+                        foot.innerHTML = `
+                            <div style="display:flex;justify-content:space-between;padding:10px 16px;background:var(--card-subtle);font-weight:700;font-size:13px;border-top:1.5px solid var(--border)">
+                                <span>Total General (${d.length} sucursales · ${totTrx} ventas)</span>
+                                <div style="display:flex;gap:20px">
+                                    <span>Efectivo: ${fQ(totEf)}</span>
+                                    <span>Electrónico: ${fQ(totTar + totTrans + totOtr)}</span>
+                                    <span style="color:var(--accent)">Gran Total: ${fQ(granTotal)}</span>
+                                </div>
+                            </div>`;
+                    }
+                })
+                .withFailureHandler(function(e) {
+                    if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="empty-cell" style="color:var(--danger)">Error: ${escHtml(e.message)}</td></tr>`;
+                })
+                .getReporteVentasSucursal({ desde: desde, hasta: hasta });
+        }
+        window.loadVentasPorSucursal = loadVentasPorSucursal;

@@ -113,6 +113,11 @@
       <span>Empresa</span>
       <span class="ajustes-nav-badge">Admin</span>
     </button>
+    <button class="ajustes-nav-item" onclick="ajustesTab('sucursales',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 21h18M3 7v14M21 7v14M6 21V11h4v10M14 21V11h4v10M9 3l3-2 3 2"/></svg>
+      <span>Sucursales</span>
+      <span class="ajustes-nav-badge">Tiendas</span>
+    </button>
     <button class="ajustes-nav-item" onclick="ajustesTab('fel',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       <span>Facturación FEL (SAT)</span>
@@ -276,6 +281,35 @@
         <div class="ajustes-row-label"><div class="ajustes-row-name">Condiciones por defecto</div><div class="ajustes-row-desc">Texto de condiciones en nuevas cotizaciones</div></div>
         <div class="ajustes-row-control"><textarea class="form-input" id="orgCondiciones" rows="3" style="resize:vertical"></textarea></div>
       </div>
+      <div class="ajustes-row">
+        <div class="ajustes-row-label"><div class="ajustes-row-name">País de operación</div><div class="ajustes-row-desc">Configuración fiscal y regional</div></div>
+        <div class="ajustes-row-control" style="max-width:220px">
+          <select class="form-select" id="orgPaisCodigo">
+            <option value="GT">Guatemala (GT)</option>
+            <option value="SV">El Salvador (SV)</option>
+            <option value="HN">Honduras (HN)</option>
+            <option value="NI">Nicaragua (NI)</option>
+            <option value="CR">Costa Rica (CR)</option>
+            <option value="PA">Panamá (PA)</option>
+            <option value="MX">México (MX)</option>
+            <option value="CO">Colombia (CO)</option>
+            <option value="US">Estados Unidos (US)</option>
+            <option value="OT">Internacional / Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="ajustes-row">
+        <div class="ajustes-row-label"><div class="ajustes-row-name">Tipo de documento fiscal</div><div class="ajustes-row-desc">Identificador tributario para clientes (NIT, RFC, RUC, Tax ID, etc.)</div></div>
+        <div class="ajustes-row-control" style="max-width:160px"><input class="form-input" id="orgTipoDocFiscal" placeholder="NIT" value="NIT" /></div>
+      </div>
+      <div class="ajustes-row ajustes-row-toggle">
+        <div class="ajustes-row-label"><div class="ajustes-row-name">Catálogo de productos con fotos</div><div class="ajustes-row-desc">Muestra imágenes en miniatura en las tarjetas de productos del POS</div></div>
+        <label class="switch on" id="orgCatalogoFotosSwitch"><input type="checkbox" id="orgCatalogoFotos" checked onchange="this.closest('label').classList.toggle('on', this.checked)"/><span class="knob"></span></label>
+      </div>
+      <div class="ajustes-row">
+        <div class="ajustes-row-label"><div class="ajustes-row-name">Webhook de envío de facturas/tickets</div><div class="ajustes-row-desc">Endpoint para enviar por correo el comprobante automático al cobrar</div></div>
+        <div class="ajustes-row-control"><input class="form-input" id="orgWebhookCorreo" placeholder="https://hook.us1.make.com/..." /></div>
+      </div>
 
       <!-- Vista previa en tiempo real de membrete y ticket -->
       <div class="ajustes-row" style="align-items:flex-start;flex-direction:column;gap:12px;border-top:1px solid var(--border);padding-top:20px;margin-top:10px">
@@ -330,6 +364,41 @@
       </div>
 
       <div class="ajustes-footer"><button class="btn-save" id="orgGuardarBtn" onclick="guardarOrgConfig()">Guardar empresa</button></div>
+    </div>
+
+    <!-- SECCIÓN SUCURSALES (MULTI-TIENDA) -->
+    <div class="ajustes-section" id="ajustes-sucursales">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+        <div>
+          <div class="ajustes-section-title" style="margin-bottom:4px">Sucursales y Tiendas Físicas</div>
+          <div style="font-size:12.5px;color:var(--text-secondary)">Organiza tus puntos de venta, asigna personal y gestiona arqueos independientes.</div>
+        </div>
+        <button class="topbar-btn" onclick="abrirModalSucursal()" style="background:var(--accent);color:#fff;font-weight:700">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nueva Sucursal
+        </button>
+      </div>
+
+      <div class="table-card" style="box-shadow:none;border:1px solid var(--border)">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Código</th>
+                <th>Dirección</th>
+                <th>Teléfono</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th style="width:120px;text-align:right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="sucursalesAdminTbody">
+              <tr><td colspan="7" class="empty-cell">Cargando sucursales…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- SECCIÓN FACTURACIÓN FEL (SAT GUATEMALA) -->
@@ -489,6 +558,7 @@
                 var sec = document.getElementById('ajustes-' + tab);
                 if (sec) sec.classList.add('active');
                 if (tab === 'empresa' || tab === 'fel') loadOrgConfigPanel();
+                if (tab === 'sucursales') loadSucursalesAdmin();
             };
         }
 
@@ -512,6 +582,15 @@
                     setVal('orgCondiciones', d.condiciones_default);
                     setVal('orgPrefijoCot', d.prefijo_cotizacion || 'COT-');
                     setVal('orgPrefijoPos', d.prefijo_ticket || 'POS-');
+                    setVal('orgPaisCodigo', d.pais_codigo || 'GT');
+                    setVal('orgTipoDocFiscal', d.tipo_documento_fiscal || 'NIT');
+                    setVal('orgWebhookCorreo', d.webhook_correo_facturas || '');
+                    const chkFotos = document.getElementById('orgCatalogoFotos');
+                    if (chkFotos) {
+                        chkFotos.checked = d.catalogo_fotos_habilitado !== false && String(d.catalogo_fotos_habilitado) !== 'false';
+                        const sw = document.getElementById('orgCatalogoFotosSwitch');
+                        if (sw) sw.classList.toggle('on', chkFotos.checked);
+                    }
                     const monSel = document.getElementById('orgMoneda');
                     if (monSel && d.moneda) {
                         const opt = [...monSel.options].find(o => o.value === d.moneda);
@@ -658,6 +737,10 @@
                 condiciones_default: v('orgCondiciones'),
                 prefijo_cotizacion: (document.getElementById('orgPrefijoCot') || {}).value || 'COT-',
                 prefijo_ticket: (document.getElementById('orgPrefijoPos') || {}).value || 'POS-',
+                pais_codigo: (document.getElementById('orgPaisCodigo') || {}).value || 'GT',
+                tipo_documento_fiscal: (document.getElementById('orgTipoDocFiscal') || {}).value || 'NIT',
+                catalogo_fotos_habilitado: !!(document.getElementById('orgCatalogoFotos') && document.getElementById('orgCatalogoFotos').checked),
+                webhook_correo_facturas: (document.getElementById('orgWebhookCorreo') || {}).value || '',
                 ...felLocal
             };
 
@@ -984,3 +1067,173 @@
                 .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = 'Actualizar contraseña'; showToast('Error: ' + e.message, '#FF453A'); })
                 .changePasswordPropio({ actual: actual, nueva: nueva });
         }
+
+        /* ═══════════════════════════════════════════════════════════
+           GESTIÓN DE SUCURSALES (MULTI-TIENDA) — ADMIN
+        ═══════════════════════════════════════════════════════════ */
+        let _adminSucursales = [];
+
+        function loadSucursalesAdmin() {
+            const tbody = document.getElementById('sucursalesAdminTbody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="empty-cell">Cargando sucursales…</td></tr>';
+            window.api
+                .withSuccessHandler(function(r) {
+                    if (!r || !r.ok) {
+                        if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="empty-cell" style="color:var(--danger)">Error: ${escHtml((r && r.error) || 'No se pudieron cargar las sucursales')}</td></tr>`;
+                        return;
+                    }
+                    _adminSucursales = r.data || [];
+                    renderSucursalesAdmin();
+                })
+                .withFailureHandler(function(e) {
+                    if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="empty-cell" style="color:var(--danger)">Error de conexión: ${escHtml(e.message)}</td></tr>`;
+                })
+                .getSucursales();
+        }
+        window.loadSucursalesAdmin = loadSucursalesAdmin;
+
+        function renderSucursalesAdmin() {
+            const tbody = document.getElementById('sucursalesAdminTbody');
+            if (!tbody) return;
+
+            if (!_adminSucursales.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-cell">No hay sucursales registradas aún. Haz clic en "Nueva Sucursal" para añadir la primera.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = _adminSucursales.map(function(s) {
+                const activa = s.activa !== false;
+                const central = !!s.es_central;
+
+                return `<tr>
+                    <td style="font-weight:700;color:var(--text-primary)">
+                        ${escHtml(s.nombre)}
+                    </td>
+                    <td style="font-size:12px;font-family:monospace;color:var(--text-secondary)">
+                        ${escHtml(s.codigo || '—')}
+                    </td>
+                    <td style="font-size:12.5px;color:var(--text-secondary)">
+                        ${escHtml(s.direccion || '—')}
+                    </td>
+                    <td style="font-size:12.5px;color:var(--text-secondary)">
+                        ${escHtml(s.telefono || '—')}
+                    </td>
+                    <td>
+                        <span class="tag ${central ? 'tag-accent' : 'tag-gray'}" style="font-size:11px">
+                            ${central ? '★ Central' : 'Sucursal'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="tag ${activa ? 'tag-success' : 'tag-gray'}" style="font-size:11px">
+                            ${activa ? '● Activa' : '○ Inactiva'}
+                        </span>
+                    </td>
+                    <td style="text-align:right;white-space:nowrap">
+                        <button class="btn-ghost" style="padding:4px 8px;font-size:12px;margin-right:4px" onclick="abrirModalSucursal('${escAttr(s.id)}')">
+                            Editar
+                        </button>
+                        ${!central ? `
+                        <button class="btn-ghost" style="padding:4px 8px;font-size:12px;color:var(--danger)" onclick="confirmDeleteSucursal('${escAttr(s.id)}', '${escAttr(s.nombre)}')">
+                            Eliminar
+                        </button>` : ''}
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function abrirModalSucursal(sucId) {
+            const esEdit = !!sucId;
+            const s = esEdit ? _adminSucursales.find(x => String(x.id) === String(sucId)) || {} : {};
+
+            _modalMode = { type: 'sucursal', action: esEdit ? 'edit' : 'add', id: sucId || null };
+
+            openModal(esEdit ? 'Editar Sucursal' : 'Nueva Sucursal', `
+                <div class="form-row">
+                    <div class="form-field">
+                        <label class="form-label">NOMBRE DE LA SUCURSAL *</label>
+                        <input class="form-input" id="mSucNombre" value="${escAttr(s.nombre || '')}" placeholder="Ej. Tienda Central Zona 10" />
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">CÓDIGO DE IDENTIFICACIÓN</label>
+                        <input class="form-input" id="mSucCodigo" value="${escAttr(s.codigo || '')}" placeholder="Ej. SUC-01" />
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">DIRECCIÓN FÍSICA</label>
+                    <input class="form-input" id="mSucDireccion" value="${escAttr(s.direccion || '')}" placeholder="Ej. 12 Calle 4-55 Zona 10, C.C. Plaza, Local 14" />
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label class="form-label">TELÉFONO DE CONTACTO</label>
+                        <input class="form-input" id="mSucTelefono" value="${escAttr(s.telefono || '')}" placeholder="Ej. +502 2333-4455" />
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">ESTADO</label>
+                        <select class="form-select" id="mSucActiva">
+                            <option value="true" ${s.activa !== false ? 'selected' : ''}>Activa</option>
+                            <option value="false" ${s.activa === false ? 'selected' : ''}>Inactiva</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-field" style="margin-top:8px">
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                        <input type="checkbox" id="mSucEsCentral" ${s.es_central ? 'checked' : ''} />
+                        <span>Establecer como Sucursal Principal / Casa Central</span>
+                    </label>
+                </div>
+            `);
+        }
+        window.abrirModalSucursal = abrirModalSucursal;
+
+        function handleSaveSucursal(m, saveBtn) {
+            const nom = (document.getElementById('mSucNombre') || {}).value.trim();
+            if (!nom) {
+                if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; }
+                showToast('El nombre de la sucursal es obligatorio', '#FF9F0A');
+                return;
+            }
+
+            const data = {
+                nombre: nom,
+                codigo: (document.getElementById('mSucCodigo') || {}).value.trim(),
+                direccion: (document.getElementById('mSucDireccion') || {}).value.trim(),
+                telefono: (document.getElementById('mSucTelefono') || {}).value.trim(),
+                activa: (document.getElementById('mSucActiva') || {}).value === 'true',
+                es_central: !!(document.getElementById('mSucEsCentral') && document.getElementById('mSucEsCentral').checked)
+            };
+
+            const cbDone = function(r) {
+                if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; }
+                if (!r || !r.ok) {
+                    showToast('Error: ' + ((r && r.error) || 'No se pudo guardar la sucursal'), '#FF453A');
+                    return;
+                }
+                closeModal();
+                showToast(m.action === 'add' ? 'Sucursal creada exitosamente ✓' : 'Sucursal actualizada ✓', '#30D158');
+                window._sucursalesCache = null; // invalidar cache
+                loadSucursalesAdmin();
+            };
+
+            if (m.action === 'add') {
+                window.api.withSuccessHandler(cbDone).addSucursal(data);
+            } else {
+                window.api.withSuccessHandler(cbDone).updateSucursal(m.id, data);
+            }
+        }
+        window.handleSaveSucursal = handleSaveSucursal;
+
+        function confirmDeleteSucursal(sucId, nombre) {
+            if (!confirm(`¿Estás seguro de eliminar la sucursal "${nombre}"?`)) return;
+            window.api
+                .withSuccessHandler(function(r) {
+                    if (!r || !r.ok) {
+                        showToast('Error al eliminar: ' + ((r && r.error) || 'Desconocido'), '#FF453A');
+                        return;
+                    }
+                    showToast('Sucursal eliminada ✓', '#30D158');
+                    window._sucursalesCache = null;
+                    loadSucursalesAdmin();
+                })
+                .deleteSucursal(sucId);
+        }
+        window.confirmDeleteSucursal = confirmDeleteSucursal;

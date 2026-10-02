@@ -1417,6 +1417,14 @@
                         <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                         Estado de Resultados
                     </button>
+                    <button class="cont-tab" data-tab="cierres-caja" onclick="switchContTab('cierres-caja',this)">
+                        <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="12" cy="13" r="3"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/></svg>
+                        Cierres de Caja
+                    </button>
+                    <button class="cont-tab" data-tab="ventas-sucursal" onclick="switchContTab('ventas-sucursal',this)">
+                        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        Ventas por Sucursal
+                    </button>
                 </div>
             
                 <!-- ── Sub-tab: Cuentas Bancarias ── -->
@@ -1627,6 +1635,103 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- ── Sub-tab: Cierres de Caja (Arqueos) ── -->
+                <div class="cont-panel" id="contPanel-cierres-caja">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                            <span style="font-weight:600;font-size:13px;color:var(--text-primary)">Historial de cierres:</span>
+                            <input type="date" class="mini-select" id="cierresDesde" style="width:135px">
+                            <span style="font-size:12px;color:var(--text-muted)">a</span>
+                            <input type="date" class="mini-select" id="cierresHasta" style="width:135px">
+                            <button class="topbar-btn" onclick="loadCierresCajaContab()" style="height:32px;font-size:12px;padding:0 12px">
+                                Filtrar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <div class="table-toolbar">
+                            <span style="font-weight:600;font-size:14px;">Arqueos y Cortes de Caja</span>
+                        </div>
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Cajero</th>
+                                        <th>Sucursal</th>
+                                        <th>Apertura</th>
+                                        <th>Cierre</th>
+                                        <th>Fondo Inicial</th>
+                                        <th class="cell-num">Ventas Efectivo</th>
+                                        <th class="cell-num">Total Esperado</th>
+                                        <th class="cell-num">Efectivo Contado</th>
+                                        <th class="cell-num">Diferencia</th>
+                                        <th>Estado</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cierresCajaTbody">
+                                    <tr><td colspan="11" class="empty-cell">Cargando cierres de caja…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-foot" id="cierresCajaFoot"></div>
+                    </div>
+                </div>
+
+                <!-- ── Sub-tab: Ventas por Sucursal ── -->
+                <div class="cont-panel" id="contPanel-ventas-sucursal">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                            <span style="font-weight:600;font-size:13px;color:var(--text-primary)">Período:</span>
+                            <input type="date" class="mini-select" id="ventasSucDesde" style="width:135px">
+                            <span style="font-size:12px;color:var(--text-muted)">a</span>
+                            <input type="date" class="mini-select" id="ventasSucHasta" style="width:135px">
+                            <button class="topbar-btn" onclick="loadVentasPorSucursal()" style="height:32px;font-size:12px;padding:0 12px">
+                                Actualizar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="kpi-grid" style="margin-bottom:20px;" id="ventasSucKpi">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Total Ventas (Todas las Sucursales)</div>
+                            <div class="kpi-value" id="ventasSucTotal">Q 0.00</div>
+                            <div class="kpi-delta up">Ingreso consolidado</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">Sucursales Activas</div>
+                            <div class="kpi-value" id="ventasSucCount">0</div>
+                            <div class="kpi-delta up">Con ventas en período</div>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <div class="table-toolbar">
+                            <span style="font-weight:600;font-size:14px;">Desglose por Sucursal</span>
+                        </div>
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Sucursal</th>
+                                        <th>Código</th>
+                                        <th class="cell-num">Transacciones</th>
+                                        <th class="cell-num">Efectivo</th>
+                                        <th class="cell-num">Tarjeta</th>
+                                        <th class="cell-num">Transferencia</th>
+                                        <th class="cell-num">Otros</th>
+                                        <th class="cell-num">Total Ventas</th>
+                                        <th style="width:180px">Participación</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ventasSucTbody">
+                                    <tr><td colspan="9" class="empty-cell">Cargando ventas por sucursal…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-foot" id="ventasSucFoot"></div>
+                    </div>
+                </div>
+
             </div>
             <!-- /page-contabilidad -->
 
@@ -2612,11 +2717,12 @@
 
                     if (m.action === 'add') {
                         const usu = v('uUsuario').trim(), nom = v('uNombre').trim(), pwd = v('uPassword'), rol = v('uRol'), correo = v('uCorreo').trim();
+                        const sucId = v('uSucursal') || null;
                         if (!usu || !nom || !pwd || !correo) {saveBtn.disabled=false; saveBtn.textContent='Guardar'; showToast('Usuario, nombre, correo y contraseña son requeridos', '#FF9F0A'); return;}
                         if (pwd.length < 6) {saveBtn.disabled=false; saveBtn.textContent='Guardar'; showToast('La contraseña debe tener al menos 6 caracteres', '#FF9F0A'); return;}
-                        window.api.withSuccessHandler(done('Usuario creado con permisos personalizados', '#30D158')).addUsuario({usuario: usu, nombre: nom, correo: correo, contrasena: pwd, rol: rol, activo: v('uActivo'), permisos: permisos});
+                        window.api.withSuccessHandler(done('Usuario creado con permisos personalizados', '#30D158')).addUsuario({usuario: usu, nombre: nom, correo: correo, contrasena: pwd, rol: rol, activo: v('uActivo'), permisos: permisos, sucursal_id: sucId});
                     } else {
-                        const data = {nombre: v('uNombre'), rol: v('uRol'), activo: v('uActivo'), permisos: permisos};
+                        const data = {nombre: v('uNombre'), rol: v('uRol'), activo: v('uActivo'), permisos: permisos, sucursal_id: v('uSucursal') || null};
                         const nuevoCorreo = (v('uCorreo') || '').trim();
                         if (nuevoCorreo) data.correo = nuevoCorreo;
                         const pwd = v('uPassword');
@@ -2648,6 +2754,12 @@
                     if (res.ok) {showToast(m.action === 'add' ? 'Categoría creada' : 'Categoría actualizada', '#30D158'); loadCategorias();}
                     else showToast('Error: ' + res.error, '#FF453A');
                 });
+            }
+            else if (m.type === 'sucursal') {
+                if (typeof window.handleSaveSucursal === 'function') {
+                    window.handleSaveSucursal(m, saveBtn);
+                    return;
+                }
             }
         }
 
@@ -2934,6 +3046,31 @@
             </div>`;
         }
 
+        let _sucursalesCache = null;
+        function _cargarSucursalesEnSelect(selectId, selectedId) {
+            const sel = document.getElementById(selectId);
+            if (!sel) return;
+            const poblar = function(list) {
+                let html = '<option value="">— Sin asignar —</option>';
+                (list || []).forEach(function(s) {
+                    const selAttr = (String(s.id) === String(selectedId)) ? ' selected' : '';
+                    html += `<option value="${escAttr(s.id)}"${selAttr}>${escHtml(s.nombre)}${s.es_central ? ' (Central)' : ''}</option>`;
+                });
+                sel.innerHTML = html;
+            };
+            if (_sucursalesCache) {
+                poblar(_sucursalesCache);
+            } else if (window.api && typeof window.api.getSucursales === 'function') {
+                window.api.withSuccessHandler(function(res) {
+                    if (res && res.ok) {
+                        _sucursalesCache = res.data || [];
+                        poblar(_sucursalesCache);
+                    }
+                }).getSucursales();
+            }
+        }
+        window._cargarSucursalesEnSelect = _cargarSucursalesEnSelect;
+
         function newUsuario() {
             if (!esAdmin()) { showToast('Solo administradores pueden crear usuarios', '#FF9F0A'); return; }
             _modalMode = {type: 'usuario', action: 'add', id: null};
@@ -2946,17 +3083,21 @@
               <div class="form-field"><label class="form-label">CONTRASEÑA *</label><input class="form-input" id="uPassword" type="password" placeholder="Mínimo 8 caracteres"/></div>
               <div class="form-row">
                 <div class="form-field"><label class="form-label">ROL</label>
-                  <select class="form-select" id="uRol"><option>Agente</option><option>Gerente</option><option>Admin</option><option>Vendedor</option></select>
+                  <select class="form-select" id="uRol"><option>Agente</option><option>Gerente</option><option>Admin</option><option>Vendedor</option><option>Cajero</option></select>
                 </div>
                 <div class="form-field"><label class="form-label">ESTADO</label>
                   <select class="form-select" id="uActivo"><option value="true">Activo</option><option value="false">Inactivo</option></select>
                 </div>
+              </div>
+              <div class="form-field"><label class="form-label">SUCURSAL ASIGNADA</label>
+                <select class="form-select" id="uSucursal"><option value="">— Sin asignar —</option></select>
               </div>
               ${_htmlPermisosSubmenus(null)}
               <div style="background:var(--accent-bg);border-radius:9px;padding:10px 12px;font-size:12px;color:#0060df;margin-top:8px;">
                 🔐 La contraseña se gestiona mediante Supabase Auth. Nunca se almacena en texto plano.
               </div>
             `);
+            _cargarSucursalesEnSelect('uSucursal', null);
         }
 
         function editUsuario(id) {
@@ -2983,7 +3124,7 @@
                   ${(window._superIds && u.auth_uid && window._superIds.indexOf(u.auth_uid) !== -1)
                     ? `<select class="form-select" id="uRol" disabled style="opacity:.75"><option value="Admin" selected>Super Admin</option></select>`
                     : `<select class="form-select" id="uRol">
-                    ${['Agente','Gerente','Admin','Vendedor'].map(r => `<option${r===u.rol?' selected':''}>${r}</option>`).join('')}
+                    ${['Agente','Gerente','Admin','Vendedor','Cajero'].map(r => `<option${r===u.rol?' selected':''}>${r}</option>`).join('')}
                   </select>`}
                 </div>
                 <div class="form-field"><label class="form-label">ESTADO</label>
@@ -2993,8 +3134,12 @@
                   </select>
                 </div>
               </div>
+              <div class="form-field"><label class="form-label">SUCURSAL ASIGNADA</label>
+                <select class="form-select" id="uSucursal"><option value="">— Sin asignar —</option></select>
+              </div>
               ${_htmlPermisosSubmenus(u.permisos)}
             `);
+            _cargarSucursalesEnSelect('uSucursal', u.sucursal_id || null);
         }
 
         function confirmDeleteUsuario(id, usuario) {
