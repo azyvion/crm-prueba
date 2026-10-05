@@ -10,12 +10,48 @@
    window.api, window._sb, cotLlenarSelectItems, renderOvStock
 */
 
+let _filtroMarca = '';
+let _filtroFamilia = '';
+let _filtroLinea = '';
+
+window.filtrarInvCatalogo = function() {
+    _filtroMarca = (document.getElementById('invFiltroMarca') || {}).value || '';
+    _filtroFamilia = (document.getElementById('invFiltroFamilia') || {}).value || '';
+    _filtroLinea = (document.getElementById('invFiltroLinea') || {}).value || '';
+    renderInventario(_filtroInvActual);
+};
+
+function _actualizarSelectsFiltrosCatalogo() {
+    const sM = document.getElementById('invFiltroMarca');
+    if (sM) {
+        const val = sM.value;
+        const list = _catData.marcas || [];
+        sM.innerHTML = '<option value="">Todas las marcas</option>' +
+            list.map(m => `<option value="${escAttr(m.id)}"${m.id === val ? ' selected' : ''}>${escHtml(m.nombre)}</option>`).join('');
+    }
+    const sF = document.getElementById('invFiltroFamilia');
+    if (sF) {
+        const val = sF.value;
+        const list = _catData.familias || [];
+        sF.innerHTML = '<option value="">Todas las familias</option>' +
+            list.map(f => `<option value="${escAttr(f.id)}"${f.id === val ? ' selected' : ''}>${escHtml(f.nombre)}</option>`).join('');
+    }
+    const sL = document.getElementById('invFiltroLinea');
+    if (sL) {
+        const val = sL.value;
+        const list = _catData.lineas || [];
+        sL.innerHTML = '<option value="">Todas las líneas</option>' +
+            list.map(l => `<option value="${escAttr(l.id)}"${l.id === val ? ' selected' : ''}>${escHtml(l.nombre)}</option>`).join('');
+    }
+}
+
         function loadInventario() {
             window.api
                 .withSuccessHandler(function (r) {
                     if (!r.ok) { showToast('Error inventario: ' + (r.error || 'sin datos'), '#FF453A'); return; }
                     _inventario = r.data || [];
                     _renderInvFilterTabs();
+                    _actualizarSelectsFiltrosCatalogo();
                     renderInventario(_filtroInvActual);
                     renderOvStock();
                     cotLlenarSelectItems();
@@ -35,6 +71,10 @@
             else if (filtro === 'Servicios') data = data.filter(i => i.tipo === 'Servicio');
             else if (filtro !== 'Todos')     data = data.filter(i => i.categoria === filtro);
 
+            if (_filtroMarca)   data = data.filter(i => String(i.marca_id) === String(_filtroMarca));
+            if (_filtroFamilia) data = data.filter(i => String(i.familia_id) === String(_filtroFamilia));
+            if (_filtroLinea)   data = data.filter(i => String(i.linea_id) === String(_filtroLinea));
+
             const q = document.getElementById('searchInput').value.toLowerCase();
             if (q && _currentPage === 'inventario') {
                 data = data.filter(i =>
@@ -53,13 +93,28 @@
                     const disp = esServicio
                         ? '<span style="color:var(--text-muted)">No aplica</span>'
                         : `<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ${cls}" style="width:${Math.max(pct, 1)}%"></div></div><span class="progress-val">${pct}%</span></div>`;
+                    
+                    const fQ = n => 'Q ' + Number(n || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    const precioPub = fQ(i.precioUnit);
+                    const precioPlataBadge = (i.precioPlata !== null && i.precioPlata !== undefined && i.precioPlata !== '') 
+                        ? `<span class="tag tag-gray" style="padding:1px 6px;font-size:9.5px;font-weight:600;background:rgba(10,132,255,.1);color:#0A84FF" title="Precio Plata">Plata: ${fQ(i.precioPlata)}</span>` : '';
+                    const precioOroBadge = (i.precioOro !== null && i.precioOro !== undefined && i.precioOro !== '') 
+                        ? `<span class="tag tag-warning" style="padding:1px 6px;font-size:9.5px;font-weight:600;background:rgba(255,159,10,.15);color:#FF9F0A" title="Precio Oro">Oro: ${fQ(i.precioOro)}</span>` : '';
+
                     return `<tr>
           <td><div class="cell-main">${escHtml(i.producto)}${inactivo}</div>${_invCellSub(i)}</td>
           <td><span class="tag ${esServicio ? 'tag-servicio' : 'tag-producto'}">${esServicio ? 'Servicio' : 'Producto'}</span></td>
           <td>${tagCat(i.categoria)}</td>
           <td>${esServicio ? '—' : i.unidades}</td>
           <td>${disp}</td>
-          <td>Q ${Number(i.precioUnit).toLocaleString()}</td>
+          <td>
+            <div style="font-weight:700;color:var(--text-primary)">${precioPub}</div>
+            <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap">
+              <span class="tag tag-gray" style="padding:1px 6px;font-size:9.5px;font-weight:600" title="Precio Público (Base)">Púb</span>
+              ${precioPlataBadge}
+              ${precioOroBadge}
+            </div>
+          </td>
           <td>${esServicio ? '<span class="tag tag-servicio">Servicio</span>' : tagEstadoInv(i.estado)}</td>
           <td style="display:flex;gap:6px">
             <button class="section-action" onclick="editInv('${i.id}')">Editar</button>
@@ -516,8 +571,13 @@ async function loadCatalogos() {
         _catData[keys[idx]] = r.data || [];
     });
     keys.forEach(renderCatalogo);
+    if (typeof _actualizarSelectsFiltrosCatalogo === 'function') _actualizarSelectsFiltrosCatalogo();
     if (typeof renderInventario === 'function') renderInventario(_filtroInvActual);
 }
+
+window.nuevaEntradaInv = function() {
+    if (typeof newInv === 'function') newInv();
+};
 
 /* ── Filtro de empresa (solo super admin) ── */
 function catEmpresasOrdenadas() {

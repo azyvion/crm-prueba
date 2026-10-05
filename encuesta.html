@@ -301,10 +301,10 @@
     }
 
     async function initSurvey() {
-      const id = getParam('id');
+      const token = getParam('token') || getParam('id');
       const container = document.getElementById('surveyContainer');
 
-      if (!id) {
+      if (!token) {
         container.innerHTML = `
           <div class="card" style="text-align:center;padding:48px 20px;">
             <div style="font-size:40px;margin-bottom:12px">⚠️</div>
@@ -315,14 +315,28 @@
       }
 
       try {
-        // Cargar encuesta
-        const { data: enc, error: encErr } = await _sb
-          .from('encuestas')
-          .select('*')
-          .eq('id', id)
-          .single();
+        // Cargar encuesta: buscar primero por token_publico, o fallback por id
+        let enc = null;
+        try {
+          const { data: encByToken } = await _sb
+            .from('encuestas')
+            .select('*')
+            .eq('token_publico', token)
+            .maybeSingle();
+          if (encByToken) enc = encByToken;
+        } catch(e) {}
 
-        if (encErr || !enc) {
+        if (!enc) {
+          const { data: encById, error: encErr } = await _sb
+            .from('encuestas')
+            .select('*')
+            .eq('id', token)
+            .maybeSingle();
+          if (encById) enc = encById;
+          else if (encErr) throw encErr;
+        }
+
+        if (!enc) {
           throw new Error('No se encontró la encuesta especificada.');
         }
 
@@ -332,7 +346,7 @@
         const { data: pregs, error: pregErr } = await _sb
           .from('encuesta_preguntas')
           .select('*')
-          .eq('encuesta_id', id)
+          .eq('encuesta_id', enc.id)
           .order('orden', { ascending: true });
 
         if (pregErr) throw pregErr;

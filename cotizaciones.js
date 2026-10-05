@@ -128,7 +128,8 @@ let _cotClienteListaPrecio = 'Publico';
             <button class="section-action" onclick="verCotizacion('${c.id}')" title="Ver documento PDF">Ver</button>
             <button class="btn-success-sm" onclick="enviarCotizacionModal('${c.id}')" title="Enviar por correo">Correo</button>
             <button class="section-action" onclick="duplicarCotizacion('${c.id}')" title="Crear copia idéntica">Duplicar</button>
-            ${c.estado !== 'Aprobada' ? `<button class="section-action" style="color:var(--accent);font-weight:600" onclick="convertirCotizacionAVenta('${c.id}')" title="Convertir a Venta / Descontar stock">Vender</button>` : ''}
+            ${c.estado !== 'Aprobada' ? `<button class="section-action" style="color:var(--accent);font-weight:600" onclick="convertirCotizacionAVenta('${c.id}')" title="Convertir a Venta / Descontar stock">Vender</button>
+            <button class="section-action" style="color:var(--success);font-weight:600" onclick="cargarCotizacionEnPos('${c.id}')" title="Cargar directamente en POS para cobrar">Cobrar en POS</button>` : ''}
             <button class="section-action" onclick="editarCotizacion('${c.id}')">Editar</button>
             <button class="btn-danger-sm" onclick="confirmDeleteCot('${c.id}','${escAttr(c.numero)}')">Eliminar</button>
           </div>
@@ -141,6 +142,78 @@ let _cotClienteListaPrecio = 'Publico';
             if (foot) foot.innerHTML = `<span><strong>${data.length}</strong> cotizaciones</span>
                 <span>Monto listado: <strong>${cotQ(total)}</strong></span>`;
         }
+
+        window.cargarCotizacionEnPos = function(id) {
+            const c = _cotizaciones.find(x => String(x.id) === String(id));
+            if (!c) { showToast('Cotización no encontrada', '#FF453A'); return; }
+
+            showToast('Cargando cotización al POS…', '#0A84FF');
+            window.api
+                .withSuccessHandler(function(r) {
+                    if (!r || !r.ok) {
+                        showToast((r && r.error) || 'No se pudo cargar la cotización', '#FF453A');
+                        return;
+                    }
+                    const cotData = r.data;
+                    const items = r.items || [];
+                    if (!items.length) {
+                        showToast('La cotización no tiene ítems para cobrar', '#FF9F0A');
+                        return;
+                    }
+
+                    if (typeof showPage === 'function') {
+                        showPage('pos', document.getElementById('nav-pos'));
+                    }
+
+                    const transferir = function() {
+                        if (cotData.clienteId) {
+                            const selCli = document.getElementById('posClienteSelect');
+                            if (selCli) {
+                                selCli.value = cotData.clienteId;
+                                if (typeof posOnClienteChange === 'function') posOnClienteChange(selCli);
+                            }
+                        } else {
+                            _posClienteSel = {
+                                id: null,
+                                nombre: cotData.cliente || 'Consumidor Final (C/F)',
+                                nit: cotData.nit || 'C/F',
+                                direccion: cotData.direccion || 'Ciudad',
+                                lista_precio: 'Publico'
+                            };
+                        }
+
+                        _posCarrito = [];
+                        items.forEach(it => {
+                            const prodOrig = (_posProductos || []).find(p => String(p.id) === String(it.itemId));
+                            _posCarrito.push({
+                                id: it.itemId || ('cot_it_' + Date.now() + Math.random()),
+                                producto: it.descripcion,
+                                precioUnit: Number(it.precioUnit) || 0,
+                                cantidad: Number(it.cantidad) || 1,
+                                descuentoPct: Number(it.descuentoPct) || 0,
+                                total: (Number(it.cantidad) || 1) * (Number(it.precioUnit) || 0) * (1 - (Number(it.descuentoPct) || 0) / 100),
+                                prodOriginal: prodOrig || { id: it.itemId, producto: it.descripcion, precioUnit: it.precioUnit, tipo: it.tipo }
+                            });
+                        });
+
+                        window._posCotizacionOrigenId = cotData.id;
+
+                        if (typeof renderPosCarrito === 'function') renderPosCarrito();
+                        showToast(`Cotización ${cotData.numero} lista para cobro en caja POS`, '#30D158');
+                    };
+
+                    if (!_posProductos || !_posProductos.length) {
+                        if (typeof loadPos === 'function') loadPos();
+                        setTimeout(transferir, 400);
+                    } else {
+                        transferir();
+                    }
+                })
+                .withFailureHandler(function(e) {
+                    showToast('Error: ' + e.message, '#FF453A');
+                })
+                .getCotizacion({id: id});
+        };
 
         window.duplicarCotizacion = function(id) {
             if (!confirm('¿Deseas duplicar esta cotización? Se creará un nuevo borrador con los mismos ítems.')) return;
@@ -228,6 +301,29 @@ let _cotClienteListaPrecio = 'Publico';
             set('cotDireccion', c.direccion);
             showToast('Tarifa aplicada: ' + _cotClienteListaPrecio, '#0A84FF');
             cotLlenarSelectItems();
+
+            // Actualizar precios de ítems ya agregados según la nueva lista de precios
+            if (_cotItems && _cotItems.length) {
+                let actualizados = 0;
+                _cotItems.forEach(it => {
+                    if (it.itemId) {
+                        const invItem = (_inventario || []).find(x => String(x.id) === String(it.itemId));
+                        if (invItem) {
+                            let p = Number(invItem.precioUnit) || 0;
+                            if (_cotClienteListaPrecio === 'Plata' && invItem.precioPlata) p = Number(invItem.precioPlata);
+                            if (_cotClienteListaPrecio === 'Oro' && invItem.precioOro) p = Number(invItem.precioOro);
+                            if (it.precioUnit !== p) {
+                                it.precioUnit = p;
+                                actualizados++;
+                            }
+                        }
+                    }
+                });
+                if (actualizados > 0) {
+                    cotRenderItems();
+                    showToast(`${actualizados} ítem(s) actualizados con tarifa ${_cotClienteListaPrecio}`, '#30D158');
+                }
+            }
         }
 
         function openCotBuilder() {
@@ -245,8 +341,13 @@ let _cotClienteListaPrecio = 'Publico';
         function nuevaCotizacion() {
             _cotEditId = null;
             _cotItems = [];
+            _cotClienteListaPrecio = 'Publico';
             const cond = (_cotEmpresa && _cotEmpresa.condicionesDefault) ||
+                (window.EMPRESA && window.EMPRESA.condicionesDefault) ||
                 'Precios expresados en quetzales (GTQ). Tiempo de entrega sujeto a disponibilidad. Esta cotización no constituye una factura.';
+            const diasVig = (_cotEmpresa && _cotEmpresa.diasVigenciaCotizacion) ||
+                (window.EMPRESA && window.EMPRESA.diasVigenciaCotizacion) || 15;
+
             document.getElementById('cotBuilderTitle').textContent = 'Nueva cotización';
             document.getElementById('cotBuilderSub').textContent = 'Completa los datos y agrega ítems del inventario';
             document.getElementById('cotSaveBtn').textContent = 'Guardar cotización';
@@ -255,7 +356,7 @@ let _cotClienteListaPrecio = 'Publico';
             });
             document.getElementById('cotClienteSel').value = '';
             document.getElementById('cotFecha').value = cotHoyISO();
-            document.getElementById('cotValidez').value = 15;
+            document.getElementById('cotValidez').value = diasVig;
             document.getElementById('cotEstado').value = 'Borrador';
             document.getElementById('cotDescuento').value = 0;
             document.getElementById('cotIVA').checked = false;
@@ -271,6 +372,9 @@ let _cotClienteListaPrecio = 'Publico';
                     if (!r || !r.ok) { showToast((r && r.error) || 'No se pudo abrir la cotización', '#FF453A'); return; }
                     const c = r.data;
                     _cotEditId = c.id;
+                    const cl = (_clientes || []).find(x => String(x.id) === String(c.clienteId));
+                    _cotClienteListaPrecio = (cl && cl.lista_precio) ? cl.lista_precio : 'Publico';
+
                     _cotItems = (r.items || []).map(i => ({
                         itemId: i.itemId, tipo: i.tipo, descripcion: i.descripcion, detalle: i.detalle,
                         cantidad: Number(i.cantidad) || 0, precioUnit: Number(i.precioUnit) || 0,

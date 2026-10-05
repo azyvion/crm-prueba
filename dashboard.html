@@ -146,11 +146,7 @@
             <svg class="nav-chevron" id="chevron-invGroup" viewBox="0 0 24 24" style="width:14px;height:14px;margin-left:auto;transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="nav-subgroup" id="invGroup" style="display:none">
-            <div class="nav-subitem" id="nav-inventario-list" onclick="showPage('inventario',document.getElementById('nav-inventario'))">
-                <svg viewBox="0 0 24 24" style="width:14px;height:14px"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                Ver inventario
-            </div>
-            <div class="nav-subitem" id="nav-crear-producto" onclick="showPage('crear-producto',document.getElementById('nav-inventario'))">
+            <div class="nav-subitem" id="nav-crear-producto" onclick="showPage('inventario',document.getElementById('nav-inventario'))">
                 <svg viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                 Producto
             </div>
@@ -884,23 +880,37 @@
                     </div>
                 </div>
                 <div class="table-card">
-                    <div class="table-toolbar">
+                    <div class="table-toolbar" style="gap:10px;flex-wrap:wrap">
                         <div class="filter-tabs" id="invFilterTabs">
                             <button class="filter-tab active" onclick="filtrarInv('Todos',this)">Todos</button>
                             <button class="filter-tab" onclick="filtrarInv('Productos',this)">Productos</button>
                             <button class="filter-tab" onclick="filtrarInv('Servicios',this)">Servicios</button>
                             <button class="filter-tab" onclick="filtrarInv('Crítico',this)">Crítico</button>
                         </div>
+                        <div class="toolbar-right" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                            <select class="mini-select" id="invFiltroMarca" onchange="filtrarInvCatalogo()">
+                                <option value="">Todas las marcas</option>
+                            </select>
+                            <select class="mini-select" id="invFiltroFamilia" onchange="filtrarInvCatalogo()">
+                                <option value="">Todas las familias</option>
+                            </select>
+                            <select class="mini-select" id="invFiltroLinea" onchange="filtrarInvCatalogo()">
+                                <option value="">Todas las líneas</option>
+                            </select>
+                            <button class="topbar-btn" onclick="nuevaEntradaInv()" style="height:32px;font-size:12px;padding:0 14px;background:var(--accent);color:#fff;font-weight:600">
+                                + Nuevo Producto
+                            </button>
+                        </div>
                     </div>
                     <table>
                         <thead>
                             <tr>
-                                <th>Ítem</th>
+                                <th>Ítem / Producto</th>
                                 <th>Tipo</th>
                                 <th>Categoría</th>
-                                <th>Unidades</th>
+                                <th>Stock</th>
                                 <th>Disponibilidad</th>
-                                <th>Precio unit.</th>
+                                <th>Listas de Precios</th>
                                 <th>Estado</th>
                                 <th></th>
                             </tr>
@@ -2840,16 +2850,16 @@
             // Sub-items de inventario y módulos
             if (id === 'pos') {
                 if (typeof loadPos === 'function') loadPos();
-            } else if (id === 'inventario') {
+            } else if (id === 'inventario' || id === 'crear-producto') {
                 _openNavGroup('invGroup');
-                const si = document.getElementById('nav-inventario-list');
+                const si = document.getElementById('nav-crear-producto') || document.getElementById('nav-inventario');
                 if (si) si.classList.add('active');
+                id = 'inventario';
+                _currentPage = 'inventario';
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                const pEl = document.getElementById('page-inventario');
+                if (pEl) pEl.classList.add('active');
                 loadInventario();
-            } else if (id === 'crear-producto') {
-                _openNavGroup('invGroup');
-                const si = document.getElementById('nav-crear-producto');
-                if (si) si.classList.add('active');
-                if (typeof cpTab === 'function') cpTab('nuevo-producto');
                 if (typeof loadCatalogos === 'function') loadCatalogos();
             } else if (id === 'categorias') {
                 _openNavGroup('invGroup');

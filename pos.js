@@ -685,6 +685,16 @@ async function posConfirmarVenta(total, descuentoMonto, subtotal) {
                 if (typeof loadInventario === 'function') loadInventario();
                 if (typeof loadTransacciones === 'function') loadTransacciones();
 
+                // Si esta venta provino de una cotización, marcarla como Aprobada
+                if (window._posCotizacionOrigenId) {
+                    const cotId = window._posCotizacionOrigenId;
+                    window._posCotizacionOrigenId = null;
+                    if (window.api && typeof window.api.updateEstadoCotizacion === 'function') {
+                        window.api.updateEstadoCotizacion({id: cotId, estado: 'Aprobada'});
+                    }
+                    if (typeof loadCotizaciones === 'function') loadCotizaciones();
+                }
+
                 // Mostrar ticket térmico modal
                 posMostrarTicketTermico(res.ticket);
             })
@@ -779,10 +789,14 @@ function posMostrarTicketTermico(t) {
                 ` : ''}
             </div>
 
-            <div style="text-align:center;margin-top:18px;font-size:10.5px;color:#444">
-                ¡Gracias por su compra!<br>
-                Conserve este comprobante para cualquier gestión.
-            </div>
+            ${(() => {
+                let extraOrg = {};
+                try { extraOrg = JSON.parse(localStorage.getItem('azyvion_org_extra') || '{}'); } catch(e) {}
+                const pieCustom = (t.empresa && t.empresa.pieTicket) || (em && em.pieTicket) || (window.EMPRESA && window.EMPRESA.pieTicket) || extraOrg.pie_ticket;
+                return pieCustom
+                    ? `<div style="text-align:center;margin-top:16px;font-size:10.5px;color:#444;white-space:pre-line;border-top:1px dashed #000;padding-top:8px">${escHtml(pieCustom)}</div>`
+                    : `<div style="text-align:center;margin-top:18px;font-size:10.5px;color:#444">¡Gracias por su compra!<br>Conserve este comprobante para cualquier gestión.</div>`;
+            })()}
         </div>
     `;
 

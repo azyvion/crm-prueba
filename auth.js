@@ -691,7 +691,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
         }
 
         /* ── Config de organización (se carga desde Supabase la primera vez) ── */
-        const _EMPRESA_DEFAULT={nombre:'Mi Empresa',eslogan:'',nit:'C/F',direccion:'',telefono:'',correo:'',sitio:'',logoUrl:'',moneda:'Q',ivaPct:12,condicionesDefault:'Precios expresados en quetzales (GTQ). Tiempo de entrega sujeto a disponibilidad. Esta cotización no constituye una factura.',prefijoCotizacion:'COT-',prefijoTicket:'POS-',paisCodigo:'GT',tipoDocumentoFiscal:'NIT',catalogoFotosHabilitado:true,webhookCorreoFacturas:''};
+        const _EMPRESA_DEFAULT={nombre:'Mi Empresa',eslogan:'',nit:'C/F',direccion:'',telefono:'',correo:'',sitio:'',logoUrl:'',moneda:'Q',ivaPct:12,condicionesDefault:'Precios expresados en quetzales (GTQ). Tiempo de entrega sujeto a disponibilidad. Esta cotización no constituye una factura.',prefijoCotizacion:'COT-',prefijoTicket:'POS-',paisCodigo:'GT',tipoDocumentoFiscal:'NIT',catalogoFotosHabilitado:true,webhookCorreoFacturas:'',diasVigenciaCotizacion:15,pieTicket:''};
         let EMPRESA = Object.assign({}, _EMPRESA_DEFAULT);
         let _orgConfigCargada = false;
 
@@ -699,6 +699,8 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if (_orgConfigCargada) return EMPRESA;
             try {
                 const {data, error} = await _sb.from('Organizations').select('*').eq('id', _currentOrgId).maybeSingle();
+                let extraLocal = {};
+                try { extraLocal = JSON.parse(localStorage.getItem('azyvion_org_extra') || '{}'); } catch(e) {}
                 if (!error && data) {
                     EMPRESA = {
                         nombre: data.nombre || _EMPRESA_DEFAULT.nombre,
@@ -717,7 +719,9 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                         paisCodigo: data.pais_codigo || 'GT',
                         tipoDocumentoFiscal: data.tipo_documento_fiscal || 'NIT',
                         catalogoFotosHabilitado: data.catalogo_fotos_habilitado !== false,
-                        webhookCorreoFacturas: data.webhook_correo_facturas || ''
+                        webhookCorreoFacturas: data.webhook_correo_facturas || '',
+                        diasVigenciaCotizacion: data.dias_vigencia_cotizacion !== undefined ? Number(data.dias_vigencia_cotizacion) : (extraLocal.dias_vigencia_cotizacion !== undefined ? Number(extraLocal.dias_vigencia_cotizacion) : 15),
+                        pieTicket: data.pie_ticket !== undefined ? (data.pie_ticket || '') : (extraLocal.pie_ticket || '')
                     };
                 }
             } catch(e) { /* tabla aún no existe, usar defaults */ }
@@ -729,7 +733,14 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             try {
                 const {data, error} = await _sb.from('Organizations').select('*').eq('id', _currentOrgId).maybeSingle();
                 if (error) return {ok:false, error: error.message};
-                return {ok:true, data: data || null};
+                let extraLocal = {};
+                try { extraLocal = JSON.parse(localStorage.getItem('azyvion_org_extra') || '{}'); } catch(e) {}
+                const resData = data ? {
+                    ...data,
+                    dias_vigencia_cotizacion: data.dias_vigencia_cotizacion !== undefined ? data.dias_vigencia_cotizacion : (extraLocal.dias_vigencia_cotizacion !== undefined ? extraLocal.dias_vigencia_cotizacion : 15),
+                    pie_ticket: data.pie_ticket !== undefined ? data.pie_ticket : (extraLocal.pie_ticket || '')
+                } : null;
+                return {ok:true, data: resData};
             } catch(e) { return {ok:false, error: e.message}; }
         }
 
@@ -752,6 +763,8 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if (p.tipo_documento_fiscal !== undefined) up.tipo_documento_fiscal = String(p.tipo_documento_fiscal).trim();
             if (p.catalogo_fotos_habilitado !== undefined) up.catalogo_fotos_habilitado = !!p.catalogo_fotos_habilitado;
             if (p.webhook_correo_facturas !== undefined) up.webhook_correo_facturas = String(p.webhook_correo_facturas).trim();
+            if (p.dias_vigencia_cotizacion !== undefined) up.dias_vigencia_cotizacion = Number(p.dias_vigencia_cotizacion) || 15;
+            if (p.pie_ticket !== undefined) up.pie_ticket = String(p.pie_ticket).trim();
             if (p.fel_habilitado !== undefined) up.fel_habilitado = !!p.fel_habilitado;
             if (p.fel_nit_emisor !== undefined) up.fel_nit_emisor = String(p.fel_nit_emisor).trim();
             if (p.fel_nombre_comercial !== undefined) up.fel_nombre_comercial = String(p.fel_nombre_comercial).trim();
@@ -763,6 +776,13 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if (p.fel_api_key !== undefined) up.fel_api_key = String(p.fel_api_key).trim();
             if (p.fel_frase_sat !== undefined) up.fel_frase_sat = String(p.fel_frase_sat).trim();
             up.updated_at = new Date().toISOString();
+
+            try {
+                localStorage.setItem('azyvion_org_extra', JSON.stringify({
+                    dias_vigencia_cotizacion: up.dias_vigencia_cotizacion !== undefined ? up.dias_vigencia_cotizacion : 15,
+                    pie_ticket: up.pie_ticket !== undefined ? up.pie_ticket : ''
+                }));
+            } catch(e) {}
             try {
                 const {data: existing} = await _sb.from('Organizations').select('id').eq('id', _currentOrgId).maybeSingle();
                 let error;
@@ -861,7 +881,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             its.forEach(i => { ibc[i.cotizacionId] = (ibc[i.cotizacionId] || 0) + 1; });
             const h = new Date(); h.setHours(0, 0, 0, 0);
             let d = cs.map(c => {
-                const v = Number(c.validezDias) || 15;
+                const v = Number(c.validezDias) || (EMPRESA && EMPRESA.diasVigenciaCotizacion) || 15;
                 const ha = new Date(c.fecha);
                 ha.setDate(ha.getDate() + v);
                 return {
@@ -1893,32 +1913,70 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             };
         }
 
-        /* ─── REPORTES CONTABLES AVANZADOS ─────────────────────────────── */
+        /* ─── REPORTES CONTABLES AVANZADOS (PARTIDA DOBLE Y P&L) ──────── */
         async function _getLibroDiario(p) {
             const orgId = _getEffectiveOrgId();
-            let q = _sb.from('TransaccionesCRM').select('*').order('fecha', {ascending: false});
+            let q = _sb.from('Transacciones').select('*').order('fecha', {ascending: false});
             if (orgId) q = q.eq('organization_id', orgId);
             if (p && p.desde) q = q.gte('fecha', p.desde);
             if (p && p.hasta) q = q.lte('fecha', p.hasta);
-            const {data, error} = await q;
-            if (error) return {ok: false, error: error.message};
+            let {data, error} = await q;
 
-            // Estructura de partida doble: Para cada transacción se genera debe y haber
+            // Fallback a TransaccionesCRM si Transacciones no arrojó registros
+            if (error || !data || !data.length) {
+                let q2 = _sb.from('TransaccionesCRM').select('*').order('fecha', {ascending: false});
+                if (orgId) q2 = q2.eq('organization_id', orgId);
+                if (p && p.desde) q2 = q2.gte('fecha', p.desde);
+                if (p && p.hasta) q2 = q2.lte('fecha', p.hasta);
+                const r2 = await q2;
+                if (r2.data && r2.data.length) data = r2.data;
+            }
+
+            // Mapeo opcional de nombres de cuentas bancarias
+            let mapaBancos = {};
+            try {
+                let qB = _sb.from('CuentasBancarias').select('id, nombre, banco');
+                if (orgId) qB = qB.eq('organization_id', orgId);
+                const {data: dCb} = await qB;
+                (dCb || []).forEach(b => { mapaBancos[b.id] = (b.nombre || b.banco || 'Banco'); });
+            } catch(e) {}
+
+            // Estructura de partida doble estricta (Debe = Haber)
             const partidas = (data || []).map((t, idx) => {
-                const esIngreso = t.tipo === 'Ingreso';
+                const tipo = t.tipo || 'Ingreso';
                 const monto = Number(t.monto || 0);
+                const ctaBanco = (t.cuentaBancariaId && mapaBancos[t.cuentaBancariaId]) ? mapaBancos[t.cuentaBancariaId] : 'Caja / Bancos';
+                const cat = t.categoria || t.concepto || 'Operación';
+
+                let cuentaDebe = '', cuentaHaber = '';
+                if (tipo === 'Ingreso') {
+                    // Ingreso: Entra dinero a Caja/Banco (Debe), Acredita a Ventas/Ingresos (Haber)
+                    cuentaDebe = ctaBanco;
+                    cuentaHaber = cat || 'Ingresos por Ventas';
+                } else if (tipo === 'Egreso') {
+                    // Egreso: Carga a Gastos/Compras (Debe), Sale dinero de Caja/Banco (Haber)
+                    cuentaDebe = cat || 'Gastos de Operación';
+                    cuentaHaber = ctaBanco;
+                } else if (tipo === 'Transferencia') {
+                    // Transferencia entre cuentas
+                    cuentaDebe = (t.cuentaDestinoId && mapaBancos[t.cuentaDestinoId]) || 'Banco Destino';
+                    cuentaHaber = ctaBanco;
+                } else {
+                    // Ajuste contable
+                    cuentaDebe = cat;
+                    cuentaHaber = ctaBanco;
+                }
+
                 return {
                     partidaNo: (data.length - idx),
                     id: t.id,
                     fecha: t.fecha,
-                    concepto: t.descripcion || t.categoria || 'Transacción',
-                    categoria: t.categoria || 'General',
-                    tipo: t.tipo,
+                    concepto: t.descripcion || t.concepto || cat,
+                    categoria: cat,
+                    tipo: tipo,
                     monto: monto,
-                    // Si es ingreso: Caja/Banco recibe (Debe), Ventas/Ingresos acredita (Haber)
-                    // Si es egreso: Gastos/Compras carga (Debe), Caja/Banco abona (Haber)
-                    debe: esIngreso ? 'Caja / Bancos' : (t.categoria || 'Gastos de Operación'),
-                    haber: esIngreso ? (t.categoria || 'Ingresos por Ventas') : 'Caja / Bancos',
+                    debe: cuentaDebe,
+                    haber: cuentaHaber,
                     debeMonto: monto,
                     haberMonto: monto
                 };
@@ -1928,21 +1986,34 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
 
         async function _getEstadoResultados(p) {
             const orgId = _getEffectiveOrgId();
-            let q = _sb.from('TransaccionesCRM').select('*');
+            let q = _sb.from('Transacciones').select('*');
             if (orgId) q = q.eq('organization_id', orgId);
             if (p && p.desde) q = q.gte('fecha', p.desde);
             if (p && p.hasta) q = q.lte('fecha', p.hasta);
-            const {data, error} = await q;
-            if (error) return {ok: false, error: error.message};
+            let {data, error} = await q;
+
+            // Fallback a TransaccionesCRM si Transacciones está vacía
+            if (error || !data || !data.length) {
+                let q2 = _sb.from('TransaccionesCRM').select('*');
+                if (orgId) q2 = q2.eq('organization_id', orgId);
+                if (p && p.desde) q2 = q2.gte('fecha', p.desde);
+                if (p && p.hasta) q2 = q2.lte('fecha', p.hasta);
+                const r2 = await q2;
+                if (r2.data && r2.data.length) data = r2.data;
+            }
 
             let ingresos = 0, egresos = 0;
             const porCat = {};
             (data || []).forEach(t => {
                 const m = Number(t.monto || 0);
                 const c = t.categoria || 'General';
-                porCat[c] = (porCat[c] || 0) + (t.tipo === 'Ingreso' ? m : -m);
-                if (t.tipo === 'Ingreso') ingresos += m;
-                else egresos += m;
+                if (t.tipo === 'Ingreso') {
+                    ingresos += m;
+                    porCat[c] = (porCat[c] || 0) + m;
+                } else if (t.tipo === 'Egreso') {
+                    egresos += m;
+                    porCat[c] = (porCat[c] || 0) - m;
+                }
             });
 
             return {
@@ -1985,18 +2056,63 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 +((c.telefono||c.correo)?'<div style="color:#666;font-size:12px">'+(c.telefono?_e(c.telefono):'')+(c.telefono&&c.correo?' · ':'')+( c.correo?_e(c.correo):'')+  '</div>':'')
                 +'</div>';
             const filas=its.map((it,i)=>'<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:10px 8px;text-align:center;color:#888;font-size:13px">'+(i+1)+'</td><td style="padding:10px 8px"><strong style="color:#111">'+_e(it.descripcion)+'</strong>'+(it.detalle?'<br><small style="color:#888">'+_e(it.detalle)+'</small>':'')+'</td><td style="padding:10px 8px;text-align:center">'+_r2(it.cantidad)+'</td><td style="padding:10px 8px;text-align:right">'+_fQ(it.precioUnit)+'</td><td style="padding:10px 8px;text-align:center">'+(it.descuentoPct>0?_r2(it.descuentoPct)+'%':'—')+'</td><td style="padding:10px 8px;text-align:right;font-weight:700;color:#0A2540">'+_fQ(it.total)+'</td></tr>').join('');
-            const html='<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cotización '+_e(c.numero)+'</title><style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;max-width:820px;margin:0 auto;padding:24px;color:#222;background:#fff}@media print{body{padding:0}}</style></head><body>'
-                +'<div style="background:linear-gradient(135deg,#0A2540,#1a4a7a);color:#fff;padding:28px 32px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:flex-start;gap:16px">'
-                +'<div>'+logoHtml+infoEmpresaHtml+'</div>'
-                +'<div style="text-align:right;flex-shrink:0"><div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;opacity:.7;margin-bottom:4px">Documento</div><h2 style="margin:0;font-size:26px;font-weight:800">Cotización</h2><div style="font-size:17px;font-weight:700;background:rgba(255,255,255,.18);padding:4px 14px;border-radius:6px;margin-top:8px;display:inline-block">'+_e(c.numero)+'</div><div style="font-size:11.5px;margin-top:10px;opacity:.85;line-height:1.7">Fecha: '+_fF(c.fecha)+'<br>Válida hasta: '+_fF(vd)+'<br><span style="background:rgba(255,255,255,.15);padding:2px 8px;border-radius:4px">'+_e(c.estado)+'</span></div></div>'
-                +'</div>'
-                +clienteHtml
-                +'<table style="width:100%;border-collapse:collapse;margin-top:16px"><thead><tr style="background:#0A2540;color:#fff"><th style="padding:11px 8px;text-align:center;font-size:12px;font-weight:600">#</th><th style="padding:11px 8px;text-align:left;font-size:12px;font-weight:600">Descripción</th><th style="padding:11px 8px;text-align:center;font-size:12px;font-weight:600">Cant.</th><th style="padding:11px 8px;text-align:right;font-size:12px;font-weight:600">Precio unit.</th><th style="padding:11px 8px;text-align:center;font-size:12px;font-weight:600">Desc.</th><th style="padding:11px 8px;text-align:right;font-size:12px;font-weight:600">Total</th></tr></thead><tbody>'+filas+'</tbody></table>'
-                +'<div style="display:flex;justify-content:flex-end;padding:8px 0 16px"><table style="width:300px;border-collapse:collapse"><tr><td style="padding:6px 8px;color:#555;font-size:13px">Subtotal</td><td style="padding:6px 8px;text-align:right;font-size:13px">'+_fQ(c.subtotal)+'</td></tr>'+(c.descuento>0?'<tr><td style="padding:6px 8px;color:#c0392b;font-size:13px">Descuento</td><td style="padding:6px 8px;text-align:right;color:#c0392b;font-size:13px">- '+_fQ(c.descuento)+'</td></tr>':'')+'<tr><td style="padding:6px 8px;color:#555;font-size:13px">IVA ('+(c.aplicaIVA?EM.ivaPct+'%':'Incluido')+')</td><td style="padding:6px 8px;text-align:right;font-size:13px">'+_fQ(c.iva)+'</td></tr><tr style="border-top:2px solid #0A2540"><td style="padding:10px 8px;font-size:17px;font-weight:700;color:#0A2540">TOTAL</td><td style="padding:10px 8px;text-align:right;font-size:17px;font-weight:700;color:#0A2540">'+_fQ(c.total)+'</td></tr></table></div>'
-                +(c.condiciones?'<div style="background:#f7f9fc;border-radius:6px;padding:12px 16px;margin-top:8px;font-size:12px;color:#555"><strong style="color:#333">Términos y condiciones:</strong> '+_e(c.condiciones)+'</div>':'')
-                +(c.notas?'<div style="border:1px solid #e0e7ef;border-radius:6px;padding:12px 16px;margin-top:10px;font-size:12px;color:#555"><strong style="color:#333">Notas:</strong> '+_e(c.notas)+'</div>':'')
-                +'<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e0e7ef;text-align:center;font-size:11px;color:#aaa">Generado por Azyvion CRM · '+_e(EM.nombre)+(EM.sitio?' · '+_e(EM.sitio):'')+'</div>'
-                +'</body></html>';
+            const estadoColors = {
+                'Aprobada': { bg: 'rgba(39, 174, 96, 0.15)', text: '#27ae60', border: '#27ae60' },
+                'Enviada': { bg: 'rgba(41, 128, 185, 0.15)', text: '#2980b9', border: '#2980b9' },
+                'Borrador': { bg: 'rgba(127, 140, 141, 0.15)', text: '#7f8c8d', border: '#7f8c8d' },
+                'Vencida': { bg: 'rgba(192, 57, 43, 0.15)', text: '#c0392b', border: '#c0392b' },
+                'Rechazada': { bg: 'rgba(192, 57, 43, 0.15)', text: '#c0392b', border: '#c0392b' }
+            };
+            const estColor = estadoColors[c.estado] || estadoColors['Borrador'];
+
+            const html = '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cotización ' + _e(c.numero) + '</title>' +
+                '<style>' +
+                '@page { size: letter portrait; margin: 12mm 14mm; }' +
+                '* { box-sizing: border-box; }' +
+                'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; max-width: 820px; margin: 0 auto; padding: 24px; color: #2D3748; background: #fff; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }' +
+                '@media print { body { padding: 0 !important; max-width: 100% !important; } .cot-print-bar { display: none !important; } }' +
+                'table.items-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 18px; border-radius: 8px; overflow: hidden; border: 1px solid #E2E8F0; }' +
+                'table.items-table th { background: #0A2540; color: #fff; padding: 10px 12px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }' +
+                'table.items-table td { padding: 10px 12px; font-size: 12.5px; border-bottom: 1px solid #EDF2F7; vertical-align: top; }' +
+                'table.items-table tr:last-child td { border-bottom: none; }' +
+                'table.items-table tr:nth-child(even) td { background-color: #F8FAFC; }' +
+                '</style></head><body>' +
+                '<div style="background: linear-gradient(135deg, #0A2540 0%, #1A446C 100%); color: #fff; padding: 26px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; box-shadow: 0 4px 12px rgba(10,37,64,0.12)">' +
+                '  <div>' + logoHtml + infoEmpresaHtml + '</div>' +
+                '  <div style="text-align: right; flex-shrink: 0">' +
+                '    <div style="font-size: 10.5px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 2px">Documento Comercial</div>' +
+                '    <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px">COTIZACIÓN</h1>' +
+                '    <div style="font-size: 16px; font-weight: 700; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 6px; margin-top: 6px; display: inline-block; letter-spacing: 0.5px">' + _e(c.numero) + '</div>' +
+                '    <div style="font-size: 12px; margin-top: 10px; opacity: 0.9; line-height: 1.6">' +
+                '      <strong>Fecha:</strong> ' + _fF(c.fecha) + '<br>' +
+                '      <strong>Válida hasta:</strong> ' + _fF(vd) + ' (' + (Number(c.validezDias) || 15) + ' días)<br>' +
+                '      <span style="display:inline-block;margin-top:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:' + estColor.bg + ';color:#fff;border:1px solid rgba(255,255,255,0.4)">' + _e(c.estado) + '</span>' +
+                '    </div>' +
+                '  </div>' +
+                '</div>' +
+                clienteHtml +
+                '<table class="items-table"><thead><tr>' +
+                '  <th style="width: 38px; text-align: center">#</th>' +
+                '  <th style="text-align: left">Descripción del Producto / Servicio</th>' +
+                '  <th style="width: 70px; text-align: center">Cant.</th>' +
+                '  <th style="width: 105px; text-align: right">Precio Unit.</th>' +
+                '  <th style="width: 75px; text-align: center">Desc.</th>' +
+                '  <th style="width: 110px; text-align: right">Total</th>' +
+                '</tr></thead><tbody>' + filas + '</tbody></table>' +
+                '<div style="display: flex; justify-content: flex-end; padding: 14px 0 16px">' +
+                '  <table style="width: 320px; border-collapse: collapse; font-size: 13px">' +
+                '    <tr><td style="padding: 6px 10px; color: #718096">Subtotal bruto</td><td style="padding: 6px 10px; text-align: right; font-weight: 500">' + _fQ(c.subtotal) + '</td></tr>' +
+                (c.descuento > 0 ? '    <tr><td style="padding: 6px 10px; color: #E53E3E">Descuento aplicado (' + (c.descuentoPct || 0) + '%)</td><td style="padding: 6px 10px; text-align: right; color: #E53E3E; font-weight: 500">- ' + _fQ(c.descuento) + '</td></tr>' : '') +
+                '    <tr><td style="padding: 6px 10px; color: #718096">IVA (' + (c.aplicaIVA ? (EM.ivaPct || 12) + '%' : 'Incluido / Exento') + ')</td><td style="padding: 6px 10px; text-align: right; font-weight: 500">' + _fQ(c.iva) + '</td></tr>' +
+                '    <tr style="border-top: 2px solid #0A2540"><td style="padding: 10px; font-size: 16px; font-weight: 800; color: #0A2540">TOTAL A PAGAR</td><td style="padding: 10px; text-align: right; font-size: 17px; font-weight: 800; color: #0A2540">' + _fQ(c.total) + '</td></tr>' +
+                '  </table>' +
+                '</div>' +
+                (c.condiciones ? '<div style="background: #F7FAFC; border: 1px solid #EDF2F7; border-radius: 8px; padding: 14px 18px; margin-top: 6px; font-size: 12px; color: #4A5568"><strong style="color: #2D3748; display: block; margin-bottom: 4px; font-size: 12.5px">Condiciones comerciales:</strong> ' + _e(c.condiciones) + '</div>' : '') +
+                (c.notas ? '<div style="background: #FFFDF5; border: 1px solid #FEF3C7; border-radius: 8px; padding: 14px 18px; margin-top: 10px; font-size: 12px; color: #92400E"><strong style="color: #78350F; display: block; margin-bottom: 4px; font-size: 12.5px">Notas adicionales:</strong> ' + _e(c.notas) + '</div>' : '') +
+                '<div style="margin-top: 36px; padding-top: 14px; border-top: 1px dashed #CBD5E0; text-align: center; font-size: 11px; color: #A0AEC0">' +
+                '  Generado por Azyvion CRM · ' + _e(EM.nombre) + (EM.sitio ? ' · ' + _e(EM.sitio) : '') + (EM.telefono ? ' · Tel: ' + _e(EM.telefono) : '') +
+                '</div>' +
+                '</body></html>';
             return{ok:true,html,numero:c.numero,cliente:c.cliente,correo:c.correo};
         }
         async function _enviarCotizacion(p,u){

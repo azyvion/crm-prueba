@@ -56,7 +56,9 @@ ALTER TABLE IF EXISTS "Organizations"
     ADD COLUMN IF NOT EXISTS fel_entorno TEXT DEFAULT 'Pruebas',
     ADD COLUMN IF NOT EXISTS fel_usuario_certificador TEXT,
     ADD COLUMN IF NOT EXISTS fel_api_key TEXT,
-    ADD COLUMN IF NOT EXISTS fel_frase_sat TEXT DEFAULT 'Sujeto a pagos trimestrales ISR';
+    ADD COLUMN IF NOT EXISTS fel_frase_sat TEXT DEFAULT 'Sujeto a pagos trimestrales ISR',
+    ADD COLUMN IF NOT EXISTS dias_vigencia_cotizacion INT DEFAULT 15,
+    ADD COLUMN IF NOT EXISTS pie_ticket TEXT;
 
 -- 4. EXTENSIÓN PARA LA TABLA Inventario (Fotos, Códigos, Precios Mayoristas y Sucursal)
 ALTER TABLE IF EXISTS "Inventario"
@@ -91,7 +93,26 @@ ALTER TABLE IF EXISTS "TransaccionesCRM"
 ALTER TABLE IF EXISTS "Usuarios"
     ADD COLUMN IF NOT EXISTS sucursal_id TEXT;
 
--- 8. BUCKETS DE STORAGE (Crear en panel de Supabase > Storage como públicos si se requiere subida directa)
+-- 8. EXTENSIÓN PARA LA TABLA Encuestas (Token público para compartir)
+ALTER TABLE IF EXISTS "encuestas"
+    ADD COLUMN IF NOT EXISTS token_publico TEXT;
+
+-- 9. POLÍTICAS RLS (Row Level Security) MULTITENANT
+-- Asegura que ningún usuario acceda a datos de otra organización
+DO $$
+BEGIN
+    -- Función auxiliar para obtener organization_id del usuario actual sin problemas de casteo de UUID
+    CREATE OR REPLACE FUNCTION public.current_org_id()
+    RETURNS TEXT AS $f$
+        SELECT organization_id::text 
+        FROM public."Usuarios" 
+        WHERE (auth_uid = auth.uid()::text OR id::text = auth.uid()::text)
+        LIMIT 1;
+    $f$ LANGUAGE sql STABLE SECURITY DEFINER;
+END $$;
+
+-- 10. BUCKETS DE STORAGE (Crear en panel de Supabase > Storage como públicos si se requiere subida directa)
 -- Buckets:
 --   - productos
 --   - logos-empresa
+

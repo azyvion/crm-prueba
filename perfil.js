@@ -310,6 +310,14 @@
         <div class="ajustes-row-label"><div class="ajustes-row-name">Webhook de envío de facturas/tickets</div><div class="ajustes-row-desc">Endpoint para enviar por correo el comprobante automático al cobrar</div></div>
         <div class="ajustes-row-control"><input class="form-input" id="orgWebhookCorreo" placeholder="https://hook.us1.make.com/..." /></div>
       </div>
+      <div class="ajustes-row">
+        <div class="ajustes-row-label"><div class="ajustes-row-name">Días de vigencia de cotización</div><div class="ajustes-row-desc">Número de días válida una cotización emitida (aplica automáticamente al crear una nueva)</div></div>
+        <div class="ajustes-row-control" style="max-width:120px"><input class="form-input" id="orgDiasVigenciaCot" type="number" min="1" max="365" placeholder="15" oninput="actualizarMembretePreview()"/></div>
+      </div>
+      <div class="ajustes-row" style="align-items:flex-start">
+        <div class="ajustes-row-label"><div class="ajustes-row-name">Pie de ticket POS</div><div class="ajustes-row-desc">Texto que aparece al final del ticket térmico (ej. mensaje de agradecimiento, política de cambios)</div></div>
+        <div class="ajustes-row-control"><textarea class="form-input" id="orgPieTicket" rows="2" style="resize:vertical" placeholder="Gracias por su compra — No se aceptan cambios ni devoluciones" oninput="actualizarMembretePreview()"></textarea></div>
+      </div>
 
       <!-- Vista previa en tiempo real de membrete y ticket -->
       <div class="ajustes-row" style="align-items:flex-start;flex-direction:column;gap:12px;border-top:1px solid var(--border);padding-top:20px;margin-top:10px">
@@ -359,6 +367,7 @@
               <span>TOTAL PAGADO</span>
               <span id="prevTicketTotal2">Q 150.00</span>
             </div>
+            <div id="prevTicketPie" style="border-top:1px dashed var(--border);margin-top:8px;padding-top:6px;text-align:center;font-size:9px;color:var(--text-muted);white-space:pre-line">Gracias por su compra</div>
           </div>
         </div>
       </div>
@@ -585,6 +594,8 @@
                     setVal('orgPaisCodigo', d.pais_codigo || 'GT');
                     setVal('orgTipoDocFiscal', d.tipo_documento_fiscal || 'NIT');
                     setVal('orgWebhookCorreo', d.webhook_correo_facturas || '');
+                    setVal('orgDiasVigenciaCot', d.dias_vigencia_cotizacion !== undefined ? d.dias_vigencia_cotizacion : 15);
+                    setVal('orgPieTicket', d.pie_ticket || '');
                     const chkFotos = document.getElementById('orgCatalogoFotos');
                     if (chkFotos) {
                         chkFotos.checked = d.catalogo_fotos_habilitado !== false && String(d.catalogo_fotos_habilitado) !== 'false';
@@ -681,6 +692,12 @@
             setT('prevTicketTotal', mon + ' 150.00');
             setT('prevTicketTotal2', mon + ' 150.00');
 
+            const pieText = (document.getElementById('orgPieTicket') || {}).value || 'Gracias por su compra';
+            setT('prevTicketPie', pieText);
+
+            const diasVig = (document.getElementById('orgDiasVigenciaCot') || {}).value || '15';
+            setT('prevCotVigencia', 'Vigencia: ' + diasVig + ' días');
+
             const prevLogo = document.getElementById('prevCotLogo');
             const orgPreview = document.getElementById('orgLogoPreview');
             if (prevLogo && orgPreview) {
@@ -741,6 +758,8 @@
                 tipo_documento_fiscal: (document.getElementById('orgTipoDocFiscal') || {}).value || 'NIT',
                 catalogo_fotos_habilitado: !!(document.getElementById('orgCatalogoFotos') && document.getElementById('orgCatalogoFotos').checked),
                 webhook_correo_facturas: (document.getElementById('orgWebhookCorreo') || {}).value || '',
+                dias_vigencia_cotizacion: Number((document.getElementById('orgDiasVigenciaCot') || {}).value) || 15,
+                pie_ticket: (document.getElementById('orgPieTicket') || {}).value || '',
                 ...felLocal
             };
 

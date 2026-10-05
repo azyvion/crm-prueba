@@ -445,9 +445,17 @@ window.handleSaveEncuesta = async function(m, saveBtn) {
                 showToast('Encuesta actualizada', '#30D158');
             } else {
                 payload.estado = 'Borrador';
+                const token = 'enc_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 9);
+                payload.token_publico = token;
                 const orgId = _encOrgId();
                 if (orgId) payload.organization_id = orgId;
-                const { error } = await _encSb().from('encuestas').insert(payload);
+                
+                let { error } = await _encSb().from('encuestas').insert(payload);
+                if (error && (error.code === '42703' || (error.message && error.message.includes('token_publico')))) {
+                    delete payload.token_publico;
+                    const r2 = await _encSb().from('encuestas').insert(payload);
+                    error = r2.error;
+                }
                 if (error) throw error;
                 showToast('Encuesta creada', '#30D158');
             }
@@ -464,27 +472,31 @@ window.handleSaveEncuesta = async function(m, saveBtn) {
 };
 
 /* ──────────────────────────────────────────────────────────────────
-   COMPARTIR URL PÚBLICA DE FORMULARIO DE ENCUESTA
+   COMPARTIR URL PÚBLICA DE FORMULARIO DE ENCUESTA (CON TOKEN PÚBLICO)
 ────────────────────────────────────────────────────────────────── */
 window.copiarLinkEncuesta = function(id) {
+    const e = _encuestas.find(x => String(x.id) === String(id));
+    const token = (e && e.token_publico) ? e.token_publico : id;
     const loc = window.location;
     const base = loc.origin + loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
-    const url = base + 'encuesta.html?id=' + encodeURIComponent(id);
+    const url = base + 'encuesta.html?token=' + encodeURIComponent(token);
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(url).then(function() {
             showToast('✓ Enlace público copiado al portapapeles', '#30D158');
         }).catch(function() {
-            prompt('Copia este enlace para compartir el formulario de la encuesta:', url);
+            prompt('Copia este enlace público para compartir la encuesta:', url);
         });
     } else {
-        prompt('Copia este enlace para compartir el formulario de la encuesta:', url);
+        prompt('Copia este enlace público para compartir la encuesta:', url);
     }
 };
 
 window.abrirLinkEncuesta = function(id) {
+    const e = _encuestas.find(x => String(x.id) === String(id));
+    const token = (e && e.token_publico) ? e.token_publico : id;
     const loc = window.location;
     const base = loc.origin + loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
-    window.open(base + 'encuesta.html?id=' + encodeURIComponent(id), '_blank');
+    window.open(base + 'encuesta.html?token=' + encodeURIComponent(token), '_blank');
 };
 
 /* ──────────────────────────────────────────────────────────────────
