@@ -1,16 +1,11 @@
 /* ═══════════════════════════════════════════════════════
-   ai.js — Asistente IA Multimodelo con Soporte Gratuito
-   Soporta: Google Gemini (Gratis), Claude y Endpoint Propio
-   Respeta estrictamente los roles y permisos del CRM
+   ai.js — Asistente IA Oficial CRM AZYVION
+   Motor exclusivo: Azyvion AI (https://azyvion-ai.onrender.com)
+   Streaming en tiempo real con estricto control de roles
 ═══════════════════════════════════════════════════════ */
 
 var _azAiOpen = false;
 var _azAiBusy = false;
-var _AZ_AI_PROVIDER_LS = 'azyvion_ai_provider';     // 'azyvion' | 'gemini' | 'custom' | 'claude'
-var _AZ_AI_GEMINI_KEY_LS = 'azyvion_gemini_api_key';
-var _AZ_AI_CLAUDE_KEY_LS = 'azyvion_claude_api_key';
-var _AZ_AI_CUSTOM_URL_LS = 'azyvion_ai_custom_url';
-var _AZ_AI_CUSTOM_KEY_LS = 'azyvion_ai_custom_key';
 var _AZ_AI_RENDER_URL = 'https://azyvion-ai.onrender.com/api/chat';
 
 function azAiToggle() {
@@ -18,113 +13,11 @@ function azAiToggle() {
     var panel = document.getElementById('azAiPanel');
     if (panel) panel.classList.toggle('open', _azAiOpen);
     if (_azAiOpen) {
-        _azAiCheckKey();
         setTimeout(function(){
             var inp = document.getElementById('azAiInput');
             if (inp) inp.focus();
         }, 250);
     }
-}
-
-function _azAiGetProvider() {
-    return localStorage.getItem(_AZ_AI_PROVIDER_LS) || 'azyvion';
-}
-
-function _azAiCheckKey() {
-    var provider = _azAiGetProvider();
-    var hasKey = false;
-    if (provider === 'azyvion') {
-        hasKey = true; // La IA nativa de Azyvion está disponible inmediatamente sin requerir claves al usuario
-    } else if (provider === 'gemini') {
-        hasKey = !!localStorage.getItem(_AZ_AI_GEMINI_KEY_LS);
-    } else if (provider === 'claude') {
-        hasKey = !!localStorage.getItem(_AZ_AI_CLAUDE_KEY_LS);
-    } else if (provider === 'custom') {
-        hasKey = !!localStorage.getItem(_AZ_AI_CUSTOM_URL_LS);
-    }
-    var banner = document.getElementById('azAiKeyBanner');
-    if (banner) {
-        banner.style.display = hasKey ? 'none' : 'block';
-        banner.innerHTML = '<strong>Configura tu IA:</strong> Haz clic para conectar ' +
-            (provider === 'azyvion' ? 'IA Nativa AZYVION' : provider === 'gemini' ? 'Google Gemini' : provider === 'claude' ? 'Claude' : 'IA Personalizada') +
-            ' <a href="javascript:void(0)" onclick="azAiOpenKeySetup()" style="text-decoration:underline;margin-left:4px">Configurar</a>';
-    }
-}
-
-function azAiOpenKeySetup() {
-    var cur = _azAiGetProvider();
-    var defaultOpt = cur === 'custom' ? '3' : cur === 'claude' ? '4' : cur === 'gemini' ? '2' : '1';
-    var prov = prompt(
-        'Elige el motor de Inteligencia Artificial para CRM AZYVION:\n' +
-        '1 = IA Nativa AZYVION (Recomendada - Conectada a tu backend propio)\n' +
-        '2 = Google Gemini Directo (API Key gratuita de aistudio.google.com)\n' +
-        '3 = Servidor Externo Propio (Webhook / URL Personalizada)\n' +
-        '4 = Anthropic Claude (API Key de console.anthropic.com)\n\n' +
-        'Ingresa 1, 2, 3 o 4:',
-        defaultOpt
-    );
-
-    if (prov === null) return;
-    prov = prov.trim();
-
-    if (prov === '1') {
-        localStorage.setItem(_AZ_AI_PROVIDER_LS, 'azyvion');
-        showToast('IA Nativa AZYVION activada como motor oficial', '#30D158');
-    } else if (prov === '2') {
-        localStorage.setItem(_AZ_AI_PROVIDER_LS, 'gemini');
-        var curKey = localStorage.getItem(_AZ_AI_GEMINI_KEY_LS) || '';
-        var key = prompt(
-            'Ingresa tu API Key de Google Gemini (100% GRATUITA):\n' +
-            'Puedes obtenerla gratis en: https://aistudio.google.com/app/apikey\n\n' +
-            'No requiere tarjeta de crédito y ofrece hasta 15 consultas por minuto gratis.',
-            curKey
-        );
-        if (key !== null) {
-            key = key.trim();
-            if (key) {
-                localStorage.setItem(_AZ_AI_GEMINI_KEY_LS, key);
-                showToast('Google Gemini configurado como IA gratuita', '#30D158');
-            } else {
-                localStorage.removeItem(_AZ_AI_GEMINI_KEY_LS);
-                showToast('API Key eliminada', '#FF9F0A');
-            }
-        }
-    } else if (prov === '3') {
-        localStorage.setItem(_AZ_AI_PROVIDER_LS, 'custom');
-        var curUrl = localStorage.getItem(_AZ_AI_CUSTOM_URL_LS) || '';
-        var url = prompt(
-            'Ingresa la URL del endpoint de tu servidor externo:\n(Ej: https://tu-servidor.com/api/ai o webhook)',
-            curUrl
-        );
-        if (url !== null) {
-            url = url.trim();
-            if (url) {
-                localStorage.setItem(_AZ_AI_CUSTOM_URL_LS, url);
-                var curTok = localStorage.getItem(_AZ_AI_CUSTOM_KEY_LS) || '';
-                var tok = prompt('Token / Clave de autorización (Opcional, dejar vacío si no requiere):', curTok);
-                if (tok !== null) localStorage.setItem(_AZ_AI_CUSTOM_KEY_LS, tok.trim());
-                showToast('Endpoint externo guardado', '#30D158');
-            } else {
-                localStorage.removeItem(_AZ_AI_CUSTOM_URL_LS);
-                showToast('Endpoint desactivado', '#FF9F0A');
-            }
-        }
-    } else if (prov === '4') {
-        localStorage.setItem(_AZ_AI_PROVIDER_LS, 'claude');
-        var curKey2 = localStorage.getItem(_AZ_AI_CLAUDE_KEY_LS) || '';
-        var key2 = prompt('Ingresa tu API Key de Anthropic (Claude):\nhttps://console.anthropic.com/', curKey2);
-        if (key2 !== null) {
-            key2 = key2.trim();
-            if (key2) {
-                localStorage.setItem(_AZ_AI_CLAUDE_KEY_LS, key2);
-                showToast('API Key de Claude guardada', '#30D158');
-            } else {
-                localStorage.removeItem(_AZ_AI_CLAUDE_KEY_LS);
-                showToast('API Key de Claude eliminada', '#FF9F0A');
-            }
-        }
-    }
-    _azAiCheckKey();
 }
 
 /**
@@ -229,21 +122,6 @@ function azAiSend(presetText) {
     var text = (presetText || (inp ? inp.value.trim() : '')).trim();
     if (!text) return;
 
-    var provider = _azAiGetProvider();
-    var apiKey = '';
-    var customUrl = '';
-
-    if (provider === 'gemini') {
-        apiKey = localStorage.getItem(_AZ_AI_GEMINI_KEY_LS) || '';
-        if (!apiKey) { azAiOpenKeySetup(); return; }
-    } else if (provider === 'claude') {
-        apiKey = localStorage.getItem(_AZ_AI_CLAUDE_KEY_LS) || '';
-        if (!apiKey) { azAiOpenKeySetup(); return; }
-    } else if (provider === 'custom') {
-        customUrl = localStorage.getItem(_AZ_AI_CUSTOM_URL_LS) || '';
-        if (!customUrl) { azAiOpenKeySetup(); return; }
-    }
-
     _azAiAddMsg(text, 'user');
     _azAiHistory.push({ role: 'user', content: text });
     if (inp) inp.value = '';
@@ -269,224 +147,131 @@ function azAiSend(presetText) {
 
     var onFail = function(err) {
         if (typingEl && typingEl.parentNode) typingEl.parentNode.removeChild(typingEl);
-        _azAiAddMsg('Error de conexión IA: ' + (err.message || String(err)) + '. Puedes reconfigurar la clave en el icono de ajustes.', 'bot');
+        _azAiAddMsg('Error de conexión con Azyvion AI: ' + (err.message || String(err)), 'bot');
         _azAiHistory.pop();
         _azAiBusy = false;
         if (sendBtn) sendBtn.disabled = false;
     };
 
-    // ── LLAMADA SEGÚN PROVEEDOR ──
-    if (provider === 'azyvion') {
-        // IA Nativa Oficial AZYVION — Conectada a Render (https://azyvion-ai.onrender.com)
-        var sseMessages = _azAiHistory.slice(-8).map(function(m){
-            return { role: m.role === 'bot' || m.role === 'assistant' ? 'assistant' : 'user', content: m.content };
-        });
+    // ── LLAMADA EXCLUSIVA A AZYVION AI (RENDER) ──
+    var sseMessages = _azAiHistory.slice(-8).map(function(m){
+        return { role: m.role === 'bot' || m.role === 'assistant' ? 'assistant' : 'user', content: m.content };
+    });
 
-        var callRenderWithRetry = function(retryCount) {
-            fetch(_AZ_AI_RENDER_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    messages: sseMessages,
-                    language: 'Spanish (es-GT)',
-                    projectContext: systemPrompt
-                })
+    var callRenderWithRetry = function(retryCount) {
+        fetch(_AZ_AI_RENDER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: sseMessages,
+                language: 'Spanish (es-GT)',
+                projectContext: systemPrompt
             })
-            .then(function(res) {
-                if (res.status === 503 && retryCount > 0) {
-                    // Render despertando (cold start)
-                    if (typingEl) typingEl.textContent = 'Iniciando Azyvion AI (servidor en reposo)…';
-                    setTimeout(function(){ callRenderWithRetry(retryCount - 1); }, 3000);
-                    return;
-                }
-                if (!res.ok) {
-                    throw new Error('Servidor Azyvion AI respondió con estado ' + res.status);
-                }
+        })
+        .then(function(res) {
+            if (res.status === 503 && retryCount > 0) {
+                // Servidor despertando (cold start)
+                if (typingEl) typingEl.textContent = 'Iniciando Azyvion AI (servidor en reposo)…';
+                setTimeout(function(){ callRenderWithRetry(retryCount - 1); }, 3000);
+                return;
+            }
+            if (!res.ok) {
+                throw new Error('Servidor Azyvion AI respondió con estado ' + res.status);
+            }
 
-                // Streaming SSE Reader
-                if (res.body && typeof res.body.getReader === 'function') {
-                    var reader = res.body.getReader();
-                    var decoder = new TextDecoder('utf-8');
-                    var buffer = '';
-                    var fullText = '';
+            // Streaming SSE Reader en tiempo real
+            if (res.body && typeof res.body.getReader === 'function') {
+                var reader = res.body.getReader();
+                var decoder = new TextDecoder('utf-8');
+                var buffer = '';
+                var fullText = '';
 
-                    function pump() {
-                        reader.read().then(function(result) {
-                            if (result.done) {
-                                onDone(fullText || 'Sin respuesta');
-                                return;
-                            }
-                            buffer += decoder.decode(result.value, { stream: true });
-                            var lines = buffer.split('\n');
-                            buffer = lines.pop();
+                function pump() {
+                    reader.read().then(function(result) {
+                        if (result.done) {
+                            onDone(fullText || 'Sin respuesta');
+                            return;
+                        }
+                        buffer += decoder.decode(result.value, { stream: true });
+                        var lines = buffer.split('\n');
+                        buffer = lines.pop();
 
-                            for (var i = 0; i < lines.length; i++) {
-                                var line = lines[i].trim();
-                                if (line.indexOf('data:') === 0) {
-                                    var dataStr = line.substring(5).trim();
-                                    if (dataStr) {
-                                        try {
-                                            var d = JSON.parse(dataStr);
-                                            if (d.text) {
-                                                fullText += d.text;
-                                                if (typingEl) {
-                                                    typingEl.classList.remove('typing');
-                                                    typingEl.textContent = fullText;
-                                                    var mEl = document.getElementById('azAiMsgs');
-                                                    if (mEl) mEl.scrollTop = mEl.scrollHeight;
-                                                }
-                                            }
-                                        } catch(e){}
-                                    }
-                                }
-                            }
-                            pump();
-                        }).catch(function(streamErr) {
-                            if (fullText) {
-                                onDone(fullText);
-                            } else {
-                                onFail(streamErr);
-                            }
-                        });
-                    }
-                    pump();
-                } else {
-                    // Fallback para navegadores sin ReadableStream en fetch
-                    res.text().then(function(raw) {
-                        var textAccum = '';
-                        var rLines = raw.split('\n');
-                        for (var j = 0; j < rLines.length; j++) {
-                            var rLine = rLines[j].trim();
-                            if (rLine.indexOf('data:') === 0) {
-                                var payload = rLine.substring(5).trim();
-                                if (payload) {
+                        for (var i = 0; i < lines.length; i++) {
+                            var line = lines[i].trim();
+                            if (line.indexOf('data:') === 0) {
+                                var dataStr = line.substring(5).trim();
+                                if (dataStr) {
                                     try {
-                                        var pObj = JSON.parse(payload);
-                                        if (pObj.text) textAccum += pObj.text;
+                                        var d = JSON.parse(dataStr);
+                                        if (d.text) {
+                                            fullText += d.text;
+                                            if (typingEl) {
+                                                typingEl.classList.remove('typing');
+                                                typingEl.textContent = fullText;
+                                                var mEl = document.getElementById('azAiMsgs');
+                                                if (mEl) mEl.scrollTop = mEl.scrollHeight;
+                                            }
+                                        }
                                     } catch(e){}
                                 }
                             }
                         }
-                        onDone(textAccum || raw);
-                    }).catch(onFail);
+                        pump();
+                    }).catch(function(streamErr) {
+                        if (fullText) {
+                            onDone(fullText);
+                        } else {
+                            onFail(streamErr);
+                        }
+                    });
                 }
-            })
-            .catch(function(err) {
-                console.warn('Fallback a respuesta asistida local:', err);
-                var pLower = text.toLowerCase();
-                var rol = (window._currentUserRole || window._rol || 'AGENTE').toUpperCase();
-                var esAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(rol);
-                var reply = '';
-
-                if (pLower.includes('pos') || pLower.includes('cobrar') || pLower.includes('caja')) {
-                    reply = 'En el **Punto de Venta (POS)** de AZYVION:\n• Puedes aperturar turno con monto inicial en efectivo.\n• Cobrar en efectivo con cálculo de vuelto automático, tarjeta o transferencia.\n• Cobrar cotizaciones aprobadas con 1 clic usando el botón "Cobrar en POS".\n• Realizar el arqueo y cierre de caja al finalizar la jornada.';
-                } else if (pLower.includes('cotiz') || pLower.includes('precio') || pLower.includes('iva')) {
-                    reply = 'Para las **Cotizaciones** en CRM AZYVION:\n• Los productos se toman del catálogo con descripción y precio bloqueados para proteger las tarifas.\n• El IVA se calcula automáticamente según la configuración de tu empresa (incluido o sobre el subtotal).\n• Tienes una **Vista previa interactiva** antes de guardar.\n• Solo los Administradores pueden editar o eliminar cotizaciones.';
-                } else if (pLower.includes('cliente') || pLower.includes('nit')) {
-                    reply = 'Para registrar un **Nuevo Cliente**:\n• Debes completar: Razón Social, NIT, Teléfono, Dirección, Ciudad, País y Fuente.\n• Puedes asignarle una lista de precio (**Público**, **Plata** u **Oro**) para aplicar tarifas preferenciales automáticas.';
-                } else if (pLower.includes('inventario') || pLower.includes('producto') || pLower.includes('sku')) {
-                    reply = 'En **Inventario / Producto**:\n• Todos los productos están unificados en un catálogo sin pestañas, con filtros por Marca, Línea y Familia.\n• El código SKU es obligatorio para control de inventario.\n• Puedes configurar precios por nivel y revisar alertas de stock bajo.';
-                } else if (!esAdmin && (pLower.includes('ganancia') || pLower.includes('total dinero') || pLower.includes('cartera') || pLower.includes('financiero'))) {
-                    reply = 'Por políticas de confidencialidad del CRM AZYVION, los reportes financieros globales están reservados exclusivamente para los Administradores.';
-                } else {
-                    reply = 'Hola. Soy el Asistente IA de CRM AZYVION. Puedo ayudarte con dudas sobre Punto de Venta (POS), cotizaciones, clientes, inventario o encuestas públicas. ¿En qué puedo orientarte hoy?';
-                }
-                onDone(reply);
-            });
-        };
-
-        callRenderWithRetry(1);
-
-    } else if (provider === 'gemini') {
-        // Google Gemini 1.5 Flash (Gratuito)
-        var contents = [];
-        var turns = _azAiHistory.slice(-8);
-        turns.forEach(function(t) {
-            contents.push({
-                role: t.role === 'assistant' ? 'model' : 'user',
-                parts: [{ text: t.content }]
-            });
-        });
-
-        var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + encodeURIComponent(apiKey);
-
-        fetch(geminiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                system_instruction: { parts: [{ text: systemPrompt }] },
-                contents: contents,
-                generationConfig: {
-                    maxOutputTokens: 600,
-                    temperature: 0.4
-                }
-            })
-        })
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-            if (data.error) {
-                onFail(new Error(data.error.message || JSON.stringify(data.error)));
-            } else if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-                var reply = data.candidates[0].content.parts.map(function(p){ return p.text; }).join('\n');
-                onDone(reply || 'Sin respuesta');
+                pump();
             } else {
-                onDone('No se obtuvo respuesta del modelo Gemini.');
+                // Fallback para navegadores sin ReadableStream
+                res.text().then(function(raw) {
+                    var textAccum = '';
+                    var rLines = raw.split('\n');
+                    for (var j = 0; j < rLines.length; j++) {
+                        var rLine = rLines[j].trim();
+                        if (rLine.indexOf('data:') === 0) {
+                            var payload = rLine.substring(5).trim();
+                            if (payload) {
+                                try {
+                                    var pObj = JSON.parse(payload);
+                                    if (pObj.text) textAccum += pObj.text;
+                                } catch(e){}
+                            }
+                        }
+                    }
+                    onDone(textAccum || raw);
+                }).catch(onFail);
             }
         })
-        .catch(onFail);
+        .catch(function(err) {
+            console.warn('Fallback a respuesta asistida local:', err);
+            var pLower = text.toLowerCase();
+            var rol = (window._currentUserRole || window._rol || 'AGENTE').toUpperCase();
+            var esAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(rol);
+            var reply = '';
 
-    } else if (provider === 'custom') {
-        // Endpoint propio / IA creada
-        var customTok = localStorage.getItem(_AZ_AI_CUSTOM_KEY_LS) || '';
-        var headers = { 'Content-Type': 'application/json' };
-        if (customTok) headers['Authorization'] = 'Bearer ' + customTok;
-
-        fetch(customUrl, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                system: systemPrompt,
-                messages: _azAiHistory.slice(-8),
-                prompt: text,
-                user: window._usuario || '',
-                role: window._currentUserRole || 'AGENTE'
-            })
-        })
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-            var reply = data.reply || data.response || data.text || (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || JSON.stringify(data);
+            if (pLower.includes('pos') || pLower.includes('cobrar') || pLower.includes('caja')) {
+                reply = 'En el **Punto de Venta (POS)** de AZYVION:\n• Puedes aperturar turno con monto inicial en efectivo.\n• Cobrar en efectivo con cálculo de vuelto automático, tarjeta o transferencia.\n• Cobrar cotizaciones aprobadas con 1 clic usando el botón "Cobrar en POS".\n• Realizar el arqueo y cierre de caja al finalizar la jornada.';
+            } else if (pLower.includes('cotiz') || pLower.includes('precio') || pLower.includes('iva')) {
+                reply = 'Para las **Cotizaciones** en CRM AZYVION:\n• Los productos se toman del catálogo con descripción y precio bloqueados para proteger las tarifas.\n• El IVA se calcula automáticamente según la configuración de tu empresa (incluido o sobre el subtotal).\n• Tienes una **Vista previa interactiva** antes de guardar.\n• Solo los Administradores pueden editar o eliminar cotizaciones.';
+            } else if (pLower.includes('cliente') || pLower.includes('nit')) {
+                reply = 'Para registrar un **Nuevo Cliente**:\n• Debes completar: Razón Social, NIT, Teléfono, Dirección, Ciudad, País y Fuente.\n• Puedes asignarle una lista de precio (**Público**, **Plata** u **Oro**) para aplicar tarifas preferenciales automáticas.';
+            } else if (pLower.includes('inventario') || pLower.includes('producto') || pLower.includes('sku')) {
+                reply = 'En **Inventario / Producto**:\n• Todos los productos están unificados en un catálogo sin pestañas, con filtros por Marca, Línea y Familia.\n• El código SKU es obligatorio para control de inventario.\n• Puedes configurar precios por nivel y revisar alertas de stock bajo.';
+            } else if (!esAdmin && (pLower.includes('ganancia') || pLower.includes('total dinero') || pLower.includes('cartera') || pLower.includes('financiero'))) {
+                reply = 'Por políticas de confidencialidad del CRM AZYVION, los reportes financieros globales están reservados exclusivamente para los Administradores.';
+            } else {
+                reply = 'Hola. Soy el Asistente IA de CRM AZYVION. Puedo ayudarte con dudas sobre Punto de Venta (POS), cotizaciones, clientes, inventario o encuestas públicas. ¿En qué puedo orientarte hoy?';
+            }
             onDone(reply);
-        })
-        .catch(onFail);
+        });
+    };
 
-    } else {
-        // Anthropic Claude
-        fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01',
-                'anthropic-dangerous-direct-browser-access': 'true'
-            },
-            body: JSON.stringify({
-                model: 'claude-haiku-4-5-20251001',
-                max_tokens: 600,
-                system: systemPrompt,
-                messages: _azAiHistory.slice(-10)
-            })
-        })
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-            if (data.error) {
-                onFail(new Error(data.error.message || JSON.stringify(data.error)));
-            } else {
-                var reply = data.content && data.content[0] && data.content[0].text || 'Sin respuesta';
-                onDone(reply);
-            }
-        })
-        .catch(onFail);
-    }
+    callRenderWithRetry(1);
 }
 
 /* Auto-resize textarea */
