@@ -295,8 +295,21 @@ function _actualizarSelectsFiltrosCatalogo() {
     </div>
     <div class="form-field"><label class="form-label">DESCRIPCIÓN (APARECE EN LA COTIZACIÓN)</label>
       <textarea class="form-input" id="mDesc" rows="2" style="resize:vertical" placeholder="Opcional">${escHtml(i.descripcion || '')}</textarea></div>
-    <div class="form-field"><label class="form-label">UNIDAD DE MEDIDA</label>
-      <input class="form-input" id="mUnidad" value="${escAttr(i.unidad || (esServicio ? 'Servicio' : 'Unidad'))}" placeholder="Unidad, Hora, Metro, Licencia…"/></div>
+    <div class="form-field"><label class="form-label">UNIDAD DE MEDIDA *</label>
+      <div style="display:flex;gap:8px">
+        <select class="form-select" id="mUnidadSel" onchange="const inp=document.getElementById('mUnidad'); if(this.value==='__custom__'){inp.style.display='block';inp.value='';inp.focus();}else{inp.style.display='none';inp.value=this.value;}">
+          <option value="Unidad" ${(i.unidad||'').toLowerCase()==='unidad'||(!i.unidad&&!esServicio)?'selected':''}>Unidad (Entera, no fraccionable)</option>
+          <option value="Kit" ${(i.unidad||'').toLowerCase()==='kit'?'selected':''}>Kit (Conjunto / Paquete)</option>
+          <option value="Milésimas" ${(i.unidad||'').toLowerCase()==='milésimas'||(i.unidad||'').toLowerCase()==='milesimas'?'selected':''}>Milésimas (Fracciones / Milésimas)</option>
+          <option value="Metro" ${(i.unidad||'').toLowerCase()==='metro'?'selected':''}>Metro (Longitud)</option>
+          <option value="Servicio" ${(i.unidad||'').toLowerCase()==='servicio'||(!i.unidad&&esServicio)?'selected':''}>Servicio</option>
+          <option value="__custom__" ${i.unidad&&!['unidad','kit','milésimas','milesimas','metro','servicio'].includes((i.unidad||'').toLowerCase())?'selected':''}>Otra unidad…</option>
+        </select>
+        <input class="form-input" id="mUnidad" value="${escAttr(i.unidad || (esServicio ? 'Servicio' : 'Unidad'))}"
+               placeholder="Escribe la unidad de medida…"
+               style="display:${i.unidad&&!['unidad','kit','milésimas','milesimas','metro','servicio'].includes((i.unidad||'').toLowerCase())?'block':'none'};flex:1"/>
+      </div>
+    </div>
     <div id="mStockWrap" style="${esServicio ? 'display:none' : ''}">
       <div class="form-field"><label class="form-label">UNIDADES EN STOCK</label>
         <input class="form-input" id="mUnid" type="number" min="0" value="${i.unidades !== undefined ? i.unidades : 0}"/></div>

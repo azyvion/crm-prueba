@@ -455,14 +455,20 @@ let _cotClienteListaPrecio = 'Publico';
                 let n = Number(valor);
                 if (isNaN(n) || n < 0) n = 0;
                 if (campo === 'descuentoPct' && n > 100) n = 100;
-                // Si la unidad de medida es 'Unidad', forzar enteros
+                // Si la unidad de medida es 'Unidad', forzar números enteros (no 1.5 de unidad)
                 if (campo === 'cantidad') {
-                    const um = (it.unidadMedida || '').toLowerCase();
-                    if (um === 'unidad') n = Math.round(n);
+                    const um = (it.unidadMedida || '').toLowerCase().trim();
+                    if (um === 'unidad') {
+                        n = Math.round(n);
+                        if (n < 1 && valor !== '' && Number(valor) > 0) n = 1;
+                    }
                 }
                 it[campo] = n;
             } else {
                 it[campo] = valor;
+                if (campo === 'unidadMedida' && (valor || '').toLowerCase().trim() === 'unidad') {
+                    it.cantidad = Math.max(1, Math.round(it.cantidad || 1));
+                }
             }
             const tot = document.getElementById('cotRowTot-' + idx);
             if (tot) tot.textContent = cotQ(cotTotalLinea(it));
@@ -498,27 +504,46 @@ let _cotClienteListaPrecio = 'Publico';
                 }
                 const um = it.unidadMedida || (it.tipo === 'Servicio' ? 'Servicio' : 'Unidad');
                 const esUnidad = (um.toLowerCase() === 'unidad');
-                const stepVal = esUnidad ? '1' : '0.01';
-                const minVal = esUnidad ? '1' : '0.01';
+                const esMilesimas = (um.toLowerCase() === 'milésimas' || um.toLowerCase() === 'milesimas');
+                const stepVal = esUnidad ? '1' : (esMilesimas ? '0.001' : '0.01');
+                const minVal = esUnidad ? '1' : (esMilesimas ? '0.001' : '0.01');
+                const esItemInventario = !!it.itemId;
+
                 return `
         <div class="cot-item-row">
           <div>
-            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
-              <div style="font-size:10px;text-transform:uppercase;color:var(--text-muted);font-weight:700;margin-bottom:3px">Descripción</div>
+            ${esItemInventario ? `
+            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:6px;user-select:none;cursor:not-allowed" title="Ficha de producto bloqueada">
+              <div style="font-size:10px;text-transform:uppercase;color:var(--text-muted);font-weight:700;margin-bottom:2px;display:flex;align-items:center;gap:4px">
+                <svg style="width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Ficha de Producto · Descripción bloqueada
+              </div>
               <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${escHtml(it.descripcion || 'Sin descripción')}</div>
-            </div>
+            </div>` : `
+            <input class="form-input" id="cotDesc-${idx}" value="${escAttr(it.descripcion || '')}"
+                   placeholder="Descripción del concepto o servicio manual…"
+                   oninput="cotSet(${idx},'descripcion',this.value)"
+                   style="height:36px;font-size:13px;margin-bottom:6px" />
+            `}
             <textarea class="cot-item-detalle" rows="1" placeholder="Detalle opcional de entrega / especificación"
                       oninput="cotSet(${idx},'detalle',this.value)">${escHtml(it.detalle || '')}</textarea>
-            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
-              <span class="tag ${it.tipo === 'Servicio' ? 'tag-servicio' : 'tag-producto'}" style="margin-top:6px;display:inline-block">${it.tipo}</span>
-              <span class="tag tag-gray" style="margin-top:6px;display:inline-block;font-size:10px">${escHtml(um)}</span>
+            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:6px">
+              <span class="tag ${it.tipo === 'Servicio' ? 'tag-servicio' : 'tag-producto'}">${it.tipo}</span>
+              <select class="form-select mini-select" style="width:auto;height:24px;padding:1px 8px;font-size:11px;font-weight:600;border-radius:6px"
+                      onchange="cotSet(${idx},'unidadMedida',this.value); cotRenderItems();" title="Unidad de medida">
+                <option value="Unidad" ${um.toLowerCase()==='unidad'?'selected':''}>Unidad</option>
+                <option value="Kit" ${um.toLowerCase()==='kit'?'selected':''}>Kit</option>
+                <option value="Milésimas" ${esMilesimas?'selected':''}>Milésimas</option>
+                ${!['unidad','kit','milésimas','milesimas'].includes(um.toLowerCase()) ? `<option value="${escAttr(um)}" selected>${escHtml(um)}</option>` : ''}
+              </select>
               ${stockHtml}
             </div>
           </div>
           <input class="form-input" type="number" min="${minVal}" step="${stepVal}" style="height:34px;font-size:13px"
                  value="${it.cantidad}" oninput="cotSet(${idx},'cantidad',this.value)" title="Unidad de medida: ${escAttr(um)}"/>
-          <input class="form-input" type="number" min="0" step="0.01" style="height:34px;font-size:13px;background:var(--bg-secondary);cursor:not-allowed;font-weight:600"
-                 value="${it.precioUnit}" readonly tabindex="-1" title="El precio unitario no es editable"/>
+          <input class="form-input" type="number" min="0" step="0.01"
+                 style="height:34px;font-size:13px;font-weight:600;${esItemInventario ? 'background:var(--bg-secondary);cursor:not-allowed;' : ''}"
+                 value="${it.precioUnit}" ${esItemInventario ? 'readonly tabindex="-1" title="El precio unitario del inventario no es editable"' : `oninput="cotSet(${idx},'precioUnit',this.value)" title="Precio unitario"`}/>
           <div class="cot-item-total" id="cotRowTot-${idx}">${cotQ(cotTotalLinea(it))}</div>
           <button class="cot-item-del" title="Quitar ítem" onclick="cotEliminarItem(${idx})">&times;</button>
         </div>`;
@@ -593,8 +618,8 @@ let _cotClienteListaPrecio = 'Publico';
             }
         }
 
-        /* ── Vista previa antes de guardar ─────────────────────── */
-        function cotAbrirVistaPrevia(onConfirmar) {
+        /* ── Vista previa de la verdadera cotización ───────────── */
+        function cotAbrirVistaPrevia() {
             const cliente = (v('cotCliente') || '').trim();
             if (!cliente) { showToast('El nombre del cliente es requerido', '#FF9F0A'); return; }
 
@@ -605,7 +630,8 @@ let _cotClienteListaPrecio = 'Publico';
                     descripcion: String(it.descripcion || '').trim(),
                     detalle: String(it.detalle || '').trim(),
                     cantidad: Number(it.cantidad) || 0,
-                    precioUnit: Number(it.precioUnit) || 0
+                    precioUnit: Number(it.precioUnit) || 0,
+                    unidadMedida: it.unidadMedida || (it.tipo === 'Servicio' ? 'Servicio' : 'Unidad')
                 }))
                 .filter(it => it.descripcion && it.cantidad > 0);
 
@@ -613,96 +639,124 @@ let _cotClienteListaPrecio = 'Publico';
 
             const t = cotCalcularTotales();
             const emp = _cotEmpresa || (window.EMPRESA || {});
+            const mon = 'Q';
+            const _fQ = n => mon + ' ' + Number(n || 0).toLocaleString('es-GT', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            const M = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+            const _fF = val => { const d = new Date(val); return isNaN(d.getTime()) ? val : d.getDate() + ' de ' + M[d.getMonth()] + ' de ' + d.getFullYear(); };
+            const fechaCot = v('cotFecha') || cotHoyISO();
+            const validezDias = Number(v('cotValidez')) || 15;
+            const vd = new Date(fechaCot); vd.setDate(vd.getDate() + validezDias);
 
-            const itemsRows = items.map((it, idx) => {
-                const origItem = _cotItems[idx];
-                const um = (origItem && origItem.unidadMedida) || (it.tipo === 'Servicio' ? 'Servicio' : 'Unidad');
-                return `
-                <tr style="border-bottom:1px solid var(--border)">
-                    <td style="padding:10px 8px;font-size:13px">
-                        <div style="font-weight:600">${escHtml(it.descripcion)}</div>
-                        ${it.detalle ? `<div style="font-size:11.5px;color:var(--text-secondary)">${escHtml(it.detalle)}</div>` : ''}
-                    </td>
-                    <td style="padding:10px 8px;text-align:center;font-size:13px">${it.cantidad} ${escHtml(um)}</td>
-                    <td style="padding:10px 8px;text-align:right;font-size:13px">${cotQ(it.precioUnit)}</td>
-                    <td style="padding:10px 8px;text-align:right;font-size:13px;font-weight:700">${cotQ(cotR2(it.cantidad * it.precioUnit))}</td>
-                </tr>
-            `}).join('');
+            const logoHtml = emp.logoUrl
+                ? '<img src="' + escAttr(emp.logoUrl) + '" alt="' + escAttr(emp.nombre) + '" style="max-height:64px;max-width:200px;object-fit:contain;background:#fff;border-radius:6px;padding:4px 8px">'
+                : '<div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-.5px">' + escHtml(emp.nombre || 'Azyvion CRM') + '</div>';
 
-            const previewHtml = `
-            <div style="max-height:75vh;overflow-y:auto;padding:4px">
-                <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px">
-                        <div>
-                            <div style="font-size:16px;font-weight:800;color:var(--text-primary)">${escHtml(emp.nombre || 'Mi Empresa')}</div>
-                            <div style="font-size:12px;color:var(--text-secondary)">NIT: ${escHtml(emp.nit || 'C/F')} · Tel: ${escHtml(emp.telefono || '—')}</div>
-                        </div>
-                        <div style="text-align:right">
-                            <span class="tag tag-borrador" style="font-size:11px">VISTA PREVIA</span>
-                            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Fecha: ${escHtml(v('cotFecha') || cotHoyISO())}</div>
-                        </div>
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12.5px">
-                        <div><strong>Cliente:</strong> ${escHtml(cliente)}</div>
-                        <div><strong>Razón Social:</strong> ${escHtml(v('cotEmpresa') || '—')}</div>
-                        <div><strong>Teléfono:</strong> ${escHtml(v('cotTelefono') || '—')}</div>
-                        <div><strong>Validez:</strong> ${v('cotValidez') || 15} días</div>
-                        ${v('cotDireccion') ? `<div style="grid-column:1/-1"><strong>Dirección:</strong> ${escHtml(v('cotDireccion'))}</div>` : ''}
-                    </div>
-                </div>
+            const filas = items.map((it, idx) => {
+                const totalLinea = cotR2(it.cantidad * it.precioUnit);
+                return '<tr style="border-bottom:1px solid #f0f0f0">' +
+                    '<td style="padding:10px 8px;text-align:center;color:#888;font-size:13px">' + (idx + 1) + '</td>' +
+                    '<td style="padding:10px 8px"><strong style="color:#111">' + escHtml(it.descripcion) + '</strong>' +
+                    (it.detalle ? '<br><small style="color:#888">' + escHtml(it.detalle) + '</small>' : '') + '</td>' +
+                    '<td style="padding:10px 8px;text-align:center">' + it.cantidad + ' <small style="color:#888">' + escHtml(it.unidadMedida) + '</small></td>' +
+                    '<td style="padding:10px 8px;text-align:right">' + _fQ(it.precioUnit) + '</td>' +
+                    '<td style="padding:10px 8px;text-align:right;font-weight:700;color:#0A2540">' + _fQ(totalLinea) + '</td>' +
+                    '</tr>';
+            }).join('');
 
-                <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
-                    <thead>
-                        <tr style="border-bottom:1.5px solid var(--border);text-align:left;font-size:11px;text-transform:uppercase;color:var(--text-muted)">
-                            <th style="padding:6px 8px">Descripción</th>
-                            <th style="padding:6px 8px;text-align:center">Cant.</th>
-                            <th style="padding:6px 8px;text-align:right">P. Unitario</th>
-                            <th style="padding:6px 8px;text-align:right">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>${itemsRows}</tbody>
-                </table>
+            const html = `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vista Previa · Cotización</title>
+<style>
+@page { size: letter portrait; margin: 12mm 14mm; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; max-width: 820px; margin: 0 auto; padding: 24px; color: #2D3748; background: #fff; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+@media print { body { padding: 0 !important; max-width: 100% !important; } .cot-print-bar { display: none !important; } }
+table.items-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 18px; border-radius: 8px; overflow: hidden; border: 1px solid #E2E8F0; }
+table.items-table th { background: #0A2540; color: #fff; padding: 10px 12px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+table.items-table td { padding: 10px 12px; font-size: 12.5px; border-bottom: 1px solid #EDF2F7; vertical-align: top; }
+table.items-table tr:last-child td { border-bottom: none; }
+table.items-table tr:nth-child(even) td { background-color: #F8FAFC; }
+.cot-print-bar { position:fixed; top:14px; right:14px; display:flex; gap:8px; z-index:99; background:rgba(0,0,0,0.85); padding:6px 10px; border-radius:10px; }
+.cot-print-bar button { padding:8px 14px; border:0; border-radius:7px; font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit; }
+</style>
+</head><body>
+<div class="cot-print-bar">
+  <button onclick="window.print()" style="background:#0A84FF;color:#fff">Imprimir / Guardar PDF</button>
+  <button onclick="window.close()" style="background:#fff;color:#111">Cerrar</button>
+</div>
+<div style="background: linear-gradient(135deg, #0A2540 0%, #1A446C 100%); color: #fff; padding: 26px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; box-shadow: 0 4px 12px rgba(10,37,64,0.12)">
+  <div>
+    ${logoHtml}
+    <div style="font-size:11px;margin-top:8px;opacity:.85;line-height:1.6">
+      ${emp.nit && emp.nit !== 'C/F' ? 'NIT: ' + escHtml(emp.nit) + '<br>' : ''}
+      ${emp.telefono ? 'Tel: ' + escHtml(emp.telefono) + '<br>' : ''}
+      ${emp.correo ? escHtml(emp.correo) : ''}
+    </div>
+  </div>
+  <div style="text-align: right; flex-shrink: 0">
+    <div style="font-size: 10.5px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.8; margin-bottom: 2px">Documento Comercial</div>
+    <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px">COTIZACIÓN</h1>
+    <div style="font-size: 14px; font-weight: 700; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 6px; margin-top: 6px; display: inline-block">VISTA PREVIA</div>
+    <div style="font-size: 12px; margin-top: 10px; opacity: 0.9; line-height: 1.6">
+      <strong>Fecha:</strong> ${_fF(fechaCot)}<br>
+      <strong>Válida hasta:</strong> ${_fF(vd)} (${validezDias} días)<br>
+      <span style="display:inline-block;margin-top:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(255,255,255,0.2);color:#fff">${escHtml(v('cotEstado') || 'Borrador')}</span>
+    </div>
+  </div>
+</div>
 
-                <div style="margin-left:auto;max-width:320px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 16px">
-                    <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0">
-                        <span>Subtotal</span>
-                        <span>${cotQ(t.subtotal)}</span>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--text-secondary)">
-                        <span>IVA (${t.ivaPct}% ${t.ivaMod === 'sobre' ? 'sobre subtotal' : 'incluido'})</span>
-                        <span>${cotQ(t.iva)}</span>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;border-top:1.5px solid var(--border);margin-top:8px;padding-top:8px">
-                        <span>Total</span>
-                        <span style="color:var(--accent)">${cotQ(t.total)}</span>
-                    </div>
-                </div>
+<div style="margin:20px 0 0;padding:16px 20px;background:#f7f9fc;border-left:4px solid #0A2540;border-radius:0 6px 6px 0">
+  <div style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#666;margin-bottom:6px">COTIZACIÓN PARA</div>
+  <div style="font-weight:700;font-size:15px;color:#0A2540">${escHtml(cliente)}</div>
+  ${v('cotEmpresa') ? `<div style="color:#444;font-size:13px">${escHtml(v('cotEmpresa'))}</div>` : ''}
+  ${v('cotDireccion') ? `<div style="color:#666;font-size:12px">${escHtml(v('cotDireccion'))}</div>` : ''}
+  ${(v('cotTelefono') || v('cotCorreo')) ? `<div style="color:#666;font-size:12px">${escHtml(v('cotTelefono') || '')}${(v('cotTelefono') && v('cotCorreo')) ? ' · ' : ''}${escHtml(v('cotCorreo') || '')}</div>` : ''}
+</div>
 
-                ${v('cotCondiciones') ? `
-                <div style="margin-top:16px;padding:12px;background:var(--bg-secondary);border-radius:8px;font-size:11.5px;color:var(--text-secondary)">
-                    <strong>Términos y Condiciones:</strong><br>${escHtml(v('cotCondiciones'))}
-                </div>` : ''}
+<table class="items-table">
+  <thead>
+    <tr>
+      <th style="width: 38px; text-align: center">#</th>
+      <th style="text-align: left">Descripción del Producto / Servicio</th>
+      <th style="width: 90px; text-align: center">Cant.</th>
+      <th style="width: 105px; text-align: right">Precio Unit.</th>
+      <th style="width: 110px; text-align: right">Total</th>
+    </tr>
+  </thead>
+  <tbody>${filas}</tbody>
+</table>
 
-                <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:14px;border-top:1px solid var(--border)">
-                    <button class="btn-cancel" onclick="closeModal()">← Volver a editar</button>
-                    <button class="btn-save" id="cotModalConfirmBtn" style="background:#30D158">✓ Confirmar y Guardar</button>
-                </div>
-            </div>`;
+<div style="display: flex; justify-content: flex-end; padding: 14px 0 16px">
+  <table style="width: 320px; border-collapse: collapse; font-size: 13px">
+    <tr><td style="padding: 6px 10px; color: #718096">Subtotal</td><td style="padding: 6px 10px; text-align: right; font-weight: 500">${_fQ(t.subtotal)}</td></tr>
+    <tr><td style="padding: 6px 10px; color: #718096">IVA (${t.ivaPct}% ${t.ivaMod === 'sobre' ? 'sobre subtotal' : 'incluido'})</td><td style="padding: 6px 10px; text-align: right; font-weight: 500">${_fQ(t.iva)}</td></tr>
+    <tr style="border-top: 2px solid #0A2540"><td style="padding: 10px; font-size: 16px; font-weight: 800; color: #0A2540">TOTAL</td><td style="padding: 10px; text-align: right; font-size: 17px; font-weight: 800; color: #0A2540">${_fQ(t.total)}</td></tr>
+  </table>
+</div>
 
-            openModal('Vista previa de la cotización', previewHtml);
-            const saveBtn = document.getElementById('modalSaveBtn');
-            if (saveBtn) saveBtn.style.display = 'none';
+${v('cotCondiciones') ? `
+<div style="margin-top:20px;padding:14px 18px;background:#f7f9fc;border-radius:8px;border:1px solid #E2E8F0">
+  <strong style="font-size:12px;text-transform:uppercase;color:#0A2540;letter-spacing:0.5px">Términos y Condiciones:</strong>
+  <div style="font-size:12.5px;color:#4A5568;margin-top:6px;white-space:pre-wrap;line-height:1.6">${escHtml(v('cotCondiciones'))}</div>
+</div>` : ''}
 
-            const confirmBtn = document.getElementById('cotModalConfirmBtn');
-            if (confirmBtn) {
-                confirmBtn.onclick = function() {
-                    closeModal();
-                    if (typeof onConfirmar === 'function') onConfirmar();
-                };
+${v('cotNotas') ? `
+<div style="margin-top:12px;padding:12px 18px;background:#fff8ee;border-radius:8px;border:1px solid #fed7aa;font-size:12px;color:#9a3412">
+  <strong>Notas:</strong> ${escHtml(v('cotNotas'))}
+</div>` : ''}
+
+</body></html>`;
+
+            const win = window.open('', '_blank');
+            if (win) {
+                win.document.open();
+                win.document.write(html);
+                win.document.close();
+            } else {
+                showToast('Permite las ventanas emergentes en tu navegador para ver la cotización.', '#FF9F0A');
             }
         }
 
-        /* ── Guardar ───────────────────────────────────────────── */
+        /* ── Guardar directamente y cerrar ─────────────────────── */
         function guardarCotizacion(forzarDirecto) {
             const cliente = (v('cotCliente') || '').trim();
             if (!cliente) { showToast('El nombre del cliente es requerido', '#FF9F0A'); return; }
@@ -720,14 +774,6 @@ let _cotClienteListaPrecio = 'Publico';
                 .filter(it => it.descripcion && it.cantidad > 0);
 
             if (!items.length) { showToast('Agrega al menos un ítem con descripción y cantidad', '#FF9F0A'); return; }
-
-            // Si es una creación nueva y no se ha visto la vista previa forzada, abrir vista previa antes de guardar
-            if (!forzarDirecto && !_cotEditId) {
-                cotAbrirVistaPrevia(function() {
-                    guardarCotizacion(true);
-                });
-                return;
-            }
 
             const btn = document.getElementById('cotSaveBtn');
             const t = cotCalcularTotales();
