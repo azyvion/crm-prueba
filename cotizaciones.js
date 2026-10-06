@@ -427,14 +427,15 @@ let _cotClienteListaPrecio = 'Publico';
                 detalle: i.descripcion || '',
                 cantidad: 1,
                 precioUnit: precio,
-                descuentoPct: 0
+                descuentoPct: 0,
+                unidadMedida: i.unidad || (i.tipo === 'Servicio' ? 'Servicio' : 'Unidad')
             });
             sel.value = '';
             cotRenderItems();
         }
 
         function cotAgregarLibre() {
-            _cotItems.push({itemId: '', tipo: 'Servicio', descripcion: '', detalle: '', cantidad: 1, precioUnit: 0, descuentoPct: 0});
+            _cotItems.push({itemId: '', tipo: 'Servicio', descripcion: '', detalle: '', cantidad: 1, precioUnit: 0, descuentoPct: 0, unidadMedida: 'Servicio'});
             cotRenderItems();
             setTimeout(function () {
                 const el = document.getElementById('cotDesc-' + (_cotItems.length - 1));
@@ -454,6 +455,11 @@ let _cotClienteListaPrecio = 'Publico';
                 let n = Number(valor);
                 if (isNaN(n) || n < 0) n = 0;
                 if (campo === 'descuentoPct' && n > 100) n = 100;
+                // Si la unidad de medida es 'Unidad', forzar enteros
+                if (campo === 'cantidad') {
+                    const um = (it.unidadMedida || '').toLowerCase();
+                    if (um === 'unidad') n = Math.round(n);
+                }
                 it[campo] = n;
             } else {
                 it[campo] = valor;
@@ -490,20 +496,27 @@ let _cotClienteListaPrecio = 'Publico';
                         }
                     }
                 }
+                const um = it.unidadMedida || (it.tipo === 'Servicio' ? 'Servicio' : 'Unidad');
+                const esUnidad = (um.toLowerCase() === 'unidad');
+                const stepVal = esUnidad ? '1' : '0.01';
+                const minVal = esUnidad ? '1' : '0.01';
                 return `
         <div class="cot-item-row">
           <div>
-            <input class="form-input" id="cotDesc-${idx}" style="height:34px;font-size:13px;background:var(--bg-secondary);cursor:not-allowed;font-weight:600"
-                   value="${escAttr(it.descripcion || '')}" placeholder="Descripción del ítem" readonly tabindex="-1" title="La descripción no es editable"/>
+            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+              <div style="font-size:10px;text-transform:uppercase;color:var(--text-muted);font-weight:700;margin-bottom:3px">Descripción</div>
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${escHtml(it.descripcion || 'Sin descripción')}</div>
+            </div>
             <textarea class="cot-item-detalle" rows="1" placeholder="Detalle opcional de entrega / especificación"
                       oninput="cotSet(${idx},'detalle',this.value)">${escHtml(it.detalle || '')}</textarea>
-            <div style="display:flex;align-items:center;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
               <span class="tag ${it.tipo === 'Servicio' ? 'tag-servicio' : 'tag-producto'}" style="margin-top:6px;display:inline-block">${it.tipo}</span>
+              <span class="tag tag-gray" style="margin-top:6px;display:inline-block;font-size:10px">${escHtml(um)}</span>
               ${stockHtml}
             </div>
           </div>
-          <input class="form-input" type="number" min="0.01" step="0.01" style="height:34px;font-size:13px"
-                 value="${it.cantidad}" oninput="cotSet(${idx},'cantidad',this.value)"/>
+          <input class="form-input" type="number" min="${minVal}" step="${stepVal}" style="height:34px;font-size:13px"
+                 value="${it.cantidad}" oninput="cotSet(${idx},'cantidad',this.value)" title="Unidad de medida: ${escAttr(um)}"/>
           <input class="form-input" type="number" min="0" step="0.01" style="height:34px;font-size:13px;background:var(--bg-secondary);cursor:not-allowed;font-weight:600"
                  value="${it.precioUnit}" readonly tabindex="-1" title="El precio unitario no es editable"/>
           <div class="cot-item-total" id="cotRowTot-${idx}">${cotQ(cotTotalLinea(it))}</div>
@@ -601,17 +614,20 @@ let _cotClienteListaPrecio = 'Publico';
             const t = cotCalcularTotales();
             const emp = _cotEmpresa || (window.EMPRESA || {});
 
-            const itemsRows = items.map((it, idx) => `
+            const itemsRows = items.map((it, idx) => {
+                const origItem = _cotItems[idx];
+                const um = (origItem && origItem.unidadMedida) || (it.tipo === 'Servicio' ? 'Servicio' : 'Unidad');
+                return `
                 <tr style="border-bottom:1px solid var(--border)">
                     <td style="padding:10px 8px;font-size:13px">
                         <div style="font-weight:600">${escHtml(it.descripcion)}</div>
                         ${it.detalle ? `<div style="font-size:11.5px;color:var(--text-secondary)">${escHtml(it.detalle)}</div>` : ''}
                     </td>
-                    <td style="padding:10px 8px;text-align:center;font-size:13px">${it.cantidad}</td>
+                    <td style="padding:10px 8px;text-align:center;font-size:13px">${it.cantidad} ${escHtml(um)}</td>
                     <td style="padding:10px 8px;text-align:right;font-size:13px">${cotQ(it.precioUnit)}</td>
                     <td style="padding:10px 8px;text-align:right;font-size:13px;font-weight:700">${cotQ(cotR2(it.cantidad * it.precioUnit))}</td>
                 </tr>
-            `).join('');
+            `}).join('');
 
             const previewHtml = `
             <div style="max-height:75vh;overflow-y:auto;padding:4px">
@@ -740,9 +756,14 @@ let _cotClienteListaPrecio = 'Publico';
                 if (!r || !r.ok) { showToast((r && r.error) || 'No se pudo guardar', '#FF453A'); return; }
                 closeCotBuilder();
                 showToast(_cotEditId ? 'Cotización actualizada' : 'Cotización ' + (r.numero || '') + ' creada', '#30D158');
+                const savedId = r.id || (_cotEditId);
                 _cotEditId = null;
                 loadCotizaciones();
                 loadActividad();
+                // Abrir automáticamente la vista previa real (PDF) de la cotización guardada
+                if (savedId && typeof verCotizacion === 'function') {
+                    setTimeout(function() { verCotizacion(savedId); }, 400);
+                }
             };
             const fail = function (e) {
                 if (btn) { btn.disabled = false; btn.textContent = textoOriginal; }

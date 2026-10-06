@@ -325,6 +325,12 @@ function renderOverview() {
             window._ovGreeting();
             // Actualizar el saludo cada minuto
             setInterval(window._ovGreeting, 60000);
+            // Auto-refrescar datos cada 60 segundos sin necesidad de botón
+            setInterval(function() {
+                if (typeof refreshCurrent === 'function') {
+                    refreshCurrent();
+                }
+            }, 60000);
         }, 100);
     });
 
