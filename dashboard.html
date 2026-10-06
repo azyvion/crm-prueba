@@ -317,12 +317,12 @@
                     <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
                 </svg>
             </div>
-            <button class="topbar-btn" id="mainCta" onclick="ctaAction()">
+            <button class="topbar-btn" id="mainCta" onclick="ctaAction()" style="display:none">
                 <svg viewBox="0 0 24 24">
                     <line x1="12" y1="5" x2="12" y2="19" />
                     <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
-                <span id="ctaLabel">Nuevo cliente</span>
+                <span id="ctaLabel">Nuevo</span>
             </button>
         </div>
 
@@ -478,9 +478,9 @@
                         <div style="margin-top:16px">
                             <div class="section-title" style="margin-bottom:10px">Acciones rápidas</div>
                             <div id="ovQuickActions" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-                                <button class="ov-quick-btn" onclick="showPage('clientes',document.getElementById('nav-clientes')); ctaAction()">
-                                    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-                                    Nuevo cliente
+                                <button class="ov-quick-btn" onclick="showPage('pos',document.getElementById('nav-pos'))">
+                                    <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                                    Punto de Venta POS
                                 </button>
                                 <button class="ov-quick-btn" onclick="showPage('prospectos',document.getElementById('nav-prospectos')); ctaAction()">
                                     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
@@ -2336,27 +2336,27 @@
 
             <div class="cot-items-head">
                 <div>Descripción</div><div>Cantidad</div><div>P. unitario</div>
-                <div>Desc. %</div><div style="text-align:right">Total</div><div></div>
+                <div style="text-align:right">Total</div><div></div>
             </div>
             <div id="cotItemsWrap">
                 <div class="cot-item-empty">Aún no has agregado ítems.</div>
             </div>
 
+            <input type="hidden" id="cotDescuento" value="0" />
+
             <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:18px;align-items:flex-start">
                 <div style="flex:1;min-width:260px">
-                    <div class="form-field">
-                        <label class="form-label">DESCUENTO GENERAL (%)</label>
-                        <input class="form-input" id="cotDescuento" type="number" min="0" max="100" step="0.01" value="0" oninput="cotRecalcular()" />
-                    </div>
-                    <label class="cot-check" style="margin-top:6px">
-                        <input type="checkbox" id="cotIVA" onchange="cotRecalcular()" />
-                        Agregar IVA (12%) sobre el subtotal
+                    <label class="cot-check" style="margin-top:6px;display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600">
+                        <input type="checkbox" id="cotIVA" onchange="cotRecalcular()" checked />
+                        <span>Aplicar impuesto / IVA de la empresa</span>
                     </label>
+                    <div id="cotIvaInfo" style="font-size:12px;color:var(--text-secondary);margin-top:8px;background:var(--bg-secondary);padding:10px 14px;border-radius:9px;border:1px solid var(--border)">
+                        Cargando política fiscal de la empresa…
+                    </div>
                 </div>
                 <div class="cot-tot-box">
                     <div class="cot-tot-row"><span>Subtotal</span><span id="cotSubtotal">Q 0.00</span></div>
-                    <div class="cot-tot-row"><span>Descuento</span><span class="neg" id="cotDescMonto">Q 0.00</span></div>
-                    <div class="cot-tot-row"><span>IVA</span><span id="cotIvaMonto">Incluido</span></div>
+                    <div class="cot-tot-row"><span>IVA (<span id="cotIvaLabel">12%</span>)</span><span id="cotIvaMonto">Q 0.00</span></div>
                     <div class="cot-tot-row final"><span>Total</span><span id="cotTotal">Q 0.00</span></div>
                 </div>
             </div>
@@ -2375,9 +2375,13 @@
         </div>
 
         <div class="cot-builder-foot">
-            <div style="font-size:12px;color:var(--text-secondary)" id="cotBuilderHint">Los totales se calculan automáticamente.</div>
+            <div style="font-size:12px;color:var(--text-secondary)" id="cotBuilderHint">Los precios y subtotales se calculan automáticamente.</div>
             <div style="display:flex;gap:10px">
                 <button class="btn-cancel" onclick="closeCotBuilder()">Cancelar</button>
+                <button class="btn-ghost" type="button" onclick="cotAbrirVistaPrevia(function(){ guardarCotizacion(true); })" style="display:flex;align-items:center;gap:6px">
+                    <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Vista previa
+                </button>
                 <button class="btn-save" id="cotSaveBtn" onclick="guardarCotizacion()">Guardar cotización</button>
             </div>
         </div>
@@ -2449,7 +2453,7 @@
         let _usuario = '';
 
         const PAGE_TITLES = {overview: 'Inicio', empleados: 'Empleados', pos: 'Punto de Venta (POS)', clientes: 'Clientes', prospectos: 'Prospectos', ficha: 'Ficha', cotizaciones: 'Cotizaciones', inventario: 'Inventario', 'crear-producto': 'Crear producto', categorias: 'Categorías', 'catalogo-marcas': 'Marcas', 'catalogo-lineas': 'Líneas', 'catalogo-familias': 'Familias', 'catalogo-unidades': 'Unidades de negocio', 'catalogo-tipos': 'Tipos de producto', encuestas: 'Encuestas', usuarios: 'Usuarios', contabilidad: 'Contabilidad', perfil: 'Ajustes', suscripciones: 'Suscripciones', 'sub-empresas': 'Empresas', 'sub-planes': 'Planes', 'sub-pagos': 'Pagos'};
-        const CTA_LABELS = {overview: 'Nuevo cliente', empleados: 'Nuevo empleado', pos: 'Guardar venta', clientes: 'Nuevo cliente', prospectos: 'Nuevo prospecto', cotizaciones: 'Nueva cotización', inventario: 'Nuevo ítem', 'crear-producto': 'Nuevo producto', categorias: 'Nueva categoría', 'catalogo-marcas': 'Nueva marca', 'catalogo-lineas': 'Nueva línea', 'catalogo-familias': 'Nueva familia', 'catalogo-unidades': 'Nueva unidad de negocio', 'catalogo-tipos': 'Nuevo tipo de producto', encuestas: 'Nueva encuesta', usuarios: 'Nuevo usuario', contabilidad: 'Nueva cuenta bancaria', perfil: '', suscripciones: '', 'sub-empresas': 'Nueva empresa', 'sub-planes': 'Nuevo plan', 'sub-pagos': ''};
+        const CTA_LABELS = {overview: '', empleados: 'Nuevo empleado', pos: 'Guardar venta', clientes: 'Nuevo cliente', prospectos: 'Nuevo prospecto', cotizaciones: 'Nueva cotización', inventario: 'Nuevo ítem', 'crear-producto': 'Nuevo producto', categorias: 'Nueva categoría', 'catalogo-marcas': 'Nueva marca', 'catalogo-lineas': 'Nueva línea', 'catalogo-familias': 'Nueva familia', 'catalogo-unidades': 'Nueva unidad de negocio', 'catalogo-tipos': 'Nuevo tipo de producto', encuestas: 'Nueva encuesta', usuarios: 'Nuevo usuario', contabilidad: 'Nueva cuenta bancaria', perfil: '', suscripciones: '', 'sub-empresas': 'Nueva empresa', 'sub-planes': 'Nuevo plan', 'sub-pagos': ''};
 
         const ETAPAS = ['Nuevo', 'Contactado', 'Calificado', 'Propuesta', 'Negociación', 'Perdido'];
         const ORIGENES = ['Referido', 'Sitio web', 'Llamada fría', 'Evento', 'Redes sociales', 'Otro'];
@@ -2621,10 +2625,24 @@
                     }).deleteCliente(m.id);
                 } else {
                     const nombre = document.getElementById('mNombre').value.trim();
-                    if (!nombre) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('El nombre es requerido', '#FF9F0A'); return;}
-                    const data = {nombre, empresa: v('mEmpresa'), segmento: v('mSegmento'), correo: v('mCorreo'),
-                                  telefono: v('mTelefono'), direccion: v('mDireccion'),
-                                  estado: v('mEstado'), valorTotal: v('mValor')};
+                    if (!nombre) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('El nombre comercial es requerido', '#FF9F0A'); return;}
+                    const razonSocial = v('mEmpresa');
+                    if (!razonSocial) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('La razón social es obligatoria', '#FF9F0A'); return;}
+                    const nit = v('mNit');
+                    if (!nit) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('El NIT es obligatorio', '#FF9F0A'); return;}
+                    const telefono = v('mTelefono');
+                    if (!telefono) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('El teléfono general es obligatorio', '#FF9F0A'); return;}
+                    const direccion = v('mDireccion');
+                    if (!direccion) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('La dirección es obligatoria', '#FF9F0A'); return;}
+                    const ciudad = v('mCiudad');
+                    if (!ciudad) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('La ciudad es obligatoria', '#FF9F0A'); return;}
+                    const pais = v('mPais');
+                    if (!pais) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('El país es obligatorio', '#FF9F0A'); return;}
+                    const fuente = v('mFuente');
+                    if (!fuente) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('La fuente / origen es obligatoria', '#FF9F0A'); return;}
+                    const data = {nombre, empresa: razonSocial, nit: nit, segmento: v('mSegmento'), correo: v('mCorreo'),
+                                  telefono: telefono, direccion: direccion, ciudad: ciudad, pais: pais, fuente: fuente,
+                                  estado: v('mEstado'), valorTotal: v('mValor'), lista_precio: v('mListaPrecio')};
                     const fn = m.action === 'add'
                         ? (cb => window.api.withSuccessHandler(cb).addCliente(data))
                         : (cb => window.api.withSuccessHandler(cb).updateCliente(m.id, data));
@@ -2652,9 +2670,17 @@
                 else {
                     const nombre = document.getElementById('pNombre').value.trim();
                     if (!nombre) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('El nombre es requerido', '#FF9F0A'); return;}
+                    const empresa = v('pEmpresa');
+                    if (!empresa) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('La empresa es obligatoria', '#FF9F0A'); return;}
+                    const telefono = v('pTelefono');
+                    if (!telefono) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('El teléfono es obligatorio', '#FF9F0A'); return;}
+                    const direccion = v('pDireccion');
+                    if (!direccion) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('La dirección es obligatoria', '#FF9F0A'); return;}
+                    const origen = v('pOrigen');
+                    if (!origen) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('El origen es obligatorio', '#FF9F0A'); return;}
                     const data = {
-                        nombre, empresa: v('pEmpresa'), segmento: v('pSegmento'), correo: v('pCorreo'),
-                        telefono: v('pTelefono'), direccion: v('pDireccion'), origen: v('pOrigen'),
+                        nombre, empresa: empresa, segmento: v('pSegmento'), correo: v('pCorreo'),
+                        telefono: telefono, direccion: direccion, origen: origen,
                         etapa: v('pEtapa'), valorEstimado: v('pValor'), probabilidad: v('pProb'), notas: v('pNotas')
                     };
                     const cb = done(m.action === 'add' ? 'Prospecto creado' : 'Prospecto actualizado', '#30D158');
@@ -2672,6 +2698,8 @@
                 } else {
                     const prod = document.getElementById('mProd').value.trim();
                     if (!prod) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('El nombre del ítem es requerido', '#FF9F0A'); return;}
+                    const skuVal = v('mSku');
+                    if (!skuVal) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('El código / SKU es obligatorio', '#FF9F0A'); return;}
                     const chkServ = document.getElementById('mEsServicio');
                     const esServ  = !!(chkServ && chkServ.checked);
                     const chkAct  = document.getElementById('mActivo');
@@ -4119,7 +4147,7 @@ function _ovApplyRoles() {
     var qaGrid = document.getElementById('ovQuickActions');
     if (!qaGrid) return;
     var acciones = [
-        { label: 'Nuevo cliente',   icon: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>', fn: "showPage('clientes',document.getElementById('nav-clientes')); ctaAction()", show: true },
+        { label: 'Punto de Venta POS', icon: '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>', fn: "showPage('pos',document.getElementById('nav-pos'))", show: true },
         { label: 'Nuevo prospecto', icon: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>', fn: "showPage('prospectos',document.getElementById('nav-prospectos')); ctaAction()", show: puedeProspectos },
         { label: 'Cotización',      icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>', fn: "showPage('cotizaciones',document.getElementById('nav-cotizaciones')); ctaAction()", show: puedeCotizaciones },
         { label: 'Nuevo ítem',      icon: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>', fn: "showPage('inventario',document.getElementById('nav-inventario')); ctaAction()", show: puedeInventario },

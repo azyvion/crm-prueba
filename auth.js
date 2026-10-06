@@ -154,18 +154,29 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             return{ok:true,data:data||[]};
         }
         async function _addCliente(p,u){
-            if(!p.nombre)return{ok:false,error:'El nombre es requerido.'};
+            if(!p.nombre)return{ok:false,error:'El nombre comercial es requerido.'};
+            if(!p.empresa)return{ok:false,error:'La razón social es obligatoria.'};
+            if(!p.nit)return{ok:false,error:'El NIT es obligatorio.'};
+            if(!p.telefono)return{ok:false,error:'El teléfono general es obligatorio.'};
+            if(!p.direccion)return{ok:false,error:'La dirección es obligatoria.'};
+            if(!p.ciudad)return{ok:false,error:'La ciudad es obligatoria.'};
+            if(!p.pais)return{ok:false,error:'El país es obligatorio.'};
+            if(!p.fuente)return{ok:false,error:'La fuente / origen es obligatoria.'};
             const org = _getEffectiveOrgId() || _currentOrgId;
             const C=['#0A84FF','#30D158','#FF9F0A','#BF5AF2','#FF453A','#5e5ce6','#8E8E93','#32ADE6'];
             const r={
                 id:_uuid(),
                 nombre:p.nombre,
                 empresa:p.empresa||'',
+                nit:p.nit||'',
                 segmento:p.segmento||'Estándar',
                 lista_precio:p.lista_precio||'Publico',
                 correo:p.correo||'',
                 telefono:p.telefono||'',
                 direccion:p.direccion||'',
+                ciudad:p.ciudad||'',
+                pais:p.pais||'',
+                fuente:p.fuente||'',
                 estado:p.estado||'Activo',
                 valorTotal:Number(p.valorTotal)||0,
                 color:C[Math.floor(Math.random()*C.length)],
@@ -181,6 +192,10 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
         async function _updateCliente(id,p,u){
             const org = _getEffectiveOrgId();
             const up = {nombre:p.nombre,empresa:p.empresa,segmento:p.segmento,correo:p.correo,telefono:p.telefono,direccion:p.direccion,estado:p.estado,valorTotal:Number(p.valorTotal)||0};
+            if (p.nit !== undefined) up.nit = p.nit;
+            if (p.ciudad !== undefined) up.ciudad = p.ciudad;
+            if (p.pais !== undefined) up.pais = p.pais;
+            if (p.fuente !== undefined) up.fuente = p.fuente;
             if (p.lista_precio !== undefined) up.lista_precio = p.lista_precio;
             let q = _sb.from('Clientes').update(up).eq('id',id);
             if (org) q = q.eq('organization_id', org);
@@ -213,9 +228,13 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
         }
         async function _addProspecto(p,u){
             if(!p.nombre)return{ok:false,error:'El nombre es requerido.'};
+            if(!p.empresa)return{ok:false,error:'La empresa es requerida.'};
+            if(!p.telefono)return{ok:false,error:'El teléfono es requerido.'};
+            if(!p.direccion)return{ok:false,error:'La dirección es requerida.'};
+            if(!p.origen)return{ok:false,error:'El origen es requerido.'};
             const org = _getEffectiveOrgId() || _currentOrgId;
             const C=['#0A84FF','#30D158','#FF9F0A','#BF5AF2','#FF453A','#5e5ce6','#8E8E93','#32ADE6'];
-            const r={id:_uuid(),nombre:p.nombre,empresa:p.empresa||'',segmento:p.segmento||'Estándar',correo:p.correo||'',telefono:p.telefono||'',direccion:p.direccion||'',origen:p.origen||'Otro',etapa:p.etapa||'Nuevo',valorEstimado:Number(p.valorEstimado)||0,probabilidad:Number(p.probabilidad)||50,notas:p.notas||'',color:C[Math.floor(Math.random()*C.length)],fechaReg:new Date().toISOString(),organization_id:org};
+            const r={id:_uuid(),nombre:p.nombre,empresa:p.empresa||'',segmento:p.segmento||'Estándar',correo:p.correo||'',telefono:p.telefono||'',direccion:p.direccion||'',origen:p.origen||'Referido',etapa:p.etapa||'Nuevo',valorEstimado:Number(p.valorEstimado)||0,probabilidad:Number(p.probabilidad)||50,notas:p.notas||'',color:C[Math.floor(Math.random()*C.length)],fechaReg:new Date().toISOString(),organization_id:org};
             const{error}=await _sb.from('Prospectos').insert(r);
             if(error)return{ok:false,error:error.message};
             return{ok:true,id:r.id};
@@ -276,6 +295,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
         }
         async function _addInventario(p,u){
             if(!p.producto)return{ok:false,error:'El nombre del ítem es requerido.'};
+            if(!p.sku)return{ok:false,error:'El código / SKU es obligatorio.'};
             const org=p.organization_id||_getEffectiveOrgId()||_currentOrgId;
             if(!org)return{ok:false,error:'No se pudo determinar la empresa del ítem.'};
             const t=p.tipo==='Servicio'?'Servicio':'Producto';
@@ -323,6 +343,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if (org) qEx = qEx.eq('organization_id', org);
             const{data:ex}=await qEx.single();
             if(!ex)return{ok:false,error:'Ítem no encontrado.'};
+            if(p.sku !== undefined && !String(p.sku).trim()) return {ok:false, error:'El código / SKU es obligatorio.'};
             const t=p.tipo!==undefined?(p.tipo==='Servicio'?'Servicio':'Producto'):(ex.tipo==='Servicio'?'Servicio':'Producto');
             const un=t==='Servicio'?0:Number(p.unidades!==undefined?p.unidades:ex.unidades)||0;
             const m=t==='Servicio'?0:Number(p.stockMax!==undefined?p.stockMax:ex.stockMax)||1;
@@ -737,6 +758,8 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 try { extraLocal = JSON.parse(localStorage.getItem('azyvion_org_extra') || '{}'); } catch(e) {}
                 const resData = data ? {
                     ...data,
+                    iva_pct: data.iva_pct !== undefined ? data.iva_pct : (extraLocal.iva_pct !== undefined ? extraLocal.iva_pct : 12),
+                    iva_modalidad: data.iva_modalidad || extraLocal.iva_modalidad || 'incluido',
                     dias_vigencia_cotizacion: data.dias_vigencia_cotizacion !== undefined ? data.dias_vigencia_cotizacion : (extraLocal.dias_vigencia_cotizacion !== undefined ? extraLocal.dias_vigencia_cotizacion : 15),
                     pie_ticket: data.pie_ticket !== undefined ? data.pie_ticket : (extraLocal.pie_ticket || '')
                 } : null;
@@ -756,6 +779,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if (p.sitio !== undefined) up.sitio = String(p.sitio).trim();
             if (p.moneda !== undefined) up.moneda = String(p.moneda).trim();
             if (p.iva_pct !== undefined) up.iva_pct = Number(p.iva_pct) || 12;
+            if (p.iva_modalidad !== undefined) up.iva_modalidad = String(p.iva_modalidad).trim();
             if (p.condiciones_default !== undefined) up.condiciones_default = String(p.condiciones_default).trim();
             if (p.prefijo_cotizacion !== undefined) up.prefijo_cotizacion = String(p.prefijo_cotizacion).trim();
             if (p.prefijo_ticket !== undefined) up.prefijo_ticket = String(p.prefijo_ticket).trim();
@@ -779,6 +803,8 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
 
             try {
                 localStorage.setItem('azyvion_org_extra', JSON.stringify({
+                    iva_pct: up.iva_pct !== undefined ? up.iva_pct : 12,
+                    iva_modalidad: up.iva_modalidad || 'incluido',
                     dias_vigencia_cotizacion: up.dias_vigencia_cotizacion !== undefined ? up.dias_vigencia_cotizacion : 15,
                     pie_ticket: up.pie_ticket !== undefined ? up.pie_ticket : ''
                 }));
@@ -990,6 +1016,9 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
         }
 
         async function _updateCotizacion(p, u) {
+            if (!['Admin','ADMIN','SUPER_ADMIN'].includes(_currentUserRole)) {
+                return {ok: false, error: 'Solo los administradores pueden editar cotizaciones.'};
+            }
             if (!p.id) return {ok: false, error: 'ID requerido.'};
             const items = _normItems(p.items);
             if (!items.length) return {ok: false, error: 'Agrega al menos un ítem.'};
@@ -1032,6 +1061,9 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
         }
 
         async function _deleteCotizacion(p, u) {
+            if (!['Admin','ADMIN','SUPER_ADMIN'].includes(_currentUserRole)) {
+                return {ok: false, error: 'Solo los administradores pueden eliminar cotizaciones.'};
+            }
             const orgId = _getEffectiveOrgId();
             let qi = _sb.from('CotizacionItems').delete().eq('cotizacionId', p.id);
             let qc = _sb.from('Cotizaciones').delete().eq('id', p.id);
@@ -2453,7 +2485,9 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
 
             // ── 2. Inicializar UI con datos locales SIN esperar al backend ──
             _rol     = sessLocal.rol    || '';
-            _usuario = sessLocal.nombre || '';
+            _usuario = sessLocal.nombre || sessLocal.usuario || '';
+            window._usuario = _usuario;
+            window._rol     = _rol;
             // Derivar _currentUserRole desde el rol legacy o session
             _currentUserRole = {
                 'Admin':       'ADMIN',

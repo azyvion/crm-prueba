@@ -10,10 +10,16 @@ window._ovGreeting = function _ovGreeting() {
     var h = new Date().getHours();
     var saludo = h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
     var emoji  = h < 12 ? '🌤️' : h < 19 ? '☀️' : '🌙';
-    var nombre = (window._usuario || '').split(' ')[0] || 'Usuario';
+    var rawNombre = '';
+    try {
+        var ss = JSON.parse(localStorage.getItem('azyvion_session') || '{}');
+        rawNombre = ss.nombre || ss.usuario || '';
+    } catch(e){}
+    if (!rawNombre) rawNombre = window._usuario || (typeof _usuario !== 'undefined' ? _usuario : '') || '';
+    var primerNombre = (rawNombre.trim().split(/\s+/)[0]) || 'Usuario';
     var grEl   = document.getElementById('ovGreeting');
     var subEl  = document.getElementById('ovGreetingSub');
-    if (grEl) grEl.textContent = saludo + ', ' + nombre + ' ' + emoji;
+    if (grEl) grEl.textContent = saludo + ', ' + primerNombre + ' ' + emoji;
     if (subEl) {
         var now = new Date();
         var dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];

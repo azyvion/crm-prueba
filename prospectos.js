@@ -279,19 +279,19 @@
             return `
     <div class="form-field"><label class="form-label">NOMBRE COMPLETO *</label><input class="form-input" id="pNombre" value="${escAttr(p.nombre)}" placeholder="Ej. Diego Herrera" required/></div>
     <div class="form-row">
-      <div class="form-field"><label class="form-label">EMPRESA</label><input class="form-input" id="pEmpresa" value="${escAttr(p.empresa)}" placeholder="Ej. Herrera & Asociados"/></div>
+      <div class="form-field"><label class="form-label">EMPRESA *</label><input class="form-input" id="pEmpresa" value="${escAttr(p.empresa)}" placeholder="Ej. Herrera & Asociados" required/></div>
       <div class="form-field"><label class="form-label">SEGMENTO</label>
         <select class="form-select" id="pSegmento">${opt(SEGMENTOS, p.segmento || 'Estándar')}</select>
       </div>
     </div>
     <div class="form-row">
       <div class="form-field"><label class="form-label">CORREO</label><input class="form-input" id="pCorreo" type="email" value="${escAttr(p.correo)}" placeholder="correo@empresa.com"/></div>
-      <div class="form-field"><label class="form-label">TELÉFONO</label><input class="form-input" id="pTelefono" value="${escAttr(p.telefono)}" placeholder="+502 0000 0000"/></div>
+      <div class="form-field"><label class="form-label">TELÉFONO *</label><input class="form-input" id="pTelefono" value="${escAttr(p.telefono)}" placeholder="+502 0000 0000" required/></div>
     </div>
-    <div class="form-field"><label class="form-label">DIRECCIÓN</label><input class="form-input" id="pDireccion" value="${escAttr(p.direccion)}" placeholder="Zona, calle, referencia"/></div>
+    <div class="form-field"><label class="form-label">DIRECCIÓN *</label><input class="form-input" id="pDireccion" value="${escAttr(p.direccion)}" placeholder="Zona, calle, referencia" required/></div>
     <div class="form-row">
-      <div class="form-field"><label class="form-label">ORIGEN</label>
-        <select class="form-select" id="pOrigen">${opt(ORIGENES, p.origen || 'Referido')}</select>
+      <div class="form-field"><label class="form-label">ORIGEN *</label>
+        <select class="form-select" id="pOrigen" required>${opt(ORIGENES, p.origen || 'Referido')}</select>
       </div>
       <div class="form-field"><label class="form-label">ETAPA</label>
         <select class="form-select" id="pEtapa">${opt(ETAPAS, p.etapa || 'Nuevo')}</select>

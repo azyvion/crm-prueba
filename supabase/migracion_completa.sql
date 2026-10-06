@@ -22,13 +22,25 @@ ALTER TABLE IF EXISTS public."Organizations"
     ADD COLUMN IF NOT EXISTS fel_entorno TEXT DEFAULT 'Pruebas',
     ADD COLUMN IF NOT EXISTS fel_usuario_certificador TEXT,
     ADD COLUMN IF NOT EXISTS fel_api_key TEXT,
-    ADD COLUMN IF NOT EXISTS fel_frase_sat TEXT DEFAULT 'Sujeto a pagos trimestrales ISR';
+    ADD COLUMN IF NOT EXISTS fel_frase_sat TEXT DEFAULT 'Sujeto a pagos trimestrales ISR',
+    ADD COLUMN IF NOT EXISTS iva_pct NUMERIC(5,2) DEFAULT 12.00,
+    ADD COLUMN IF NOT EXISTS iva_modalidad TEXT DEFAULT 'incluido';
 
--- 2. EXTENSIÓN PARA LA TABLA Clientes (Listas de Precio: Público, Plata, Oro)
+-- 2. EXTENSIÓN PARA LA TABLA Clientes (Listas de Precio, NIT, Ubicación, Origen)
 ALTER TABLE IF EXISTS public."Clientes"
     ADD COLUMN IF NOT EXISTS lista_precio TEXT DEFAULT 'Publico',
     ADD COLUMN IF NOT EXISTS nit TEXT DEFAULT 'C/F',
+    ADD COLUMN IF NOT EXISTS direccion TEXT,
+    ADD COLUMN IF NOT EXISTS ciudad TEXT,
+    ADD COLUMN IF NOT EXISTS pais TEXT,
+    ADD COLUMN IF NOT EXISTS fuente TEXT,
     ADD COLUMN IF NOT EXISTS sucursal_id TEXT,
+    ADD COLUMN IF NOT EXISTS organization_id TEXT;
+
+-- 2.1 EXTENSIÓN PARA LA TABLA Prospectos (Dirección, Origen y Multitenant)
+ALTER TABLE IF EXISTS public."Prospectos"
+    ADD COLUMN IF NOT EXISTS direccion TEXT,
+    ADD COLUMN IF NOT EXISTS origen TEXT,
     ADD COLUMN IF NOT EXISTS organization_id TEXT;
 
 -- 3. EXTENSIÓN PARA LA TABLA Inventario (Precios por Nivel, Códigos y Clasificación)

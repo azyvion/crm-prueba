@@ -57,6 +57,8 @@ ALTER TABLE IF EXISTS "Organizations"
     ADD COLUMN IF NOT EXISTS fel_usuario_certificador TEXT,
     ADD COLUMN IF NOT EXISTS fel_api_key TEXT,
     ADD COLUMN IF NOT EXISTS fel_frase_sat TEXT DEFAULT 'Sujeto a pagos trimestrales ISR',
+    ADD COLUMN IF NOT EXISTS iva_pct NUMERIC(5,2) DEFAULT 12.00,
+    ADD COLUMN IF NOT EXISTS iva_modalidad TEXT DEFAULT 'incluido',
     ADD COLUMN IF NOT EXISTS dias_vigencia_cotizacion INT DEFAULT 15,
     ADD COLUMN IF NOT EXISTS pie_ticket TEXT;
 
@@ -74,11 +76,20 @@ ALTER TABLE IF EXISTS "Inventario"
     ADD COLUMN IF NOT EXISTS unidad_negocio_id TEXT,
     ADD COLUMN IF NOT EXISTS tipo_producto_id TEXT;
 
--- 5. EXTENSIÓN PARA LA TABLA Clientes (Precios Diferenciados, NIT y Sucursal)
+-- 5. EXTENSIÓN PARA LA TABLA Clientes (Precios Diferenciados, NIT, Ubicación y Origen)
 ALTER TABLE IF EXISTS "Clientes"
     ADD COLUMN IF NOT EXISTS lista_precio TEXT DEFAULT 'Publico',
     ADD COLUMN IF NOT EXISTS nit TEXT,
+    ADD COLUMN IF NOT EXISTS direccion TEXT,
+    ADD COLUMN IF NOT EXISTS ciudad TEXT,
+    ADD COLUMN IF NOT EXISTS pais TEXT,
+    ADD COLUMN IF NOT EXISTS fuente TEXT,
     ADD COLUMN IF NOT EXISTS sucursal_id TEXT;
+
+-- 5.1 EXTENSIÓN PARA LA TABLA Prospectos (Dirección y Origen)
+ALTER TABLE IF EXISTS "Prospectos"
+    ADD COLUMN IF NOT EXISTS direccion TEXT,
+    ADD COLUMN IF NOT EXISTS origen TEXT;
 
 -- 6. EXTENSIÓN PARA LA TABLA Transacciones / Contabilidad (Sucursal y Caja)
 ALTER TABLE IF EXISTS "Transacciones"

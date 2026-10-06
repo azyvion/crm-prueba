@@ -130,8 +130,9 @@ let _cotClienteListaPrecio = 'Publico';
             <button class="section-action" onclick="duplicarCotizacion('${c.id}')" title="Crear copia idéntica">Duplicar</button>
             ${c.estado !== 'Aprobada' ? `<button class="section-action" style="color:var(--accent);font-weight:600" onclick="convertirCotizacionAVenta('${c.id}')" title="Convertir a Venta / Descontar stock">Vender</button>
             <button class="section-action" style="color:var(--success);font-weight:600" onclick="cargarCotizacionEnPos('${c.id}')" title="Cargar directamente en POS para cobrar">Cobrar en POS</button>` : ''}
+            ${((typeof esAdmin === 'function' && esAdmin()) || ['Admin','ADMIN','SUPER_ADMIN'].includes((window._currentUserRole || window._rol || '').toUpperCase())) ? `
             <button class="section-action" onclick="editarCotizacion('${c.id}')">Editar</button>
-            <button class="btn-danger-sm" onclick="confirmDeleteCot('${c.id}','${escAttr(c.numero)}')">Eliminar</button>
+            <button class="btn-danger-sm" onclick="confirmDeleteCot('${c.id}','${escAttr(c.numero)}')">Eliminar</button>` : ''}
           </div>
         </td>
       </tr>`).join('')
@@ -366,6 +367,11 @@ let _cotClienteListaPrecio = 'Publico';
         }
 
         function editarCotizacion(id) {
+            const _esAdminCot = (typeof esAdmin === 'function' && esAdmin()) || ['Admin','ADMIN','SUPER_ADMIN'].includes((window._currentUserRole || window._rol || '').toUpperCase());
+            if (!_esAdminCot) {
+                showToast('Solo los administradores pueden editar cotizaciones', '#FF9F0A');
+                return;
+            }
             const btn = document.getElementById('cotSaveBtn');
             window.api
                 .withSuccessHandler(function (r) {
@@ -458,8 +464,9 @@ let _cotClienteListaPrecio = 'Publico';
         }
 
         function cotTotalLinea(it) {
-            const bruto = (Number(it.cantidad) || 0) * (Number(it.precioUnit) || 0);
-            return cotR2(bruto - bruto * (Number(it.descuentoPct) || 0) / 100);
+            const cant = Number(it.cantidad) || 0;
+            const precio = Number(it.precioUnit) || 0;
+            return cotR2(cant * precio);
         }
 
         function cotRenderItems() {
@@ -486,22 +493,19 @@ let _cotClienteListaPrecio = 'Publico';
                 return `
         <div class="cot-item-row">
           <div>
-            <input class="form-input" id="cotDesc-${idx}" style="height:34px;font-size:13px"
-                   value="${escAttr(it.descripcion || '')}" placeholder="Descripción del ítem"
-                   oninput="cotSet(${idx},'descripcion',this.value)"/>
-            <textarea class="cot-item-detalle" rows="1" placeholder="Detalle opcional"
+            <input class="form-input" id="cotDesc-${idx}" style="height:34px;font-size:13px;background:var(--bg-secondary);cursor:not-allowed;font-weight:600"
+                   value="${escAttr(it.descripcion || '')}" placeholder="Descripción del ítem" readonly tabindex="-1" title="La descripción no es editable"/>
+            <textarea class="cot-item-detalle" rows="1" placeholder="Detalle opcional de entrega / especificación"
                       oninput="cotSet(${idx},'detalle',this.value)">${escHtml(it.detalle || '')}</textarea>
             <div style="display:flex;align-items:center;flex-wrap:wrap">
               <span class="tag ${it.tipo === 'Servicio' ? 'tag-servicio' : 'tag-producto'}" style="margin-top:6px;display:inline-block">${it.tipo}</span>
               ${stockHtml}
             </div>
           </div>
-          <input class="form-input" type="number" min="0" step="0.01" style="height:34px;font-size:13px"
+          <input class="form-input" type="number" min="0.01" step="0.01" style="height:34px;font-size:13px"
                  value="${it.cantidad}" oninput="cotSet(${idx},'cantidad',this.value)"/>
-          <input class="form-input" type="number" min="0" step="0.01" style="height:34px;font-size:13px"
-                 value="${it.precioUnit}" oninput="cotSet(${idx},'precioUnit',this.value)"/>
-          <input class="form-input" type="number" min="0" max="100" step="0.01" style="height:34px;font-size:13px"
-                 value="${it.descuentoPct}" oninput="cotSet(${idx},'descuentoPct',this.value)"/>
+          <input class="form-input" type="number" min="0" step="0.01" style="height:34px;font-size:13px;background:var(--bg-secondary);cursor:not-allowed;font-weight:600"
+                 value="${it.precioUnit}" readonly tabindex="-1" title="El precio unitario no es editable"/>
           <div class="cot-item-total" id="cotRowTot-${idx}">${cotQ(cotTotalLinea(it))}</div>
           <button class="cot-item-del" title="Quitar ítem" onclick="cotEliminarItem(${idx})">&times;</button>
         </div>`;
@@ -509,32 +513,181 @@ let _cotClienteListaPrecio = 'Publico';
             cotRecalcular();
         }
 
+        function _cotEmpresaIvaConfig() {
+            const emp = _cotEmpresa || (window.EMPRESA || {});
+            let localExtra = {};
+            try { localExtra = JSON.parse(localStorage.getItem('azyvion_org_extra') || '{}'); } catch(e){}
+            const pct = emp.iva_pct !== undefined ? Number(emp.iva_pct) : (localExtra.iva_pct !== undefined ? Number(localExtra.iva_pct) : 12);
+            const mod = emp.iva_modalidad || localExtra.iva_modalidad || 'incluido';
+            return { pct: isNaN(pct) ? 12 : pct, mod: mod };
+        }
 
         function cotCalcularTotales() {
-            const subtotal  = cotR2(_cotItems.reduce((s, it) => s + cotTotalLinea(it), 0));
-            let descPct     = Number(v('cotDescuento')) || 0;
-            if (descPct < 0) descPct = 0;
-            if (descPct > 100) descPct = 100;
-            const descuento = cotR2(subtotal * descPct / 100);
-            const base      = cotR2(subtotal - descuento);
-            const chk       = document.getElementById('cotIVA');
+            const bruto = cotR2(_cotItems.reduce((s, it) => s + cotTotalLinea(it), 0));
+            const chk = document.getElementById('cotIVA');
             const aplicaIVA = !!(chk && chk.checked);
-            const iva       = aplicaIVA ? cotR2(base * COT_IVA_PCT / 100) : 0;
-            return {subtotal, descPct, descuento, iva, aplicaIVA, total: cotR2(base + iva)};
+            const cfg = _cotEmpresaIvaConfig();
+
+            let subtotal = bruto;
+            let iva = 0;
+            let total = bruto;
+
+            if (!aplicaIVA || cfg.mod === 'exento' || cfg.pct === 0) {
+                subtotal = bruto;
+                iva = 0;
+                total = bruto;
+            } else if (cfg.mod === 'sobre') {
+                // Precios son sin IVA, se suma sobre el subtotal
+                subtotal = bruto;
+                iva = cotR2(subtotal * (cfg.pct / 100));
+                total = cotR2(subtotal + iva);
+            } else {
+                // 'incluido': Precios ya tienen IVA incluido, se desglosa
+                total = bruto;
+                subtotal = cotR2(total / (1 + (cfg.pct / 100)));
+                iva = cotR2(total - subtotal);
+            }
+
+            return {
+                subtotal,
+                iva,
+                aplicaIVA,
+                ivaPct: cfg.pct,
+                ivaMod: cfg.mod,
+                total
+            };
         }
 
         function cotRecalcular() {
             const t = cotCalcularTotales();
             const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
             set('cotSubtotal', cotQ(t.subtotal));
-            set('cotDescMonto', t.descuento > 0 ? '- ' + cotQ(t.descuento) : cotQ(0));
-            set('cotIvaMonto', t.aplicaIVA ? cotQ(t.iva) : 'Incluido');
+            const lbl = document.getElementById('cotIvaLabel');
+            if (lbl) lbl.textContent = t.ivaPct + '% (' + (t.ivaMod === 'sobre' ? 'sobre subtotal' : 'incluido') + ')';
+            set('cotIvaMonto', t.aplicaIVA ? cotQ(t.iva) : 'Q 0.00 (Exento)');
             set('cotTotal', cotQ(t.total));
+
+            const descRow = document.getElementById('cotDescRowWrap');
+            if (descRow) descRow.style.display = 'none';
+
+            const info = document.getElementById('cotIvaInfo');
+            if (info) {
+                info.innerHTML = t.ivaMod === 'sobre'
+                    ? `Configuración de empresa: <strong>+${t.ivaPct}% de IVA sobre el subtotal</strong>.`
+                    : t.ivaMod === 'exento'
+                    ? `Configuración de empresa: <strong>Exento de IVA (0%)</strong>.`
+                    : `Configuración de empresa: <strong>IVA del ${t.ivaPct}% ya incluido en los precios</strong> (desglosado en el total).`;
+            }
+        }
+
+        /* ── Vista previa antes de guardar ─────────────────────── */
+        function cotAbrirVistaPrevia(onConfirmar) {
+            const cliente = (v('cotCliente') || '').trim();
+            if (!cliente) { showToast('El nombre del cliente es requerido', '#FF9F0A'); return; }
+
+            const items = _cotItems
+                .map(it => ({
+                    itemId: it.itemId || '',
+                    tipo: it.tipo === 'Servicio' ? 'Servicio' : 'Producto',
+                    descripcion: String(it.descripcion || '').trim(),
+                    detalle: String(it.detalle || '').trim(),
+                    cantidad: Number(it.cantidad) || 0,
+                    precioUnit: Number(it.precioUnit) || 0
+                }))
+                .filter(it => it.descripcion && it.cantidad > 0);
+
+            if (!items.length) { showToast('Agrega al menos un ítem con cantidad válida', '#FF9F0A'); return; }
+
+            const t = cotCalcularTotales();
+            const emp = _cotEmpresa || (window.EMPRESA || {});
+
+            const itemsRows = items.map((it, idx) => `
+                <tr style="border-bottom:1px solid var(--border)">
+                    <td style="padding:10px 8px;font-size:13px">
+                        <div style="font-weight:600">${escHtml(it.descripcion)}</div>
+                        ${it.detalle ? `<div style="font-size:11.5px;color:var(--text-secondary)">${escHtml(it.detalle)}</div>` : ''}
+                    </td>
+                    <td style="padding:10px 8px;text-align:center;font-size:13px">${it.cantidad}</td>
+                    <td style="padding:10px 8px;text-align:right;font-size:13px">${cotQ(it.precioUnit)}</td>
+                    <td style="padding:10px 8px;text-align:right;font-size:13px;font-weight:700">${cotQ(cotR2(it.cantidad * it.precioUnit))}</td>
+                </tr>
+            `).join('');
+
+            const previewHtml = `
+            <div style="max-height:75vh;overflow-y:auto;padding:4px">
+                <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px">
+                        <div>
+                            <div style="font-size:16px;font-weight:800;color:var(--text-primary)">${escHtml(emp.nombre || 'Mi Empresa')}</div>
+                            <div style="font-size:12px;color:var(--text-secondary)">NIT: ${escHtml(emp.nit || 'C/F')} · Tel: ${escHtml(emp.telefono || '—')}</div>
+                        </div>
+                        <div style="text-align:right">
+                            <span class="tag tag-borrador" style="font-size:11px">VISTA PREVIA</span>
+                            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Fecha: ${escHtml(v('cotFecha') || cotHoyISO())}</div>
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12.5px">
+                        <div><strong>Cliente:</strong> ${escHtml(cliente)}</div>
+                        <div><strong>Razón Social:</strong> ${escHtml(v('cotEmpresa') || '—')}</div>
+                        <div><strong>Teléfono:</strong> ${escHtml(v('cotTelefono') || '—')}</div>
+                        <div><strong>Validez:</strong> ${v('cotValidez') || 15} días</div>
+                        ${v('cotDireccion') ? `<div style="grid-column:1/-1"><strong>Dirección:</strong> ${escHtml(v('cotDireccion'))}</div>` : ''}
+                    </div>
+                </div>
+
+                <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+                    <thead>
+                        <tr style="border-bottom:1.5px solid var(--border);text-align:left;font-size:11px;text-transform:uppercase;color:var(--text-muted)">
+                            <th style="padding:6px 8px">Descripción</th>
+                            <th style="padding:6px 8px;text-align:center">Cant.</th>
+                            <th style="padding:6px 8px;text-align:right">P. Unitario</th>
+                            <th style="padding:6px 8px;text-align:right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>${itemsRows}</tbody>
+                </table>
+
+                <div style="margin-left:auto;max-width:320px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 16px">
+                    <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0">
+                        <span>Subtotal</span>
+                        <span>${cotQ(t.subtotal)}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--text-secondary)">
+                        <span>IVA (${t.ivaPct}% ${t.ivaMod === 'sobre' ? 'sobre subtotal' : 'incluido'})</span>
+                        <span>${cotQ(t.iva)}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;border-top:1.5px solid var(--border);margin-top:8px;padding-top:8px">
+                        <span>Total</span>
+                        <span style="color:var(--accent)">${cotQ(t.total)}</span>
+                    </div>
+                </div>
+
+                ${v('cotCondiciones') ? `
+                <div style="margin-top:16px;padding:12px;background:var(--bg-secondary);border-radius:8px;font-size:11.5px;color:var(--text-secondary)">
+                    <strong>Términos y Condiciones:</strong><br>${escHtml(v('cotCondiciones'))}
+                </div>` : ''}
+
+                <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:14px;border-top:1px solid var(--border)">
+                    <button class="btn-cancel" onclick="closeModal()">← Volver a editar</button>
+                    <button class="btn-save" id="cotModalConfirmBtn" style="background:#30D158">✓ Confirmar y Guardar</button>
+                </div>
+            </div>`;
+
+            openModal('Vista previa de la cotización', previewHtml);
+            const saveBtn = document.getElementById('modalSaveBtn');
+            if (saveBtn) saveBtn.style.display = 'none';
+
+            const confirmBtn = document.getElementById('cotModalConfirmBtn');
+            if (confirmBtn) {
+                confirmBtn.onclick = function() {
+                    closeModal();
+                    if (typeof onConfirmar === 'function') onConfirmar();
+                };
+            }
         }
 
         /* ── Guardar ───────────────────────────────────────────── */
-        function guardarCotizacion() {
-            const btn = document.getElementById('cotSaveBtn');
+        function guardarCotizacion(forzarDirecto) {
             const cliente = (v('cotCliente') || '').trim();
             if (!cliente) { showToast('El nombre del cliente es requerido', '#FF9F0A'); return; }
 
@@ -546,12 +699,21 @@ let _cotClienteListaPrecio = 'Publico';
                     detalle: String(it.detalle || '').trim(),
                     cantidad: Number(it.cantidad) || 0,
                     precioUnit: Number(it.precioUnit) || 0,
-                    descuentoPct: Number(it.descuentoPct) || 0
+                    descuentoPct: 0
                 }))
                 .filter(it => it.descripcion && it.cantidad > 0);
 
             if (!items.length) { showToast('Agrega al menos un ítem con descripción y cantidad', '#FF9F0A'); return; }
 
+            // Si es una creación nueva y no se ha visto la vista previa forzada, abrir vista previa antes de guardar
+            if (!forzarDirecto && !_cotEditId) {
+                cotAbrirVistaPrevia(function() {
+                    guardarCotizacion(true);
+                });
+                return;
+            }
+
+            const btn = document.getElementById('cotSaveBtn');
             const t = cotCalcularTotales();
             const data = {
                 clienteId:   v('cotClienteSel'),
@@ -564,7 +726,7 @@ let _cotClienteListaPrecio = 'Publico';
                 validezDias: v('cotValidez') || 15,
                 condiciones: v('cotCondiciones'),
                 notas:       v('cotNotas'),
-                descuentoPct: t.descPct,
+                descuentoPct: 0,
                 aplicaIVA:   t.aplicaIVA,
                 estado:      v('cotEstado') || 'Borrador',
                 items:       items
@@ -608,6 +770,11 @@ let _cotClienteListaPrecio = 'Publico';
         }
 
         function confirmDeleteCot(id, numero) {
+            const _esAdminCot = (typeof esAdmin === 'function' && esAdmin()) || ['Admin','ADMIN','SUPER_ADMIN'].includes((window._currentUserRole || window._rol || '').toUpperCase());
+            if (!_esAdminCot) {
+                showToast('Solo los administradores pueden eliminar cotizaciones', '#FF9F0A');
+                return;
+            }
             _modalMode = {type: 'cotizacion', action: 'delete', id: id};
             openModal('Eliminar cotización', `<div style="text-align:center;padding:10px 0">
     <svg viewBox="0 0 24 24" style="width:44px;height:44px;stroke:var(--danger);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;fill:none;margin-bottom:12px;display:block;margin-inline:auto"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>

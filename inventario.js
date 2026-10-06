@@ -268,35 +268,7 @@ function _actualizarSelectsFiltrosCatalogo() {
             i = i || {};
             const esServicio = i.tipo === 'Servicio';
             const cat = i.categoria || 'Otro';
-            const imgUrl = i.imagen_url || i.imagen || '';
             return `
-    ${_invFormEmpresa(i)}
-    
-    <!-- Imagen del Producto (Almacenamiento Cloud Supabase) -->
-    <div class="form-field" style="background:var(--bg-secondary);padding:12px;border-radius:10px;border:1px solid var(--border);margin-bottom:14px">
-      <label class="form-label" style="font-size:11px;font-weight:700">FOTOGRAFÍA / IMAGEN DEL PRODUCTO (EN LA NUBE)</label>
-      <div style="display:flex;gap:14px;align-items:center">
-        <div id="mProdImgPreview" style="width:72px;height:72px;border-radius:10px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;background:var(--card);overflow:hidden;flex-shrink:0">
-          ${imgUrl ? `<img src="${escAttr(imgUrl)}" style="width:100%;height:100%;object-fit:cover">` : `<span style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px">Sin foto</span>`}
-        </div>
-        <div style="flex:1">
-          <input type="hidden" id="mProdImgUrl" value="${escAttr(imgUrl)}" />
-          <input type="file" id="mProdImgFile" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="_subirFotoProducto(event)" />
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button type="button" class="btn-ghost" id="mProdImgUploadBtn" onclick="document.getElementById('mProdImgFile').click()" style="font-size:12px;padding:6px 14px">
-              📁 Subir imagen
-            </button>
-            <button type="button" class="btn-danger-sm" id="mProdImgDelBtn" onclick="_eliminarFotoProducto()" style="display:${imgUrl ? 'inline-block' : 'none'};font-size:12px">
-              Quitar
-            </button>
-          </div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
-            Se almacena en la nube (la BD solo guarda la URL, sin sobrecargar datos). JPG, PNG o WebP, máx. 3 MB.
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div class="switch-field">
       <div>
         <div class="sf-txt">Es un servicio</div>
@@ -309,8 +281,8 @@ function _actualizarSelectsFiltrosCatalogo() {
     </div>
     <div class="form-field"><label class="form-label" id="mProdLabel">${esServicio ? 'NOMBRE DEL SERVICIO *' : 'NOMBRE DEL PRODUCTO *'}</label>
       <input class="form-input" id="mProd" value="${escAttr(i.producto || '')}" placeholder="Ej. Router Mikrotik RB450G" required/></div>
-    <div class="form-field"><label class="form-label">CÓDIGO / SKU</label>
-      <input class="form-input" id="mSku" value="${escAttr(i.sku || '')}" placeholder="Opcional"/></div>
+    <div class="form-field"><label class="form-label">CÓDIGO / SKU *</label>
+      <input class="form-input" id="mSku" value="${escAttr(i.sku || '')}" placeholder="Ej. PROD-001" required/></div>
     ${_invFormClasificacion(i)}
     <div class="form-field"><label class="form-label">CATEGORÍA</label>
       <select class="form-select" id="mCatSel" onchange="_syncCatInput(this)" style="margin-bottom:6px">
@@ -756,11 +728,7 @@ function _invHint(org) {
         '. Créalos desde el submenú de Inventario.</div>';
 }
 function _invFormEmpresa(i) {
-    if (!_catEsSA) return '';
-    i = i || {};
-    if (i.id) return `<div class="form-field"><label class="form-label">EMPRESA</label><div class="cat-readonly">${escHtml(catEmpresaNombre(i.organization_id))}</div></div>`;
-    return `<div class="form-field"><label class="form-label">EMPRESA *</label>
-      <select class="form-select" id="mInvEmpresa" onchange="_invEmpresaChange(this)">${_catEmpresaOpts(_invEmpresaActual(i))}</select></div>`;
+    return '';
 }
 function _invFormClasificacion(i) {
     i = i || {};

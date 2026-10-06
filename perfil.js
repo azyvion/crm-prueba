@@ -272,31 +272,51 @@
       <div class="ajustes-row">
         <div class="ajustes-row-label"><div class="ajustes-row-name">Moneda</div><div class="ajustes-row-desc">Moneda usada en cotizaciones y POS</div></div>
         <div class="ajustes-row-control" style="max-width:220px"><select class="form-select" id="orgMoneda" onchange="actualizarMembretePreview()"><option value="Q">Q — Quetzal (GTQ)</option><option value="$">$ — Dólar (USD)</option><option value="€">€ — Euro (EUR)</option><option value="L">L — Lempira (HNL)</option><option value="C$">C$ — Córdoba (NIO)</option></select></div>
+      <div class="ajustes-row">
+        <div class="ajustes-row-label">
+          <div class="ajustes-row-name">País de operación</div>
+          <div class="ajustes-row-desc">Configuración fiscal y regional (ajusta el IVA y moneda sugerida automáticamente)</div>
+        </div>
+        <div class="ajustes-row-control" style="max-width:240px">
+          <select class="form-select" id="orgPaisCodigo" onchange="_onPaisChange(this); actualizarMembretePreview()">
+            <option value="GT">Guatemala (GT - 12% IVA)</option>
+            <option value="SV">El Salvador (SV - 13% IVA)</option>
+            <option value="HN">Honduras (HN - 15% ISV)</option>
+            <option value="NI">Nicaragua (NI - 15% IVA)</option>
+            <option value="CR">Costa Rica (CR - 13% IVA)</option>
+            <option value="PA">Panamá (PA - 7% ITBMS)</option>
+            <option value="MX">México (MX - 16% IVA)</option>
+            <option value="CO">Colombia (CO - 19% IVA)</option>
+            <option value="US">Estados Unidos (US - Sales Tax)</option>
+            <option value="OT">Internacional / Otro</option>
+          </select>
+        </div>
       </div>
       <div class="ajustes-row">
-        <div class="ajustes-row-label"><div class="ajustes-row-name">% IVA</div><div class="ajustes-row-desc">Porcentaje de impuesto aplicado por defecto</div></div>
-        <div class="ajustes-row-control" style="max-width:120px"><input class="form-input" id="orgIva" type="number" min="0" max="50" placeholder="12" oninput="actualizarMembretePreview()"/></div>
+        <div class="ajustes-row-label">
+          <div class="ajustes-row-name">Tasa de Impuesto / IVA (%)</div>
+          <div class="ajustes-row-desc">Porcentaje de impuesto aplicable a las cotizaciones y ventas (ej. 12% Guatemala, 16% México, 13% El Salvador)</div>
+        </div>
+        <div class="ajustes-row-control" style="max-width:130px">
+          <input class="form-input" id="orgIva" type="number" min="0" max="50" step="0.01" placeholder="12" oninput="actualizarMembretePreview()"/>
+        </div>
+      </div>
+      <div class="ajustes-row">
+        <div class="ajustes-row-label">
+          <div class="ajustes-row-name">Modalidad de Aplicación del IVA</div>
+          <div class="ajustes-row-desc">Indica cómo se calcula el impuesto en las cotizaciones y ventas</div>
+        </div>
+        <div class="ajustes-row-control" style="max-width:320px">
+          <select class="form-select" id="orgIvaModalidad" onchange="actualizarMembretePreview()">
+            <option value="incluido">Precios con IVA incluido (Predeterminado · Consumidor final)</option>
+            <option value="sobre">Más IVA sobre el subtotal (+IVA al final · B2B)</option>
+            <option value="exento">Exento de IVA / Sin impuesto (0%)</option>
+          </select>
+        </div>
       </div>
       <div class="ajustes-row" style="align-items:flex-start">
         <div class="ajustes-row-label"><div class="ajustes-row-name">Condiciones por defecto</div><div class="ajustes-row-desc">Texto de condiciones en nuevas cotizaciones</div></div>
         <div class="ajustes-row-control"><textarea class="form-input" id="orgCondiciones" rows="3" style="resize:vertical"></textarea></div>
-      </div>
-      <div class="ajustes-row">
-        <div class="ajustes-row-label"><div class="ajustes-row-name">País de operación</div><div class="ajustes-row-desc">Configuración fiscal y regional</div></div>
-        <div class="ajustes-row-control" style="max-width:220px">
-          <select class="form-select" id="orgPaisCodigo">
-            <option value="GT">Guatemala (GT)</option>
-            <option value="SV">El Salvador (SV)</option>
-            <option value="HN">Honduras (HN)</option>
-            <option value="NI">Nicaragua (NI)</option>
-            <option value="CR">Costa Rica (CR)</option>
-            <option value="PA">Panamá (PA)</option>
-            <option value="MX">México (MX)</option>
-            <option value="CO">Colombia (CO)</option>
-            <option value="US">Estados Unidos (US)</option>
-            <option value="OT">Internacional / Otro</option>
-          </select>
-        </div>
       </div>
       <div class="ajustes-row">
         <div class="ajustes-row-label"><div class="ajustes-row-name">Tipo de documento fiscal</div><div class="ajustes-row-desc">Identificador tributario para clientes (NIT, RFC, RUC, Tax ID, etc.)</div></div>
@@ -588,6 +608,7 @@
                     setVal('orgSitio', d.sitio);
                     setVal('orgDireccion', d.direccion);
                     setVal('orgIva', d.iva_pct !== undefined ? d.iva_pct : 12);
+                    setVal('orgIvaModalidad', d.iva_modalidad || 'incluido');
                     setVal('orgCondiciones', d.condiciones_default);
                     setVal('orgPrefijoCot', d.prefijo_cotizacion || 'COT-');
                     setVal('orgPrefijoPos', d.prefijo_ticket || 'POS-');
@@ -751,6 +772,7 @@
                 direccion: v('orgDireccion'),
                 moneda: v('orgMoneda') || 'Q',
                 iva_pct: Number(v('orgIva')) || 12,
+                iva_modalidad: (document.getElementById('orgIvaModalidad') || {}).value || 'incluido',
                 condiciones_default: v('orgCondiciones'),
                 prefijo_cotizacion: (document.getElementById('orgPrefijoCot') || {}).value || 'COT-',
                 prefijo_ticket: (document.getElementById('orgPrefijoPos') || {}).value || 'POS-',
@@ -762,6 +784,15 @@
                 pie_ticket: (document.getElementById('orgPieTicket') || {}).value || '',
                 ...felLocal
             };
+
+            try {
+                localStorage.setItem('azyvion_org_extra', JSON.stringify({
+                    iva_pct: datos.iva_pct,
+                    iva_modalidad: datos.iva_modalidad,
+                    dias_vigencia_cotizacion: datos.dias_vigencia_cotizacion,
+                    pie_ticket: datos.pie_ticket
+                }));
+            } catch(e) {}
 
             const resetBtns = () => {
                 const b1 = document.getElementById('orgGuardarBtn');
@@ -1256,3 +1287,38 @@
                 .deleteSucursal(sucId);
         }
         window.confirmDeleteSucursal = confirmDeleteSucursal;
+
+        function _onPaisChange(sel) {
+            if (!sel || !sel.value) return;
+            const pais = sel.value;
+            const ivaInp = document.getElementById('orgIva');
+            const modSel = document.getElementById('orgIvaModalidad');
+            const monSel = document.getElementById('orgMoneda');
+            const nitInp = document.getElementById('orgTipoDocFiscal');
+
+            const configPorPais = {
+                'GT': { iva: 12, mod: 'incluido', moneda: 'Q', doc: 'NIT' },
+                'SV': { iva: 13, mod: 'incluido', moneda: '$', doc: 'NIT' },
+                'HN': { iva: 15, mod: 'sobre',    moneda: 'L', doc: 'RTN' },
+                'NI': { iva: 15, mod: 'sobre',    moneda: 'C$', doc: 'RUC' },
+                'CR': { iva: 13, mod: 'incluido', moneda: '$', doc: 'Cédula Jurídica' },
+                'PA': { iva: 7,  mod: 'sobre',    moneda: '$', doc: 'RUC' },
+                'MX': { iva: 16, mod: 'incluido', moneda: '$', doc: 'RFC' },
+                'CO': { iva: 19, mod: 'sobre',    moneda: '$', doc: 'NIT' },
+                'US': { iva: 0,  mod: 'sobre',    moneda: '$', doc: 'Tax ID' },
+                'OT': { iva: 0,  mod: 'incluido', moneda: '$', doc: 'NIT' }
+            };
+
+            const c = configPorPais[pais];
+            if (c) {
+                if (ivaInp) ivaInp.value = c.iva;
+                if (modSel) modSel.value = c.mod;
+                if (monSel && c.moneda) {
+                    const opt = [...monSel.options].find(o => o.value === c.moneda);
+                    if (opt) opt.selected = true;
+                }
+                if (nitInp) nitInp.value = c.doc;
+                showToast('Parámetros fiscales sugeridos para ' + pais + ' aplicados', '#0A84FF');
+            }
+        }
+        window._onPaisChange = _onPaisChange;

@@ -374,17 +374,16 @@ function _htmlFormCliente(c = {}) {
 
   <div class="form-row">
     <div class="form-field">
-      <label class="form-label">RAZÓN SOCIAL</label>
-      <input class="form-input" id="mEmpresa" value="${escAttr(c.empresa || c.razonSocial || '')}" placeholder="Ej. ABC Tecnologías, S.A."/>
+      <label class="form-label">RAZÓN SOCIAL *</label>
+      <input class="form-input" id="mEmpresa" value="${escAttr(c.empresa || c.razonSocial || '')}" placeholder="Ej. ABC Tecnologías, S.A." required/>
     </div>
     <div class="form-field">
-      <label class="form-label">NIT</label>
-      <input class="form-input" id="mNit" value="${escAttr(c.nit || '')}" placeholder="Ej. 1234567-8"/>
+      <label class="form-label">NIT *</label>
+      <input class="form-input" id="mNit" value="${escAttr(c.nit || '')}" placeholder="Ej. 1234567-8 o C/F" required/>
     </div>
   </div>
 
   <div class="crm-form-section">Contacto</div>
-  <div class="form-hint" style="margin:-4px 0 8px">Al menos uno es obligatorio: correo o teléfono.</div>
 
   <div class="form-row">
     <div class="form-field">
@@ -392,8 +391,8 @@ function _htmlFormCliente(c = {}) {
       <input class="form-input" id="mCorreo" type="email" value="${escAttr(c.correo || '')}" placeholder="info@empresa.com"/>
     </div>
     <div class="form-field">
-      <label class="form-label">TELÉFONO GENERAL</label>
-      <input class="form-input" id="mTelefono" value="${escAttr(c.telefono || '')}" placeholder="+502 0000-0000"/>
+      <label class="form-label">TELÉFONO GENERAL *</label>
+      <input class="form-input" id="mTelefono" value="${escAttr(c.telefono || '')}" placeholder="+502 0000-0000" required/>
     </div>
   </div>
 
@@ -406,18 +405,18 @@ function _htmlFormCliente(c = {}) {
 
   <div class="form-row">
     <div class="form-field">
-      <label class="form-label">DIRECCIÓN</label>
-      <input class="form-input" id="mDireccion" value="${escAttr(c.direccion || '')}" placeholder="Zona, calle, referencia"/>
+      <label class="form-label">DIRECCIÓN *</label>
+      <input class="form-input" id="mDireccion" value="${escAttr(c.direccion || '')}" placeholder="Zona, calle, referencia" required/>
     </div>
     <div class="form-field">
-      <label class="form-label">CIUDAD</label>
-      <input class="form-input" id="mCiudad" value="${escAttr(c.ciudad || '')}" placeholder="Ciudad de Guatemala"/>
+      <label class="form-label">CIUDAD *</label>
+      <input class="form-input" id="mCiudad" value="${escAttr(c.ciudad || '')}" placeholder="Ciudad de Guatemala" required/>
     </div>
   </div>
 
   <div class="form-field" style="max-width:260px">
-    <label class="form-label">PAÍS</label>
-    <select class="form-select" id="mPais">${paises}</select>
+    <label class="form-label">PAÍS *</label>
+    <select class="form-select" id="mPais" required>${paises}</select>
   </div>
 
   <div class="crm-form-section">Clasificación CRM</div>
@@ -435,8 +434,8 @@ function _htmlFormCliente(c = {}) {
 
   <div class="form-row">
     <div class="form-field">
-      <label class="form-label">FUENTE / ORIGEN</label>
-      <select class="form-select" id="mFuente">${fuents}</select>
+      <label class="form-label">FUENTE / ORIGEN *</label>
+      <select class="form-select" id="mFuente" required>${fuents}</select>
     </div>
     <div class="form-field">
       <label class="form-label">EJECUTIVO ASIGNADO</label>
