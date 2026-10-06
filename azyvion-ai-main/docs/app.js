@@ -1,0 +1,1958 @@
+// Firebase SDKs are loaded dynamically (see loadFirebaseSdk below) instead
+// of via static imports. A static "import ... from <CDN url>" that fails to
+// load — offline, blocked CDN, ad-blocker, corporate firewall — aborts the
+// entire module before a single line of app.js runs. That used to take the
+// whole app down (no chat, nothing), not just the login screen. Dynamic
+// import() wrapped in try/catch lets Azyvion AI fall back to local mode.
+const FIREBASE_SDK_VERSION = "12.16.0";
+let initializeApp,
+  getAuth,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  firebaseSignOut,
+  getFirestore,
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  deleteDoc,
+  serverTimestamp,
+  query;
+
+async function loadFirebaseSdk() {
+  const [appMod, authMod, fsMod] = await Promise.all([
+    import(`https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VERSION}/firebase-app.js`),
+    import(`https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VERSION}/firebase-auth.js`),
+    import(`https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VERSION}/firebase-firestore.js`),
+  ]);
+  ({ initializeApp } = appMod);
+  ({ getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, getRedirectResult } = authMod);
+  firebaseSignOut = authMod.signOut;
+  ({ getFirestore, collection, doc, getDocs, setDoc, deleteDoc, serverTimestamp, query } = fsMod);
+}
+
+const API_BASE = (window.AZYVION_CONFIG && window.AZYVION_CONFIG.API_BASE_URL) || "";
+const STORAGE_KEY = "azyvion_ai_chats_v1";
+const PROJECTS_STORAGE_KEY = "azyvion_ai_projects_v1";
+const FIREBASE_CONFIG = window.AZYVION_CONFIG?.FIREBASE || {};
+const FIREBASE_ENABLED = Boolean(FIREBASE_CONFIG.apiKey && !String(FIREBASE_CONFIG.apiKey).startsWith("PASTE_"));
+
+const appEl = document.querySelector(".app"),
+  menuToggle = document.getElementById("menuToggle"),
+  scrim = document.getElementById("scrim"),
+  sidebarEl = document.getElementById("sidebar"),
+  historyEl = document.getElementById("history"),
+  newChatBtn = document.getElementById("newChat"),
+  input = document.getElementById("input"),
+  composer = document.getElementById("composer"),
+  attachBtn = document.getElementById("attachBtn"),
+  fileInput = document.getElementById("fileInput"),
+  attachPreview = document.getElementById("attachPreview"),
+  thread = document.getElementById("thread"),
+  welcome = document.getElementById("welcome"),
+  messagesEl = document.getElementById("messages"),
+  send = document.getElementById("send"),
+  statusText = document.getElementById("statusText"),
+  statusWrap = document.getElementById("statusWrap"),
+  suggestions = document.getElementById("suggestions"),
+  welcomeGreeting = document.getElementById("welcomeGreeting"),
+  authOverlay = document.getElementById("authOverlay"),
+  googleSignInBtn = document.getElementById("googleSignIn"),
+  guestSignInBtn = document.getElementById("guestSignIn"),
+  authCloseBtn = document.getElementById("authClose"),
+  authNote = document.getElementById("authNote"),
+  accountCard = document.getElementById("accountCard"),
+  accountAvatar = document.getElementById("accountAvatar"),
+  accountName = document.getElementById("accountName"),
+  accountEmail = document.getElementById("accountEmail"),
+  accountMenu = document.getElementById("accountMenu"),
+  accountPopover = document.getElementById("accountPopover"),
+  signOutBtn = document.getElementById("signOutBtn"),
+  settingsBtn = document.getElementById("settingsBtn"),
+  settingsOverlay = document.getElementById("settingsOverlay"),
+  settingsClose = document.getElementById("settingsClose"),
+  projectsListEl = document.getElementById("projectsList"),
+  newProjectBtn = document.getElementById("newProjectBtn"),
+  projectOverlay = document.getElementById("projectOverlay"),
+  projectModalTitle = document.getElementById("projectModalTitle"),
+  projectModalClose = document.getElementById("projectModalClose"),
+  projectNameInput = document.getElementById("projectName"),
+  projectInstructionsInput = document.getElementById("projectInstructions"),
+  projectFileInput = document.getElementById("projectFileInput"),
+  projectFileBtn = document.getElementById("projectFileBtn"),
+  projectFilesListEl = document.getElementById("projectFilesList"),
+  projectDeleteBtn = document.getElementById("projectDeleteBtn"),
+  projectSaveBtn = document.getElementById("projectSaveBtn"),
+  modelPickerBtn = document.getElementById("modelPickerBtn"),
+  modelPickerLabel = document.getElementById("modelPickerLabel"),
+  modelPickerIcon = document.getElementById("modelPickerIcon"),
+  modelPopover = document.getElementById("modelPopover"),
+  composerHint = document.getElementById("composerHint");
+
+const MAX_IMAGES = 5; // Groq's qwen3.6-27b vision model accepts up to 5 images per request
+let pendingImages = []; // [{ dataUrl, name }] queued for the next message
+
+let demoMode = false;
+let firebaseApp = null;
+let auth = null;
+let db = null;
+let currentUser = null;
+let cloudSyncReady = false;
+let authReady = false;
+let authRequired = FIREBASE_ENABLED;
+let chats = loadChats();
+let activeId;
+activeId = chats.length ? chats[0].id : createChat();
+
+// Projects: a chat with a projectId belongs to that project and is shown
+// nested under it in the sidebar instead of in "Recientes" — chats with no
+// projectId (personal chats) stay in "Recientes". Both live in the same
+// `chats` array and sync to the same per-user cloud account, so nothing
+// about how a chat is stored/synced changes — only how it's grouped in the UI.
+let projects = loadProjects();
+const expandedProjectIds = new Set(); // which project rows are expanded (UI-only, not persisted)
+let editingProjectId = null; // project currently open in the project modal, null = creating new
+let editingFiles = []; // working copy of the project's attached files while the modal is open
+
+/* ---------- models ----------
+   Straks (chat, text) and Straks Imagen (text-to-image) are the two models
+   the user can pick from the model picker above the composer, styled after
+   Claude's model switcher. The choice is per-device (localStorage), not
+   per-chat, and simply changes what sendMessage() does with the next
+   message: talk to /api/chat, or generate an image client-side. */
+const MODELS = [
+  { id: "straks", name: "Straks", desc: "Modelo principal · rápido para el día a día", type: "chat", placeholder: "Message Azyvion AI...", hint: "Enter to send · Shift + Enter for a new line · Puedes adjuntar imágenes (JPG, PNG, WEBP)" },
+  { id: "straks-image", name: "Straks Imagen", desc: "Genera imágenes a partir de texto", type: "image", placeholder: "Describe la imagen que quieres generar…", hint: "Enter para generar · Describe la imagen con el mayor detalle posible" },
+];
+const MODEL_STORAGE_KEY = "azyvion_ai_model_v1";
+
+function loadModel() {
+  try {
+    const saved = localStorage.getItem(MODEL_STORAGE_KEY);
+    if (MODELS.some((m) => m.id === saved)) return saved;
+  } catch {
+    /* storage unavailable */
+  }
+  return MODELS[0].id;
+}
+
+let currentModelId = loadModel();
+
+function getCurrentModel() {
+  return MODELS.find((m) => m.id === currentModelId) || MODELS[0];
+}
+
+const IMAGE_MODEL_ICON =
+  '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" stroke-width="2"/><circle cx="8.5" cy="8.5" r="1.6" fill="currentColor"/><path d="M21 15.5 16 10l-8.5 8.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function applyModelToComposer() {
+  const model = getCurrentModel();
+  if (modelPickerLabel) modelPickerLabel.textContent = model.name;
+  if (modelPickerIcon) {
+    modelPickerIcon.innerHTML = model.type === "image" ? IMAGE_MODEL_ICON : "S";
+    modelPickerIcon.style.background = model.type === "image" ? "linear-gradient(135deg,#7c4dff,#ff6fa5)" : "";
+  }
+  if (input) input.placeholder = model.placeholder;
+  if (composerHint) composerHint.textContent = model.hint;
+  if (attachBtn) attachBtn.hidden = model.type === "image"; // attaching a photo doesn't apply to image generation
+  modelPopover?.querySelectorAll(".model-option").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.model === model.id);
+  });
+}
+
+function setModel(id) {
+  if (!MODELS.some((m) => m.id === id)) return;
+  currentModelId = id;
+  try {
+    localStorage.setItem(MODEL_STORAGE_KEY, id);
+  } catch {
+    /* storage unavailable — selection still works for this session */
+  }
+  applyModelToComposer();
+  closeModelPopover();
+}
+
+function closeModelPopover() {
+  if (!modelPopover) return;
+  modelPopover.hidden = true;
+  modelPickerBtn?.setAttribute("aria-expanded", "false");
+}
+
+modelPickerBtn?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  const willShow = modelPopover.hidden;
+  modelPopover.hidden = !willShow;
+  modelPickerBtn.setAttribute("aria-expanded", String(willShow));
+});
+modelPopover?.querySelectorAll(".model-option").forEach((btn) => {
+  btn.addEventListener("click", () => setModel(btn.dataset.model));
+});
+document.addEventListener("click", (event) => {
+  if (modelPopover && !modelPopover.hidden && !modelPopover.contains(event.target) && event.target !== modelPickerBtn) {
+    closeModelPopover();
+  }
+});
+applyModelToComposer();
+
+// True when there's a real backend to talk to: either an explicit
+// API_BASE_URL in config.js, or we're running locally against
+// `node server.js` (which also serves /docs itself). False on a bare
+// static deployment (e.g. GitHub Pages) with no backend configured — used
+// to gate both text sending (see sendMessage) and the voice button.
+function isBackendConfigured() {
+  return Boolean(
+    API_BASE ||
+      window.location.protocol === "http:" ||
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1"
+  );
+}
+
+/* ---------- persistence ---------- */
+function loadChats() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveChats() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(chats));
+  } catch {
+    /* storage unavailable — chat still works for this session */
+  }
+  queueCloudSync();
+}
+
+function createChat(projectId = null) {
+  const id = `c_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  chats.unshift({ id, title: "New chat", messages: [], projectId: projectId || null });
+  saveChats();
+  return id;
+}
+
+function getActiveChat() {
+  return chats.find((c) => c.id === activeId);
+}
+
+/* ---------- projects ---------- */
+function loadProjects() {
+  try {
+    const raw = localStorage.getItem(PROJECTS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveProjects() {
+  try {
+    localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
+  } catch {
+    /* storage unavailable — projects still work for this session */
+  }
+}
+
+function getProject(id) {
+  return projects.find((p) => p.id === id) || null;
+}
+
+function createProject(name, instructions, files) {
+  const id = `p_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  projects.unshift({
+    id,
+    name: name || "Untitled project",
+    instructions: instructions || "",
+    files: Array.isArray(files) ? files : [],
+  });
+  saveProjects();
+  queueCloudSyncProject(id);
+  return id;
+}
+
+function updateProject(id, patch) {
+  const p = getProject(id);
+  if (!p) return;
+  Object.assign(p, patch);
+  saveProjects();
+  queueCloudSyncProject(id);
+}
+
+function deleteProject(id) {
+  const idx = projects.findIndex((p) => p.id === id);
+  if (idx === -1) return;
+  projects.splice(idx, 1);
+  // Chats that belonged to this project become personal chats instead of
+  // being deleted with it — losing a project shouldn't lose conversations.
+  let chatsChanged = false;
+  chats.forEach((c) => {
+    if (c.projectId === id) {
+      c.projectId = null;
+      chatsChanged = true;
+    }
+  });
+  if (chatsChanged) saveChats();
+  expandedProjectIds.delete(id);
+  saveProjects();
+  deleteCloudProject(id);
+}
+
+/* ---------- authentication + cloud sync ---------- */
+function firebaseIsConfigured() {
+  return FIREBASE_ENABLED;
+}
+
+function showAuth(show, note = "Sign in with Google to sync your Azyvion AI conversations.") {
+  if (!authOverlay) return;
+  authOverlay.hidden = !show;
+  document.body.classList.toggle("auth-locked", show);
+  if (authNote) authNote.textContent = note;
+  // Every time the overlay is opened, reset the Google button back to its
+  // clickable state. Without this, a *successful* sign-in leaves the button
+  // permanently disabled (it was only ever re-enabled in the error branch of
+  // signInGoogle()), so the next time the overlay reappears — after signing
+  // out, or after picking "Continue without an account" and later tapping
+  // the account card to log in — the button looks stuck/greyed out.
+  if (show && googleSignInBtn) {
+    googleSignInBtn.disabled = false;
+    googleSignInBtn.classList.remove("loading");
+  }
+}
+
+function setAccount(user) {
+  if (!user) {
+    accountName.textContent = firebaseIsConfigured() ? "Signed out" : "Local mode";
+    accountEmail.textContent = firebaseIsConfigured() ? "Tap to sign in" : "Firebase not configured";
+    accountAvatar.textContent = "A";
+    accountAvatar.style.backgroundImage = "";
+    // Signed out but Firebase is configured: the account card itself becomes
+    // the "sign in" entry point, since the chevron popover only ever offered
+    // "Sign out" (useless once already signed out) with no way back in.
+    accountCard?.classList.toggle("clickable", firebaseIsConfigured());
+    updateWelcomeGreeting(null);
+    return;
+  }
+  accountCard?.classList.remove("clickable");
+  accountName.textContent = user.displayName || "Azyvion user";
+  accountEmail.textContent = user.email || "Google account";
+  if (user.photoURL) {
+    accountAvatar.textContent = "";
+    accountAvatar.style.backgroundImage = `url(${JSON.stringify(user.photoURL)})`;
+  } else {
+    accountAvatar.style.backgroundImage = "";
+    accountAvatar.textContent = (user.displayName || "A").trim().charAt(0).toUpperCase() || "A";
+  }
+  updateWelcomeGreeting(user);
+}
+
+function updateWelcomeGreeting(user) {
+  if (!welcomeGreeting) return;
+  if (!user) {
+    welcomeGreeting.innerHTML = 'Welcome to <em>Azyvion AI</em>';
+    return;
+  }
+  const firstName = (user.displayName || "").trim().split(/\s+/)[0];
+  const hasHistory = chats.some((c) => (c.messages || []).length > 0);
+  if (firstName && hasHistory) welcomeGreeting.innerHTML = `<em>${firstName}</em> is back!`;
+  else if (firstName) welcomeGreeting.innerHTML = `Welcome, <em>${firstName}</em>!`;
+  else welcomeGreeting.innerHTML = 'Welcome to <em>Azyvion AI</em>';
+}
+
+function cleanForCloud(content) {
+  if (typeof content === "string") return content.slice(0, 120000);
+  if (!Array.isArray(content)) return "";
+  const text = content.filter((p) => p && p.type === "text").map((p) => p.text || "").join("\n");
+  const imageCount = content.filter((p) => p && p.type === "image_url").length;
+  return imageCount ? `${text}${text ? "\n\n" : ""}[${imageCount} image${imageCount > 1 ? "s" : ""} attached]` : text;
+}
+
+function cloudChat(chat) {
+  return {
+    title: (chat.title || "New chat").slice(0, 120),
+    projectId: chat.projectId || null,
+    messages: (chat.messages || []).slice(-100).map((m) => ({
+      role: m.role === "assistant" ? "assistant" : "user",
+      content: cleanForCloud(m.content),
+    })),
+    updatedAt: serverTimestamp(),
+  };
+}
+
+function cloudProject(project) {
+  return {
+    name: (project.name || "Untitled project").slice(0, 120),
+    instructions: (project.instructions || "").slice(0, 8000),
+    files: (project.files || []).slice(0, 8).map((f) => ({
+      name: (f.name || "file").slice(0, 120),
+      content: (f.content || "").slice(0, 20000),
+    })),
+    updatedAt: serverTimestamp(),
+  };
+}
+
+let cloudSyncTimer = null;
+const cloudSyncQueue = new Set();
+function queueCloudSync(chatId = activeId) {
+  if (!cloudSyncReady || !currentUser || !chatId) return;
+  cloudSyncQueue.add(chatId);
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(flushCloudSync, 500);
+}
+
+async function flushCloudSync() {
+  if (!cloudSyncReady || !currentUser || !db) return;
+  const ids = [...cloudSyncQueue];
+  cloudSyncQueue.clear();
+  for (const id of ids) {
+    const chat = chats.find((c) => c.id === id);
+    if (!chat) continue;
+    try {
+      await setDoc(doc(db, "users", currentUser.uid, "chats", id), cloudChat(chat), { merge: true });
+    } catch (err) {
+      console.warn("Cloud sync failed", err);
+    }
+  }
+}
+
+async function deleteCloudChat(id) {
+  if (!cloudSyncReady || !currentUser || !db) return;
+  try {
+    await deleteDoc(doc(db, "users", currentUser.uid, "chats", id));
+  } catch (err) {
+    console.warn("Cloud delete failed", err);
+  }
+}
+
+async function loadCloudChats() {
+  if (!cloudSyncReady || !currentUser || !db) return;
+  try {
+    const snap = await getDocs(query(collection(db, "users", currentUser.uid, "chats")));
+    const cloud = [];
+    snap.forEach((d) => {
+      const data = d.data() || {};
+      cloud.push({
+        id: d.id,
+        title: data.title || "New chat",
+        projectId: data.projectId || null,
+        messages: Array.isArray(data.messages) ? data.messages.map((m) => ({
+          role: m.role === "assistant" ? "assistant" : "user",
+          content: typeof m.content === "string" ? m.content : "",
+        })) : [],
+      });
+    });
+    const byId = new Map(chats.map((c) => [c.id, c]));
+    for (const c of cloud) byId.set(c.id, c);
+    chats = [...byId.values()].sort((a, b) => (b.id || "").localeCompare(a.id || ""));
+    if (!chats.length) activeId = createChat();
+    else if (!chats.some((c) => c.id === activeId)) activeId = chats[0].id;
+    saveChats();
+    renderHistory();
+    renderMessages();
+  } catch (err) {
+    console.warn("Cloud history unavailable", err);
+  }
+}
+
+let projectSyncTimer = null;
+const projectSyncQueue = new Set();
+function queueCloudSyncProject(projectId) {
+  if (!cloudSyncReady || !currentUser || !projectId) return;
+  projectSyncQueue.add(projectId);
+  clearTimeout(projectSyncTimer);
+  projectSyncTimer = setTimeout(flushCloudSyncProjects, 500);
+}
+
+async function flushCloudSyncProjects() {
+  if (!cloudSyncReady || !currentUser || !db) return;
+  const ids = [...projectSyncQueue];
+  projectSyncQueue.clear();
+  for (const id of ids) {
+    const project = getProject(id);
+    if (!project) continue;
+    try {
+      await setDoc(doc(db, "users", currentUser.uid, "projects", id), cloudProject(project), { merge: true });
+    } catch (err) {
+      console.warn("Project cloud sync failed", err);
+    }
+  }
+}
+
+async function deleteCloudProject(id) {
+  if (!cloudSyncReady || !currentUser || !db) return;
+  try {
+    await deleteDoc(doc(db, "users", currentUser.uid, "projects", id));
+  } catch (err) {
+    console.warn("Project cloud delete failed", err);
+  }
+}
+
+async function loadCloudProjects() {
+  if (!cloudSyncReady || !currentUser || !db) return;
+  try {
+    const snap = await getDocs(query(collection(db, "users", currentUser.uid, "projects")));
+    const cloud = [];
+    snap.forEach((d) => {
+      const data = d.data() || {};
+      cloud.push({
+        id: d.id,
+        name: data.name || "Untitled project",
+        instructions: data.instructions || "",
+        files: Array.isArray(data.files)
+          ? data.files.map((f) => ({ name: f.name || "file", content: f.content || "" }))
+          : [],
+      });
+    });
+    const byId = new Map(projects.map((p) => [p.id, p]));
+    for (const p of cloud) byId.set(p.id, p);
+    projects = [...byId.values()];
+    saveProjects();
+    renderHistory();
+  } catch (err) {
+    console.warn("Cloud projects unavailable", err);
+  }
+}
+
+async function signInGoogle() {
+  if (!auth) {
+    showAuth(true, "Add your Firebase web configuration in docs/config.js first.");
+    return;
+  }
+  googleSignInBtn.disabled = true;
+  googleSignInBtn.classList.add("loading");
+  authNote.textContent = "Opening Google sign-in…";
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+  try {
+    const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (isMobile) await signInWithRedirect(auth, provider);
+    else await signInWithPopup(auth, provider);
+  } catch (err) {
+    console.error(err);
+    authNote.textContent = friendlyAuthError(err);
+    googleSignInBtn.disabled = false;
+    googleSignInBtn.classList.remove("loading");
+  }
+}
+
+function friendlyAuthError(err) {
+  const code = err?.code || "";
+  if (code.includes("popup-closed-by-user") || code.includes("cancelled-popup-request")) return "Google sign-in was closed. Try again when you're ready.";
+  if (code.includes("popup-blocked")) return "Your browser blocked the sign-in popup. Allow popups for this site and try again.";
+  if (code.includes("unauthorized-domain")) return "This domain is not authorized in Firebase. Add it under Authentication → Settings → Authorized domains.";
+  if (code.includes("operation-not-allowed")) return "Google sign-in is not enabled in your Firebase project yet.";
+  if (code.includes("network-request-failed")) return "No internet connection. Check your network and try again.";
+  if (code.includes("too-many-requests")) return "Too many attempts. Wait a moment and try again.";
+  if (code.includes("user-disabled")) return "This Google account has been disabled.";
+  return "Google sign-in failed. Check your connection and try again.";
+}
+
+function isGuestSession() {
+  try {
+    return sessionStorage.getItem("azyvion_guest_mode") === "1";
+  } catch {
+    return false;
+  }
+}
+
+async function initializeAuth() {
+  if (!firebaseIsConfigured()) {
+    authRequired = false;
+    authReady = true;
+    setAccount(null);
+    return;
+  }
+  let redirectErrorNote = null;
+  try {
+    await loadFirebaseSdk();
+    firebaseApp = initializeApp(FIREBASE_CONFIG);
+    auth = getAuth(firebaseApp);
+    db = getFirestore(firebaseApp);
+    try {
+      await getRedirectResult(auth);
+    } catch (err) {
+      console.warn("Redirect sign-in", err);
+      redirectErrorNote = friendlyAuthError(err);
+    }
+    onAuthStateChanged(auth, async (user) => {
+      currentUser = user;
+      authReady = true;
+      if (user) {
+        cloudSyncReady = true;
+        setAccount(user);
+        showAuth(false);
+        await loadCloudChats();
+        await loadCloudProjects();
+        updateWelcomeGreeting(user);
+        setStatus("ready", "Signed in");
+      } else {
+        cloudSyncReady = false;
+        setAccount(null);
+        showSettings(false); // settings requires an active session — close it if the user signs out
+        const skip = isGuestSession();
+        showAuth(!skip, redirectErrorNote || "Sign in with Google to sync your Azyvion AI conversations.");
+        redirectErrorNote = null;
+        setStatus("ready", skip ? "Local mode" : "Sign in required");
+      }
+    });
+  } catch (err) {
+    // Firebase failed to load or initialize (offline, blocked CDN,
+    // ad-blocker, bad config, etc). Azyvion AI still works fully in local
+    // mode — chats already persist to localStorage — so a login-system
+    // outage never locks the person out of the whole app anymore.
+    console.error("Firebase initialization failed", err);
+    authRequired = false;
+    authReady = true;
+    auth = null;
+    setAccount(null);
+    showAuth(false);
+    setStatus("ready", "Local mode");
+  }
+}
+
+googleSignInBtn?.addEventListener("click", signInGoogle);
+function dismissAuthOverlay() {
+  // Closing the overlay (✕) has the same effect as "Continue without an
+  // account": there's no third state in this app between "signed in" and
+  // "local mode", so dismissing it just puts you in local mode until you
+  // choose to sign in again from the account card.
+  try {
+    sessionStorage.setItem("azyvion_guest_mode", "1");
+  } catch {
+    /* sessionStorage unavailable — overlay may reappear on reload, not critical */
+  }
+  showAuth(false);
+  setStatus("ready", "Local mode");
+}
+guestSignInBtn?.addEventListener("click", dismissAuthOverlay);
+authCloseBtn?.addEventListener("click", dismissAuthOverlay);
+function openAccountAction() {
+  if (currentUser) {
+    accountPopover.hidden = !accountPopover.hidden;
+    return;
+  }
+  // Signed out (including guest mode): reopen the login overlay instead of
+  // the "Sign out" popover, which had nothing useful to offer here — this
+  // was the missing way back in after choosing "Continue without an account".
+  if (!firebaseIsConfigured()) return;
+  try {
+    sessionStorage.removeItem("azyvion_guest_mode");
+  } catch {
+    /* storage unavailable */
+  }
+  showAuth(true);
+}
+accountMenu?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  openAccountAction();
+});
+accountCard?.addEventListener("click", openAccountAction);
+signOutBtn?.addEventListener("click", async () => {
+  accountPopover.hidden = true;
+  if (auth) await firebaseSignOut(auth).catch(console.warn);
+  // Privacy: wipe this device's local chat cache on sign-out so the next
+  // person who signs in on a shared device doesn't inherit (or accidentally
+  // sync into their own account) the previous user's conversations. Anything
+  // unsynced was already pushed to the cloud by the debounce in
+  // queueCloudSync before this point.
+  chats = [];
+  projects = [];
+  expandedProjectIds.clear();
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(PROJECTS_STORAGE_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+  activeId = createChat();
+  renderHistory();
+  renderMessages();
+});
+document.addEventListener("click", (event) => {
+  if (!accountPopover.hidden && !accountPopover.contains(event.target) && event.target !== accountMenu) accountPopover.hidden = true;
+});
+
+/* ---------- settings modal ---------- */
+function showSettings(show) {
+  if (!settingsOverlay) return;
+  settingsOverlay.hidden = !show;
+}
+
+settingsBtn?.addEventListener("click", () => {
+  // Settings will soon hold account-level configuration, not just local
+  // design preferences — so opening it requires an active Google session.
+  // Guests and signed-out users are sent to the login overlay instead.
+  if (firebaseIsConfigured() && !currentUser) {
+    try {
+      sessionStorage.removeItem("azyvion_guest_mode");
+    } catch {
+      /* storage unavailable */
+    }
+    showAuth(true, "Sign in to access Settings.");
+    return;
+  }
+  showSettings(true);
+});
+settingsClose?.addEventListener("click", () => showSettings(false));
+settingsOverlay?.addEventListener("click", (event) => {
+  if (event.target === settingsOverlay) showSettings(false);
+});
+
+const settingsTabButtons = document.querySelectorAll(".settings-tab");
+const settingsPanes = document.querySelectorAll(".settings-pane");
+settingsTabButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    settingsTabButtons.forEach((b) => {
+      b.classList.toggle("active", b === btn);
+      b.setAttribute("aria-selected", b === btn ? "true" : "false");
+    });
+    settingsPanes.forEach((pane) => pane.classList.toggle("active", pane.dataset.pane === btn.dataset.tab));
+  });
+});
+
+initializeAuth();
+
+/* ---------- sidebar rendering ---------- */
+// Builds one clickable history row — shared between "Recientes" (personal
+// chats, no project) and the chat list nested under each project, so both
+// look and behave identically.
+function buildChatItem(c) {
+  const item = document.createElement("div");
+  item.className = `h-item${c.id === activeId ? " active" : ""}`;
+  item.setAttribute("role", "button");
+  item.setAttribute("tabindex", "0");
+  item.setAttribute("aria-current", c.id === activeId ? "true" : "false");
+  const label = document.createElement("span");
+  label.textContent = c.title || "New chat";
+  const del = document.createElement("button");
+  del.type = "button";
+  del.className = "del";
+  del.setAttribute("aria-label", "Delete chat");
+  del.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1.5 1.5L10.5 10.5M10.5 1.5L1.5 10.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+  del.addEventListener("click", (e) => {
+    e.stopPropagation();
+    deleteChat(c.id);
+  });
+  item.appendChild(label);
+  item.appendChild(del);
+  item.addEventListener("click", () => switchChat(c.id));
+  item.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      switchChat(c.id);
+    }
+  });
+  return item;
+}
+
+function renderHistory() {
+  historyEl.innerHTML = "";
+  // Only chats with no projectId ("personal" chats) show under Recientes —
+  // chats that belong to a project are rendered nested under it instead by
+  // renderProjects() below. Both are part of the same synced account.
+  const personalChats = chats.filter((c) => !c.projectId);
+  if (!personalChats.length) {
+    const empty = document.createElement("div");
+    empty.className = "history-empty";
+    empty.textContent = "No conversations yet.";
+    historyEl.appendChild(empty);
+  } else {
+    personalChats.forEach((c) => historyEl.appendChild(buildChatItem(c)));
+  }
+  renderProjects();
+}
+
+function renderProjects() {
+  if (!projectsListEl) return;
+  projectsListEl.innerHTML = "";
+  projects.forEach((p) => {
+    const expanded = expandedProjectIds.has(p.id);
+
+    const item = document.createElement("div");
+    item.className = "project-item";
+
+    const row = document.createElement("div");
+    row.className = "project-row";
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "proj-toggle";
+    toggle.textContent = expanded ? "▾" : "▸";
+    toggle.setAttribute("aria-label", expanded ? "Collapse project" : "Expand project");
+
+    const name = document.createElement("span");
+    name.className = "proj-name";
+    name.textContent = p.name || "Untitled project";
+    name.title = p.name || "Untitled project";
+
+    const toggleExpanded = () => {
+      if (expandedProjectIds.has(p.id)) expandedProjectIds.delete(p.id);
+      else expandedProjectIds.add(p.id);
+      renderProjects();
+    };
+    toggle.addEventListener("click", toggleExpanded);
+    name.addEventListener("click", toggleExpanded);
+
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "proj-add";
+    addBtn.setAttribute("aria-label", "New chat in this project");
+    addBtn.textContent = "+";
+    addBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      expandedProjectIds.add(p.id);
+      activeId = createChat(p.id);
+      renderHistory();
+      renderMessages();
+      closeSidebarOnMobile();
+      input.focus();
+    });
+
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.className = "proj-edit";
+    editBtn.setAttribute("aria-label", "Edit project");
+    editBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.3 2.3a1.6 1.6 0 0 1 2.4 2.4L5.5 12.9l-3 .7.7-3 8.1-8.3Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+    editBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openProjectModal(p);
+    });
+
+    row.appendChild(toggle);
+    row.appendChild(name);
+    row.appendChild(addBtn);
+    row.appendChild(editBtn);
+    item.appendChild(row);
+
+    if (expanded) {
+      const chatsWrap = document.createElement("div");
+      chatsWrap.className = "project-chats";
+      const projectChats = chats.filter((c) => c.projectId === p.id);
+      if (!projectChats.length) {
+        const empty = document.createElement("div");
+        empty.className = "history-empty";
+        empty.textContent = "No chats in this project yet.";
+        chatsWrap.appendChild(empty);
+      } else {
+        projectChats.forEach((c) => chatsWrap.appendChild(buildChatItem(c)));
+      }
+      item.appendChild(chatsWrap);
+    }
+
+    projectsListEl.appendChild(item);
+  });
+}
+
+/* ---------- project modal ---------- */
+function openProjectModal(project) {
+  editingProjectId = project ? project.id : null;
+  editingFiles = project ? (project.files || []).map((f) => ({ ...f })) : [];
+  projectModalTitle.textContent = project ? "Editar proyecto" : "New project";
+  projectNameInput.value = project ? project.name || "" : "";
+  projectInstructionsInput.value = project ? project.instructions || "" : "";
+  projectDeleteBtn.hidden = !project;
+  renderProjectFilesList();
+  projectOverlay.hidden = false;
+  projectNameInput.focus();
+}
+
+function closeProjectModal() {
+  projectOverlay.hidden = true;
+}
+
+const MAX_PROJECT_FILES = 8;
+const MAX_PROJECT_FILE_CHARS = 20000; // keeps project docs small enough for cloud sync + the AI's context window
+
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+}
+
+function renderProjectFilesList() {
+  projectFilesListEl.innerHTML = "";
+  editingFiles.forEach((f, i) => {
+    const row = document.createElement("div");
+    row.className = "project-file-row";
+    const span = document.createElement("span");
+    span.textContent = f.name;
+    const rm = document.createElement("button");
+    rm.type = "button";
+    rm.className = "rm-file";
+    rm.setAttribute("aria-label", "Remove file");
+    rm.textContent = "✕";
+    rm.addEventListener("click", () => {
+      editingFiles.splice(i, 1);
+      renderProjectFilesList();
+    });
+    row.appendChild(span);
+    row.appendChild(rm);
+    projectFilesListEl.appendChild(row);
+  });
+}
+
+newProjectBtn?.addEventListener("click", () => openProjectModal(null));
+projectModalClose?.addEventListener("click", closeProjectModal);
+projectOverlay?.addEventListener("click", (e) => {
+  if (e.target === projectOverlay) closeProjectModal();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && projectOverlay && !projectOverlay.hidden) closeProjectModal();
+});
+
+projectFileBtn?.addEventListener("click", () => projectFileInput.click());
+projectFileInput?.addEventListener("change", async () => {
+  const files = Array.from(projectFileInput.files || []);
+  projectFileInput.value = ""; // allow re-selecting the same file later
+  for (const file of files) {
+    if (editingFiles.length >= MAX_PROJECT_FILES) break;
+    try {
+      const text = await readFileAsText(file);
+      editingFiles.push({ name: file.name, content: text.slice(0, MAX_PROJECT_FILE_CHARS) });
+    } catch {
+      /* skip files the browser can't read as text */
+    }
+  }
+  renderProjectFilesList();
+});
+
+projectSaveBtn?.addEventListener("click", () => {
+  const name = projectNameInput.value.trim();
+  if (!name) {
+    projectNameInput.focus();
+    return;
+  }
+  const instructions = projectInstructionsInput.value.trim();
+  const filesSnapshot = editingFiles.map((f) => ({ ...f }));
+  if (editingProjectId) {
+    updateProject(editingProjectId, { name, instructions, files: filesSnapshot });
+  } else {
+    const id = createProject(name, instructions, filesSnapshot);
+    expandedProjectIds.add(id);
+  }
+  closeProjectModal();
+  renderHistory();
+});
+
+projectDeleteBtn?.addEventListener("click", () => {
+  if (!editingProjectId) return;
+  if (!confirm("¿Eliminar este proyecto? Sus chats pasarán a tus chats personales.")) return;
+  deleteProject(editingProjectId);
+  closeProjectModal();
+  renderHistory();
+});
+
+function switchChat(id) {
+  activeId = id;
+  renderHistory();
+  renderMessages();
+  closeSidebarOnMobile();
+}
+
+function deleteChat(id) {
+  const idx = chats.findIndex((c) => c.id === id);
+  if (idx === -1) return;
+  chats.splice(idx, 1);
+  saveChats();
+  deleteCloudChat(id);
+  if (activeId === id) {
+    activeId = chats.length ? chats[0].id : createChat();
+  }
+  renderHistory();
+  renderMessages();
+}
+
+newChatBtn.addEventListener("click", () => {
+  activeId = createChat();
+  renderHistory();
+  renderMessages();
+  closeSidebarOnMobile();
+  input.focus();
+});
+
+/* ---------- mobile sidebar ---------- */
+function openSidebar() {
+  appEl.classList.add("sidebar-open");
+  menuToggle.setAttribute("aria-expanded", "true");
+}
+function closeSidebar() {
+  appEl.classList.remove("sidebar-open");
+  menuToggle.setAttribute("aria-expanded", "false");
+}
+function closeSidebarOnMobile() {
+  if (window.innerWidth <= 860) closeSidebar();
+}
+menuToggle.addEventListener("click", () => {
+  appEl.classList.contains("sidebar-open") ? closeSidebar() : openSidebar();
+});
+scrim.addEventListener("click", closeSidebar);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && appEl.classList.contains("sidebar-open")) closeSidebar();
+});
+
+/* ---------- image attachments ---------- */
+attachBtn.addEventListener("click", () => fileInput.click());
+
+fileInput.addEventListener("change", async () => {
+  const files = Array.from(fileInput.files || []).filter((f) => f.type.startsWith("image/"));
+  fileInput.value = ""; // allow re-selecting the same file later
+  for (const file of files) {
+    if (pendingImages.length >= MAX_IMAGES) break;
+    try {
+      const dataUrl = await compressImage(file);
+      pendingImages.push({ dataUrl, name: file.name });
+    } catch {
+      /* skip files the browser can't decode as an image */
+    }
+  }
+  renderAttachPreview();
+});
+
+// Downscales + re-encodes as JPEG in the browser before it ever touches the
+// network — keeps requests small and comfortably under Groq's 20MB/image
+// limit even for large phone photos.
+function compressImage(file, maxDim = 1600, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = () => {
+      img.onload = () => {
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderAttachPreview() {
+  attachPreview.innerHTML = "";
+  pendingImages.forEach((img, i) => {
+    const t = document.createElement("div");
+    t.className = "attach-thumb";
+    t.innerHTML = `<img src="${img.dataUrl}" alt="${img.name}"><span class="rm">✕</span>`;
+    t.querySelector(".rm").addEventListener("click", () => {
+      pendingImages.splice(i, 1);
+      renderAttachPreview();
+    });
+    attachPreview.appendChild(t);
+  });
+}
+
+// Paste an image straight from the clipboard into the composer.
+input.addEventListener("paste", async (e) => {
+  const items = Array.from(e.clipboardData?.items || []).filter((it) => it.type.startsWith("image/"));
+  if (!items.length || pendingImages.length >= MAX_IMAGES) return;
+  e.preventDefault();
+  for (const it of items) {
+    if (pendingImages.length >= MAX_IMAGES) break;
+    const file = it.getAsFile();
+    if (!file) continue;
+    try {
+      const dataUrl = await compressImage(file);
+      pendingImages.push({ dataUrl, name: "pasted-image" });
+    } catch {}
+  }
+  renderAttachPreview();
+});
+
+/* ---------- lightweight markdown renderer ----------
+   No CDN dependency (keeps this a zero-network-risk static file): a small,
+   self-escaping parser covering what model replies actually use — fenced
+   code blocks, inline code, bold/italic, links, lists, headings, quotes.
+   Everything is escaped before any tag is added, so this is safe against
+   HTML/script injection from model output. */
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function inlineMarkdown(text) {
+  let out = escapeHtml(text);
+  out = out.replace(/`([^`]+)`/g, '<code>$1</code>');
+  out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  out = out.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>');
+  out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  return out;
+}
+
+function markdownToHtml(raw) {
+  const text = (raw || "").replace(/\r\n/g, "\n");
+  const blocks = [];
+  const codeFence = /```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g;
+  let last = 0,
+    m;
+  while ((m = codeFence.exec(text))) {
+    if (m.index > last) blocks.push({ type: "text", content: text.slice(last, m.index) });
+    blocks.push({ type: "code", lang: m[1], content: m[2].replace(/\n$/, "") });
+    last = codeFence.lastIndex;
+  }
+  if (last < text.length) blocks.push({ type: "text", content: text.slice(last) });
+
+  return blocks
+    .map((b) => {
+      if (b.type === "code") {
+        return `<div class="code-block"><div class="code-bar"><span>${escapeHtml(b.lang || "text")}</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></div><pre><code>${escapeHtml(b.content)}</code></pre></div>`;
+      }
+      return renderTextBlock(b.content);
+    })
+    .join("");
+}
+
+function renderTextBlock(text) {
+  const lines = text.split("\n");
+  const html = [];
+  let list = null; // { type: 'ul' | 'ol', items: [] }
+  let para = [];
+
+  const flushPara = () => {
+    if (para.length) {
+      html.push(`<p>${para.map(inlineMarkdown).join("<br>")}</p>`);
+      para = [];
+    }
+  };
+  const flushList = () => {
+    if (list) {
+      html.push(`<${list.type}>${list.items.map((i) => `<li>${inlineMarkdown(i)}</li>`).join("")}</${list.type}>`);
+      list = null;
+    }
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    const heading = line.match(/^(#{1,3})\s+(.*)$/);
+    const ul = line.match(/^[-*]\s+(.*)$/);
+    const ol = line.match(/^\d+\.\s+(.*)$/);
+    const quote = line.match(/^>\s?(.*)$/);
+
+    if (!line) {
+      flushPara();
+      flushList();
+    } else if (heading) {
+      flushPara();
+      flushList();
+      const level = heading[1].length + 3; // h4-h6: stays subordinate to the UI's own headings
+      html.push(`<h${level}>${inlineMarkdown(heading[2])}</h${level}>`);
+    } else if (ul) {
+      flushPara();
+      if (!list || list.type !== "ul") {
+        flushList();
+        list = { type: "ul", items: [] };
+      }
+      list.items.push(ul[1]);
+    } else if (ol) {
+      flushPara();
+      if (!list || list.type !== "ol") {
+        flushList();
+        list = { type: "ol", items: [] };
+      }
+      list.items.push(ol[1]);
+    } else if (quote) {
+      flushPara();
+      flushList();
+      html.push(`<blockquote>${inlineMarkdown(quote[1])}</blockquote>`);
+    } else {
+      flushList();
+      para.push(line);
+    }
+  }
+  flushPara();
+  flushList();
+  return html.join("");
+}
+
+function attachCodeCopyHandlers(root) {
+  root.querySelectorAll(".copy-code").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const code = btn.closest(".code-block").querySelector("code").textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        const original = btn.textContent;
+        btn.textContent = "Copied";
+        btn.classList.add("copied");
+        setTimeout(() => {
+          btn.textContent = original;
+          btn.classList.remove("copied");
+        }, 1600);
+      });
+    });
+  });
+}
+
+/* ---------- message rendering ---------- */
+function renderMessages() {
+  const chat = getActiveChat();
+  messagesEl.innerHTML = "";
+  if (!chat || !chat.messages.length) {
+    welcome.style.display = "";
+    return;
+  }
+  welcome.style.display = "none";
+  chat.messages.forEach((m) => appendMessageEl(m.role, m.content));
+  scrollToBottom();
+}
+
+function appendMessageEl(role, content) {
+  const { text, images, genImages } = splitContent(content);
+  const w = document.createElement("div");
+  w.className = `message ${role}`;
+  const imagesHtml = images.length
+    ? `<div class="msg-images">${images.map((u) => `<img src="${u}" alt="Imagen adjunta">`).join("")}</div>`
+    : "";
+  const genImagesHtml = genImages.length
+    ? genImages.map((g) => generatedImageHtml(g.url, g.prompt)).join("")
+    : "";
+  const bodyHtml = role === "assistant" ? markdownToHtml(text) : `<p>${escapeHtml(text)}</p>`;
+  const actionsHtml =
+    role === "assistant" && text
+      ? '<div class="msg-actions"><button type="button" class="copy-msg" aria-label="Copy message">Copy</button></div>'
+      : "";
+  w.innerHTML = `<div class="avatar">${role === "assistant" ? "A" : "YOU"}</div><div class="bubble"><span class="label">${role === "assistant" ? "AZYVION AI" : "YOU"}</span>${imagesHtml}${genImagesHtml}<div class="content">${bodyHtml}</div>${actionsHtml}</div>`;
+  attachCodeCopyHandlers(w);
+  const copyMsgBtn = w.querySelector(".copy-msg");
+  if (copyMsgBtn) {
+    copyMsgBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(text).then(() => {
+        copyMsgBtn.textContent = "Copied";
+        setTimeout(() => (copyMsgBtn.textContent = "Copy"), 1600);
+      });
+    });
+  }
+  messagesEl.appendChild(w);
+  return w;
+}
+
+// Markup for one already-generated (Straks Imagen) image, with download /
+// open-in-new-tab actions. Shared by appendMessageEl (loading history) and
+// generateImage (a freshly generated reply).
+function generatedImageHtml(url, prompt) {
+  const safePrompt = escapeHtml(prompt || "");
+  const safeUrl = escapeHtml(url);
+  return (
+    `<div class="gen-image-wrap"><img src="${safeUrl}" alt="${safePrompt}" loading="lazy">` +
+    `<div class="gen-image-actions">` +
+    `<a href="${safeUrl}" download="straks-imagen.jpg" target="_blank" rel="noopener">Descargar</a>` +
+    `<a href="${safeUrl}" target="_blank" rel="noopener">Abrir</a>` +
+    `<button type="button" class="gen-regenerate" data-prompt="${safePrompt}">Regenerar</button>` +
+    `</div></div>`
+  );
+}
+
+// Event delegation: the "Regenerar" button is created dynamically (both for
+// history and for fresh replies), so it's wired once here instead of at
+// creation time.
+messagesEl.addEventListener("click", (event) => {
+  const btn = event.target.closest(".gen-regenerate");
+  if (!btn) return;
+  regenerateImage(btn.dataset.prompt || "");
+});
+
+// Message content can be a plain string or an array of parts:
+// OpenAI-style { type: "text" } / { type: "image_url" } (user text +
+// attached photos), plus our own { type: "generated_image" } (a Straks
+// Imagen result). Normalizes any shape into { text, images, genImages }.
+function splitContent(content) {
+  if (typeof content === "string") return { text: content, images: [], genImages: [] };
+  if (Array.isArray(content)) {
+    const text = content.filter((p) => p.type === "text").map((p) => p.text).join("\n");
+    const images = content.filter((p) => p.type === "image_url").map((p) => p.image_url.url);
+    const genImages = content.filter((p) => p.type === "generated_image").map((p) => ({ url: p.url, prompt: p.prompt }));
+    return { text, images, genImages };
+  }
+  return { text: "", images: [], genImages: [] };
+}
+
+function typingEl() {
+  const w = document.createElement("div");
+  w.className = "message assistant";
+  w.innerHTML = '<div class="avatar">A</div><div class="bubble"><span class="label">AZYVION AI</span><p class="typing"><span></span><span></span><span></span></p></div>';
+  messagesEl.appendChild(w);
+  scrollToBottom();
+  return w;
+}
+
+/* ---------- streaming "materialize" renderer ----------
+   Each incoming chunk is wrapped in its own span and enters blurred +
+   cyan-tinted, then resolves to normal text — the reply "condenses" into
+   view instead of just appearing. A pulsing cursor tracks the tail while
+   live, and the assistant avatar glows while a response is in flight. */
+function startStreamBubble() {
+  const w = document.createElement("div");
+  w.className = "message assistant streaming";
+  w.innerHTML =
+    '<div class="avatar">A</div><div class="bubble"><span class="label">AZYVION AI</span><p class="stream-text"></p></div>';
+  messagesEl.appendChild(w);
+  const p = w.querySelector(".stream-text");
+  const cursor = document.createElement("span");
+  cursor.className = "stream-cursor";
+  p.appendChild(cursor);
+  scrollToBottom();
+
+  return {
+    el: w,
+    push(chunk) {
+      const span = document.createElement("span");
+      span.className = "mat-in";
+      span.textContent = chunk;
+      p.insertBefore(span, cursor);
+      scrollToBottom();
+    },
+    finish() {
+      w.classList.remove("streaming");
+      cursor.remove();
+      const text = p.textContent;
+      if (text) {
+        p.outerHTML = `<div class="content">${markdownToHtml(text)}</div><div class="msg-actions"><button type="button" class="copy-msg" aria-label="Copy message">Copy</button></div>`;
+        attachCodeCopyHandlers(w);
+        const copyMsgBtn = w.querySelector(".copy-msg");
+        copyMsgBtn.addEventListener("click", () => {
+          navigator.clipboard.writeText(text).then(() => {
+            copyMsgBtn.textContent = "Copied";
+            setTimeout(() => (copyMsgBtn.textContent = "Copy"), 1600);
+          });
+        });
+      }
+    },
+  };
+}
+
+function scrollToBottom() {
+  thread.scrollTop = thread.scrollHeight;
+}
+
+function titleFrom(text) {
+  const clean = text.trim().replace(/\s+/g, " ");
+  return clean.length > 42 ? clean.slice(0, 42) + "…" : clean;
+}
+
+/* ---------- status ----------
+   Render's free tier spins the backend down after inactivity, so the very
+   first check on page load can legitimately fail while it wakes up (can
+   take 30-50s). We used to lock into demo mode forever after one failed
+   check — now we retry with backoff and keep re-checking in the
+   background, so the moment the backend comes online the UI (and real
+   sending) recovers automatically instead of staying stuck on the canned
+   demo reply. */
+let statusRetryTimer = null;
+
+function setStatus(status, text) {
+  statusText.textContent = text;
+  statusWrap.classList.remove("ready", "error");
+  if (status === "ready" || status === "error") statusWrap.classList.add(status);
+}
+
+async function checkStatus(isRetry = false) {
+  if (!isBackendConfigured()) {
+    enterDemoMode("No backend configured for this deployment.", true);
+    return;
+  }
+
+  if (!isRetry) {
+    statusText.textContent = "Checking system";
+    statusWrap.classList.remove("ready", "error");
+  }
+
+  try {
+    const r = await fetch(`${API_BASE}/api/status`);
+    const d = await r.json();
+    clearTimeout(statusRetryTimer);
+    if (d.configured) {
+      demoMode = false;
+      statusText.textContent = "System online";
+      statusWrap.classList.remove("error");
+      statusWrap.classList.add("ready");
+    } else {
+      statusText.textContent = "API key required";
+      statusWrap.classList.remove("ready");
+      statusWrap.classList.add("error");
+    }
+  } catch {
+    enterDemoMode("Couldn't reach the Azyvion AI backend (it may be waking up).", false);
+    // Keep retrying in the background — covers Render cold starts and
+    // transient network blips — instead of giving up permanently.
+    clearTimeout(statusRetryTimer);
+    statusRetryTimer = setTimeout(() => checkStatus(true), 6000);
+  }
+}
+
+function enterDemoMode(reason, permanent) {
+  demoMode = true;
+  statusText.textContent = permanent ? "Demo mode — backend not connected" : "Reconnecting…";
+  statusWrap.classList.remove("ready");
+  statusWrap.classList.add("error");
+  console.info(`Azyvion AI: ${reason} Set API_BASE_URL in config.js to connect a live backend.`);
+}
+
+// Detects the language the browser/OS is set to, so the backend can make
+// Azyvion AI reply in that language by default (e.g. Chinese browser ->
+// Chinese reply) without the user having to ask. Returns something like
+// "Spanish (es-GT)"; falls back to just the raw code if the browser doesn't
+// support Intl.DisplayNames (e.g. very old browsers).
+function getBrowserLanguage() {
+  const code = (navigator.language || navigator.userLanguage || "en").trim();
+  try {
+    const displayName = new Intl.DisplayNames([code, "en"], { type: "language" }).of(code);
+    return displayName ? `${displayName} (${code})` : code;
+  } catch {
+    return code;
+  }
+}
+
+// If the active chat belongs to a project, folds that project's instructions
+// and attached files into a single string the backend can drop into the
+// system prompt — this is what makes a project's context actually apply to
+// its chats, not just organize them visually in the sidebar.
+function buildProjectContext(chat) {
+  if (!chat || !chat.projectId) return "";
+  const project = getProject(chat.projectId);
+  if (!project) return "";
+  const parts = [];
+  if (project.name) parts.push(`Project name: ${project.name}`);
+  if (project.instructions) parts.push(project.instructions.slice(0, 3000));
+  (project.files || []).slice(0, 5).forEach((f) => {
+    parts.push(`--- File: ${f.name} ---\n${(f.content || "").slice(0, 3000)}`);
+  });
+  return parts.join("\n\n").slice(0, 6000);
+}
+
+// A Render free-tier backend that's asleep can reject or drop the very
+// first request while it spins up. One silent retry after a short pause
+// turns that into "worked, just a bit slower" instead of a visible error.
+async function fetchChatWithRetry(messages, projectContext, attempt = 0, signal) {
+  try {
+    return await fetch(`${API_BASE}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal,
+      body: JSON.stringify({
+        messages,
+        language: getBrowserLanguage(),
+        projectContext: projectContext || undefined,
+      }),
+    });
+  } catch (e) {
+    if (e.name === "AbortError") throw e; // deliberate cancel (voice barge-in) — don't retry it
+    if (attempt === 0) {
+      await new Promise((res) => setTimeout(res, 2500));
+      return fetchChatWithRetry(messages, projectContext, attempt + 1, signal);
+    }
+    throw e;
+  }
+}
+
+/* ---------- sending ----------
+   opts is used by the voice conversation feature (see voice.js) to reuse
+   this exact same pipeline — same history, same project context, same
+   backend/model — instead of talking to /api/chat separately:
+     - voice: true        skip the image-model branch; voice always talks
+                           to the reasoning model, never Straks Imagen.
+     - signal: AbortSignal lets a barge-in (user interrupts while the
+                           reply is still streaming) cancel the fetch.
+     - onDelta(text)       called with each streamed chunk, so voice.js can
+                           synthesize speech sentence-by-sentence as it
+                           arrives instead of waiting for the full reply.
+     - onDone(fullText)    called once the reply has finished streaming.
+     - onAborted(partial)  called instead of onDone/onError when `signal`
+                           was aborted; `partial` is whatever had streamed
+                           in before the interruption.
+     - onError(err)        called on a real failure (not a deliberate abort).
+*/
+async function sendMessage(text, opts = {}) {
+  text = (text || "").trim();
+  if (!opts.voice && getCurrentModel().type === "image") return sendImagePrompt(text);
+
+  const images = pendingImages.slice();
+  if ((!text && !images.length) || send.disabled) return;
+
+  const chat = getActiveChat();
+  if (welcome.style.display !== "none") welcome.style.display = "none";
+
+  const content = images.length
+    ? [
+        ...(text ? [{ type: "text", text }] : []),
+        ...images.map((img) => ({ type: "image_url", image_url: { url: img.dataUrl } })),
+      ]
+    : text;
+
+  if (!chat.messages.length) chat.title = titleFrom(text || "Imagen adjunta");
+  chat.messages.push({ role: "user", content });
+  saveChats();
+  renderHistory();
+  appendMessageEl("user", content);
+  scrollToBottom();
+
+  input.value = "";
+  input.style.height = "auto";
+  pendingImages = [];
+  renderAttachPreview();
+
+  send.disabled = true;
+
+  // demoMode is only a hint from the last background status check — it can
+  // be stale (e.g. the Render backend just finished waking up). Rather than
+  // trusting it blindly, only fall back to the canned reply if there's
+  // truly no backend configured for this deployment at all. Everything
+  // else gets a real attempt against /api/chat, so a backend that woke up
+  // since page load still works without a manual refresh.
+  if (!isBackendConfigured()) {
+    const reply = "This is a static preview — no backend is connected here. Deploy server.js (see README) and set API_BASE_URL in config.js to enable real responses.";
+    await streamDemoReply(reply);
+    chat.messages.push({ role: "assistant", content: reply });
+    saveChats();
+    opts.onDelta?.(reply);
+    opts.onDone?.(reply);
+    send.disabled = false;
+    if (!opts.voice) input.focus();
+    return;
+  }
+
+  const t = typingEl();
+  let stream = null;
+  let full = "";
+  try {
+    const r = await fetchChatWithRetry(chat.messages, buildProjectContext(chat), 0, opts.signal);
+    if (!r.ok) {
+      let msg = "Request failed";
+      try {
+        msg = (await r.json()).error || msg;
+      } catch {}
+      throw new Error(msg);
+    }
+
+    demoMode = false;
+    statusText.textContent = "System online";
+    statusWrap.classList.remove("error");
+    statusWrap.classList.add("ready");
+
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    t.remove();
+    stream = startStreamBubble();
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split("\n\n");
+      buffer = events.pop(); // keep the last, possibly-incomplete event
+      for (const evt of events) {
+        const lines = evt.split("\n");
+        const eventType = (lines.find((l) => l.startsWith("event: ")) || "").slice(7).trim();
+        const dataLine = (lines.find((l) => l.startsWith("data: ")) || "").slice(6).trim();
+        if (!dataLine) continue;
+        let payload;
+        try {
+          payload = JSON.parse(dataLine);
+        } catch {
+          // A stray/partial chunk (network blip, proxy buffering during a
+          // Render cold start) shouldn't kill the whole in-progress reply —
+          // skip just this one event and keep streaming.
+          continue;
+        }
+        if (eventType === "delta" && payload.text) {
+          full += payload.text;
+          stream.push(payload.text);
+          opts.onDelta?.(payload.text);
+        } else if (eventType === "error") {
+          throw new Error(payload.error || "Something went wrong.");
+        }
+      }
+    }
+
+    stream.finish();
+    if (!full) {
+      // Stream completed but the model returned no visible text — show the
+      // fallback in the bubble immediately instead of leaving it blank
+      // until the next reload.
+      stream.el.querySelector(".stream-text").textContent = "I couldn't generate a response.";
+    }
+    const finalText = full || "I couldn't generate a response.";
+    chat.messages.push({ role: "assistant", content: finalText });
+    saveChats();
+    opts.onDone?.(finalText);
+  } catch (e) {
+    if (e.name === "AbortError") {
+      // Deliberate interruption (voice barge-in), not a failure — keep
+      // whatever text had already streamed in as the assistant's message
+      // instead of showing an error.
+      t.remove();
+      if (stream) stream.finish();
+      if (full) {
+        chat.messages.push({ role: "assistant", content: full });
+        saveChats();
+      } else if (stream) {
+        stream.el.remove();
+      }
+      opts.onAborted?.(full);
+    } else if (!stream) {
+      t.remove();
+      appendMessageEl("assistant", `I couldn't connect right now. ${e.message}`);
+      opts.onError?.(e);
+    } else if (!full) {
+      stream.finish();
+      stream.el.querySelector(".stream-text").textContent = `I couldn't connect right now. ${e.message}`;
+      opts.onError?.(e);
+    } else {
+      stream.finish();
+      opts.onError?.(e);
+    }
+  } finally {
+    scrollToBottom();
+    send.disabled = false;
+    if (!opts.voice) input.focus();
+  }
+}
+
+/* ---------- Straks Imagen (text-to-image) ----------
+   Runs entirely client-side against Pollinations' free, keyless image API
+   (https://image.pollinations.ai) — no backend/API key required, so image
+   generation works even on a static GitHub Pages deployment with no server
+   configured. The user can generate as many images as they like; each
+   prompt gets its own image with a random seed so repeating a prompt gives
+   a different result. */
+function pollinationsUrl(prompt, seed) {
+  const encoded = encodeURIComponent(prompt.slice(0, 800));
+  // model=flux: Pollinations' strongest general-purpose free model (no key
+  // needed). enhance=true lets it expand/improve the raw prompt internally
+  // before generating — this is the single biggest lever for output quality
+  // without a paid key, closing a lot of the gap with ChatGPT/Gemini-style
+  // image tools. nologo removes the watermark; safe stays off by default so
+  // normal creative prompts aren't over-blocked.
+  return `https://image.pollinations.ai/prompt/${encoded}?model=flux&width=1024&height=1024&nologo=true&enhance=true&seed=${seed}`;
+}
+
+async function sendImagePrompt(text) {
+  if (!text || send.disabled) return;
+
+  const chat = getActiveChat();
+  if (welcome.style.display !== "none") welcome.style.display = "none";
+
+  if (!chat.messages.length) chat.title = titleFrom(text);
+  chat.messages.push({ role: "user", content: text });
+  saveChats();
+  renderHistory();
+  appendMessageEl("user", text);
+  scrollToBottom();
+
+  input.value = "";
+  input.style.height = "auto";
+  await runImageGeneration(text, chat);
+}
+
+// Re-runs generation for a prompt already in the conversation (the
+// "Regenerar" button on a past result) — same flow as sendImagePrompt but
+// without adding another user bubble, since the prompt is already visible.
+async function regenerateImage(text) {
+  if (!text || send.disabled) return;
+  const chat = getActiveChat();
+  await runImageGeneration(text, chat);
+}
+
+// Shared by sendImagePrompt and regenerateImage: appends a loading bubble
+// (blurred placeholder that resolves once the image finishes loading) and
+// pushes the final assistant message once it's ready.
+async function runImageGeneration(text, chat) {
+  send.disabled = true;
+
+  const seed = Math.floor(Math.random() * 1e9);
+  const url = pollinationsUrl(text, seed);
+  const w = document.createElement("div");
+  w.className = "message assistant";
+  w.innerHTML =
+    `<div class="avatar">A</div><div class="bubble"><span class="label">AZYVION AI</span>` +
+    `<div class="gen-image-wrap loading"><img src="${escapeHtml(url)}" alt="Generando…">` +
+    `<div class="gen-image-status"><span class="typing"><span></span><span></span><span></span></span> Generando imagen…</div></div></div>`;
+  messagesEl.appendChild(w);
+  scrollToBottom();
+
+  const img = w.querySelector("img");
+  const wrap = w.querySelector(".gen-image-wrap");
+  const status = w.querySelector(".gen-image-status");
+
+  const finish = (ok) => {
+    wrap.classList.remove("loading");
+    if (ok) {
+      const safeUrl = escapeHtml(url);
+      const safePrompt = escapeHtml(text);
+      status.outerHTML =
+        `<div class="gen-image-actions">` +
+        `<a href="${safeUrl}" download="straks-imagen.jpg" target="_blank" rel="noopener">Descargar</a>` +
+        `<a href="${safeUrl}" target="_blank" rel="noopener">Abrir</a>` +
+        `<button type="button" class="gen-regenerate" data-prompt="${safePrompt}">Regenerar</button>` +
+        `</div>`;
+      chat.messages.push({
+        role: "assistant",
+        content: [
+          { type: "text", text: `Imagen generada a partir de: "${text}"` },
+          { type: "generated_image", url, prompt: text },
+        ],
+      });
+    } else {
+      status.textContent = "No se pudo generar la imagen. Intenta de nuevo.";
+      chat.messages.push({ role: "assistant", content: "No se pudo generar la imagen. Intenta de nuevo." });
+    }
+    saveChats();
+    send.disabled = false;
+    input.focus();
+    scrollToBottom();
+  };
+
+  img.addEventListener("load", () => finish(true), { once: true });
+  img.addEventListener("error", () => finish(false), { once: true });
+}
+
+/* Demo mode has no backend, but streams the canned reply word-by-word
+   through the same materialize renderer so the UX stays consistent. */
+function streamDemoReply(text) {
+  return new Promise((resolve) => {
+    const t = typingEl();
+    setTimeout(() => {
+      t.remove();
+      const stream = startStreamBubble();
+      const words = text.split(" ");
+      let i = 0;
+      const tick = () => {
+        if (i >= words.length) {
+          stream.finish();
+          resolve();
+          return;
+        }
+        stream.push((i === 0 ? "" : " ") + words[i]);
+        i++;
+        setTimeout(tick, 35 + Math.random() * 40);
+      };
+      tick();
+    }, 400);
+  });
+}
+
+composer.addEventListener("submit", (e) => {
+  e.preventDefault();
+  sendMessage(input.value);
+});
+
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    composer.requestSubmit();
+  }
+});
+
+input.addEventListener("input", () => {
+  input.style.height = "auto";
+  input.style.height = Math.min(input.scrollHeight, 160) + "px";
+});
+
+document.querySelectorAll(".suggestions button").forEach((b) =>
+  b.addEventListener("click", () => sendMessage(b.textContent))
+);
+
+renderHistory();
+renderMessages();
+checkStatus();
+
+/* =========================================================================
+   PWA — instalación + actualización forzada
+   ========================================================================= */
+
+const APP_VERSION = (window.AZYVION_CONFIG && window.AZYVION_CONFIG.APP_VERSION) || "0";
+const appVersionEl = document.getElementById("appVersion");
+if (appVersionEl) appVersionEl.textContent = `v${APP_VERSION}`;
+
+let swRegistration = null;
+let reloadingForUpdate = false;
+
+function isStandaloneApp() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true // iOS
+  );
+}
+
+// Recarga forzada, en el mismo espíritu de un Ctrl+Shift+R: se dispara sola
+// cuando detecta una versión nueva, sin pedirle nada al usuario.
+function forceReload() {
+  if (reloadingForUpdate) return;
+  reloadingForUpdate = true;
+  showUpdateToast();
+  setTimeout(() => window.location.reload(), 700);
+}
+
+function showUpdateToast() {
+  if (document.getElementById("updateToast")) return;
+  const t = document.createElement("div");
+  t.id = "updateToast";
+  t.className = "update-toast";
+  t.textContent = "Actualizando Azyvion AI a la nueva versión…";
+  document.body.appendChild(t);
+}
+
+// Compara version.json (siempre pedido a la red, nunca a caché) contra la
+// versión con la que se cargó esta pestaña. Es el respaldo que garantiza la
+// actualización incluso si, por lo que sea, el service worker no llega a
+// activarse a tiempo (primera visita, navegador sin soporte, etc).
+async function checkForNewVersion() {
+  try {
+    const r = await fetch(`./version.json?_=${Date.now()}`, { cache: "no-store" });
+    const d = await r.json();
+    if (d.version && d.version !== APP_VERSION) forceReload();
+  } catch {
+    /* sin conexión o bloqueado — se reintenta en el siguiente chequeo */
+  }
+}
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    // updateViaCache: "none" evita que el navegador sirva un sw.js viejo
+    // desde su propia caché HTTP — siempre pide el archivo real a la red.
+    navigator.serviceWorker
+      .register("./sw.js", { updateViaCache: "none" })
+      .then((reg) => {
+        swRegistration = reg;
+        reg.update().catch(() => {});
+      })
+      .catch(() => {});
+  });
+
+  // Se dispara cuando un service worker nuevo toma el control de la
+  // página: es la señal de "ya hay versión nueva activa", y se recarga sola.
+  navigator.serviceWorker.addEventListener("controllerchange", forceReload);
+
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data && event.data.type === "SW_ACTIVATED" && event.data.version !== APP_VERSION) {
+      forceReload();
+    }
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    if (swRegistration) swRegistration.update().catch(() => {});
+    checkForNewVersion();
+  });
+
+  // Revisión periódica mientras la app queda abierta en segundo plano.
+  setInterval(() => {
+    if (swRegistration) swRegistration.update().catch(() => {});
+    checkForNewVersion();
+  }, 5 * 60 * 1000);
+}
+
+checkForNewVersion();
+
+/* ---------- banner de instalación ("agregar a inicio") ---------- */
+
+let deferredInstallPrompt = null;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+
+function installDismissedThisSession() {
+  try {
+    return sessionStorage.getItem("azyvion_install_dismissed") === "1";
+  } catch {
+    return false;
+  }
+}
+function markInstallDismissed() {
+  try {
+    sessionStorage.setItem("azyvion_install_dismissed", "1");
+  } catch {
+    /* sessionStorage no disponible — el banner podría repetirse, no es grave */
+  }
+}
+
+function showInstallBanner(platform) {
+  if (isStandaloneApp() || installDismissedThisSession()) return;
+  if (document.getElementById("installBanner")) return;
+
+  const banner = document.createElement("div");
+  banner.id = "installBanner";
+  banner.className = "install-banner";
+
+  if (platform === "ios") {
+    banner.innerHTML =
+      '<div class="install-banner-text">' +
+      "<strong>Instala Azyvion AI</strong>" +
+      '<span>Toca <b>Compartir</b> y luego <b>“Agregar a inicio”</b>.</span>' +
+      "</div>" +
+      '<button type="button" class="install-close" aria-label="Cerrar">✕</button>';
+  } else {
+    banner.innerHTML =
+      '<div class="install-banner-text">' +
+      "<strong>Instala Azyvion AI</strong>" +
+      "<span>Ábrela como app, más rápido, desde tu pantalla de inicio.</span>" +
+      "</div>" +
+      '<div class="install-banner-actions">' +
+      '<button type="button" class="install-btn">Instalar</button>' +
+      '<button type="button" class="install-close" aria-label="Cerrar">✕</button>' +
+      "</div>";
+  }
+
+  document.body.appendChild(banner);
+
+  banner.querySelector(".install-close").addEventListener("click", () => {
+    banner.remove();
+    markInstallDismissed();
+  });
+
+  const installBtn = banner.querySelector(".install-btn");
+  if (installBtn) {
+    installBtn.addEventListener("click", async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      banner.remove();
+      markInstallDismissed();
+    });
+  }
+}
+
+// Android / Chrome / Edge: el navegador ofrece el evento de instalación.
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  showInstallBanner("android");
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  markInstallDismissed();
+  const b = document.getElementById("installBanner");
+  if (b) b.remove();
+});
+
+// iOS Safari no dispara beforeinstallprompt — se muestran instrucciones manuales.
+if (isIOS && !isStandaloneApp()) {
+  showInstallBanner("ios");
+}
+
+/* ---------- exports for voice.js ----------
+   The voice conversation feature (docs/voice.js) is a separate module so
+   it only loads/runs the mic + speech-synthesis machinery when actually
+   needed. It reuses sendMessage() itself — same chat history, same
+   project context, same backend/model — rather than talking to /api/chat
+   on its own, so a voice turn has exactly the same reasoning, context, and
+   personality as typing would. */
+export { API_BASE, sendMessage, isBackendConfigured };

@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#02080f">
+<meta name="description" content="Azyvion AI — Intelligence Beyond Limits.">
+<title>Azyvion AI — Intelligence Beyond Limits.</title>
+
+<!-- PWA: manifest + iconos -->
+<link rel="manifest" href="./manifest.json">
+<meta name="app-version" content="3.3">
+<link rel="icon" href="./favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png">
+
+<!-- Android / Chrome -->
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- iOS: sin esto Safari no permite instalar como app de pantalla completa -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Azyvion AI">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+
+<link rel="stylesheet" href="./styles.css?v=3.3">
+</head>
+<body>
+<div class="app">
+
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle sidebar" aria-expanded="false" aria-controls="sidebar">
+    <svg width="18" height="14" viewBox="0 0 18 14" fill="none"><path d="M1 1H17M1 7H17M1 13H17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+  </button>
+
+  <div class="status status-corner" id="statusWrap" role="status" aria-live="polite"><i id="statusDot"></i><span id="statusText">Checking system</span></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="side-top">
+      <a class="brand" href="./"><img src="./logo.png" alt="Azyvion" onerror="this.style.display='none'"><span>AZYVION <b>AI</b></span></a>
+    </div>
+    <button class="new-chat" id="newChat">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5V13.5M1.5 7.5H13.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      New chat
+    </button>
+
+    <div class="nav-label-row">
+      <div class="nav-label">Proyectos</div>
+      <button type="button" class="nav-add" id="newProjectBtn" aria-label="New project">+</button>
+    </div>
+    <div class="projects" id="projectsList" aria-label="Projects"></div>
+
+    <div class="nav-label">Recientes</div>
+    <nav class="history" id="history" aria-label="Chat history"></nav>
+    <div class="side-bottom">
+      <div class="app-version" id="appVersion">v3.3</div>
+      <button type="button" class="settings-link" id="settingsBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V19.5a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H4.5a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H10a1.7 1.7 0 0 0 1-1.55V4.5a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V10a1.7 1.7 0 0 0 1.55 1h.09a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        Settings
+      </button>
+      <div class="account-card" id="accountCard">
+        <div class="account-avatar" id="accountAvatar">A</div>
+        <div class="account-copy">
+          <strong id="accountName">Guest</strong>
+          <span id="accountEmail">Local mode</span>
+        </div>
+        <button type="button" class="account-menu" id="accountMenu" aria-label="Account menu" aria-haspopup="menu">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3.5 8.5 7 12l3.5-3.5M3.5 5.5 7 2l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="scrim" id="scrim"></div>
+
+  <main class="main">
+    <div class="bg-grid"></div>
+    <div class="beacon" aria-hidden="true">
+      <svg viewBox="0 0 1000 620" preserveAspectRatio="xMidYMin meet" xmlns="http://www.w3.org/2000/svg">
+        <path class="r4" d="M120 600 L500 40 L880 600" stroke-width="2"/>
+        <path class="r3" d="M195 600 L500 130 L805 600" stroke-width="2"/>
+        <path class="r2" d="M270 600 L500 220 L730 600" stroke-width="2.5"/>
+        <path class="r1" d="M345 600 L500 310 L655 600" stroke-width="3"/>
+      </svg>
+    </div>
+
+    <div class="thread" id="thread">
+      <section class="welcome" id="welcome">
+        <div class="welcome-greet">
+          <span class="welcome-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C12 7 15 10 20 12C15 14 12 17 12 22C12 17 9 14 4 12C9 10 12 7 12 2Z" fill="url(#welcomeMarkGrad)"/>
+              <defs>
+                <linearGradient id="welcomeMarkGrad" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#176EB1"/>
+                  <stop offset="1" stop-color="#00A9D9"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </span>
+          <h1 id="welcomeGreeting">Welcome to <em>Azyvion AI</em></h1>
+        </div>
+        <p>A private AI interface built by Azyvion. Ask questions, explore ideas, write, analyze, and build.</p>
+        <div class="suggestions" id="suggestions">
+          <button type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.44 1 1.13 1 1.85V16h5v-.25c0-.72.4-1.4 1-1.85A6 6 0 0 0 12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Give me a startup idea</button>
+          <button type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M14 6.5 4 11l10 4.5 10-4.5L14 6.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.5 12.8V17c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5v-4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Help me build a product</button>
+          <button type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="m9 8-5 4 5 4M15 8l5 4-5 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Explain AI simply</button>
+        </div>
+      </section>
+      <div class="messages" id="messages"></div>
+    </div>
+
+    <div class="composer-dock">
+      <div class="attach-preview" id="attachPreview"></div>
+      <div class="model-bar">
+        <button type="button" class="model-picker-btn" id="modelPickerBtn" aria-haspopup="true" aria-expanded="false">
+          <span class="model-picker-icon" id="modelPickerIcon">S</span>
+          <span id="modelPickerLabel">Straks</span>
+          <svg class="model-picker-caret" width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="model-popover" id="modelPopover" hidden>
+          <button type="button" class="model-option" data-model="straks">
+            <span class="model-option-icon straks">S</span>
+            <span class="model-option-main">
+              <span class="model-option-name">Straks</span>
+              <span class="model-option-desc">Modelo principal · rápido para el día a día</span>
+            </span>
+            <svg class="model-check" width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button type="button" class="model-option" data-model="straks-image">
+            <span class="model-option-icon straks-image">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="8.5" r="1.6" fill="currentColor"/><path d="M21 15.5 16 10l-8.5 8.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="model-option-main">
+              <span class="model-option-name">Straks Imagen</span>
+              <span class="model-option-desc">Genera imágenes a partir de texto</span>
+            </span>
+            <svg class="model-check" width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+      <form class="composer" id="composer">
+        <input type="file" id="fileInput" accept="image/*" multiple hidden>
+        <button type="button" class="attach-btn" id="attachBtn" aria-label="Attach image">
+          <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M14.5 7.5L8.4 13.6a3.2 3.2 0 0 1-4.5-4.5l6.1-6.1a2.1 2.1 0 0 1 3 3l-6.1 6.1a1 1 0 0 1-1.5-1.5l5.5-5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <textarea id="input" rows="1" placeholder="Message Azyvion AI..." autocomplete="off"></textarea>
+        <button type="button" class="voice-btn" id="voiceBtn" aria-label="Start voice conversation" title="Voice conversation">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="1.7"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+        <button type="submit" id="send" aria-label="Send"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 13V3M8 3L3 8M8 3L13 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </form>
+    </div>
+  </main>
+
+  <aside class="artifact-panel" id="artifactPanel" hidden>
+    <div class="artifact-head">
+      <span id="artifactTitle">Artifact</span>
+      <div class="artifact-actions">
+        <button type="button" id="artifactPreviewToggle" hidden>Preview</button>
+        <button type="button" id="artifactCopyBtn">Copy</button>
+        <button type="button" id="artifactDownloadBtn">Download</button>
+        <button type="button" id="artifactCloseBtn" aria-label="Close artifact">✕</button>
+      </div>
+    </div>
+    <div class="artifact-body">
+      <pre class="artifact-code" id="artifactCode"><code></code></pre>
+      <iframe class="artifact-frame" id="artifactFrame" title="Artifact preview" sandbox="allow-scripts" hidden></iframe>
+    </div>
+  </aside>
+</div>
+
+<div class="auth-overlay" id="authOverlay" hidden>
+  <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <button type="button" class="modal-close auth-close" id="authClose" aria-label="Close">✕</button>
+    <div class="auth-mark"><img src="./logo.png" alt="Azyvion"></div>
+    <div class="auth-eyebrow">AZYVION / 3.3</div>
+    <h2 id="authTitle">Your AI, anywhere.</h2>
+    <p>Sign in with Google to keep your conversations synced across devices.</p>
+    <button type="button" class="google-btn" id="googleSignIn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.35 12.27c0-.68-.06-1.34-.18-1.97H12v3.73h5.24a4.48 4.48 0 0 1-1.94 2.94v2.44h3.14c1.84-1.7 2.91-4.21 2.91-7.14Z"/><path fill="#34A853" d="M12 21.75c2.63 0 4.84-.87 6.46-2.34l-3.14-2.44c-.87.58-1.98.93-3.32.93-2.55 0-4.71-1.72-5.48-4.04H3.27v2.52A9.75 9.75 0 0 0 12 21.75Z"/><path fill="#FBBC05" d="M6.52 13.86A5.86 5.86 0 0 1 6.21 12c0-.64.11-1.27.31-1.86V7.62H3.27A9.75 9.75 0 0 0 2.25 12c0 1.57.38 3.05 1.02 4.38l3.25-2.52Z"/><path fill="#EA4335" d="M12 6.1c1.43 0 2.72.49 3.73 1.46l2.8-2.8C16.84 3.09 14.63 2.25 12 2.25a9.75 9.75 0 0 0-8.73 5.37l3.25 2.52C7.29 7.82 9.45 6.1 12 6.1Z"/></svg>
+      Continue with Google
+    </button>
+    <button type="button" class="guest-btn" id="guestSignIn">Continue without an account</button>
+    <div class="auth-note" id="authNote">Free to use. Your Google password is never shared with Azyvion.</div>
+  </div>
+</div>
+
+<div class="voice-overlay" id="voiceOverlay" hidden role="dialog" aria-modal="true" aria-label="Voice conversation">
+  <button type="button" class="voice-close" id="voiceClose" aria-label="Close voice mode">
+    <svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M2 2l14 14M16 2 2 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
+  <div class="voice-stage">
+    <div class="voice-orb" id="voiceOrb">
+      <div class="voice-bars" id="voiceBars">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+    <p class="voice-status" id="voiceStatus">Activating microphone…</p>
+    <p class="voice-caption" id="voiceCaption"></p>
+  </div>
+  <div class="voice-controls">
+    <button type="button" class="voice-control voice-mute" id="voiceMuteBtn" aria-label="Mute microphone">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="1.6"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+    <button type="button" class="voice-control voice-end" id="voiceEndBtn" aria-label="End voice conversation">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="account-popover" id="accountPopover" hidden>
+  <button type="button" id="signOutBtn">Sign out</button>
+</div>
+
+<div class="modal-overlay" id="settingsOverlay" hidden>
+  <div class="modal settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-head">
+      <h2 id="settingsTitle">Settings</h2>
+      <button type="button" class="modal-close" id="settingsClose" aria-label="Close settings">✕</button>
+    </div>
+    <div class="settings-tabs" role="tablist">
+      <button type="button" class="settings-tab active" data-tab="design" role="tab" aria-selected="true">Diseño</button>
+      <button type="button" class="settings-tab" data-tab="advanced" role="tab" aria-selected="false">Avanzado</button>
+    </div>
+    <div class="settings-body">
+      <section class="settings-pane active" data-pane="design">
+        <div class="field-row">
+          <label for="designBlue">Color primario</label>
+          <input type="color" id="designBlue">
+        </div>
+        <div class="field-row">
+          <label for="designCyan">Color de acento</label>
+          <input type="color" id="designCyan">
+        </div>
+        <div class="field-row">
+          <label for="designBg">Color de fondo</label>
+          <input type="color" id="designBg">
+        </div>
+        <div class="field-row">
+          <label for="designFont">Tipografía</label>
+          <select id="designFont">
+            <option value="DM Sans">DM Sans</option>
+            <option value="Inter">Inter</option>
+            <option value="Poppins">Poppins</option>
+            <option value="Manrope">Manrope</option>
+            <option value="Georgia">Georgia (serif)</option>
+            <option value="system-ui">Sistema</option>
+          </select>
+        </div>
+        <div class="field-row">
+          <label for="designRadius">Bordes</label>
+          <select id="designRadius">
+            <option value="sharp">Rectos</option>
+            <option value="default">Predeterminado</option>
+            <option value="round">Redondeados</option>
+          </select>
+        </div>
+        <div class="field-row">
+          <label for="designDensity">Densidad</label>
+          <select id="designDensity">
+            <option value="comfortable">Cómoda</option>
+            <option value="compact">Compacta</option>
+          </select>
+        </div>
+        <button type="button" class="secondary-btn" id="designReset">Restablecer diseño</button>
+      </section>
+      <section class="settings-pane" data-pane="advanced">
+        <label class="field-label" for="customInstructions">Instrucciones personalizadas</label>
+        <textarea id="customInstructions" rows="4" placeholder="Contexto o instrucciones que se aplican a todas tus conversaciones..."></textarea>
+        <div class="field-row switch-row">
+          <label for="enterToSend">Enter para enviar</label>
+          <input type="checkbox" id="enterToSend">
+        </div>
+        <div class="settings-divider"></div>
+        <div class="field-row switch-row">
+          <span>Exportar tus chats, proyectos y ajustes</span>
+          <button type="button" class="secondary-btn" id="exportDataBtn">Exportar</button>
+        </div>
+        <div class="field-row switch-row">
+          <span>Importar una copia de seguridad</span>
+          <button type="button" class="secondary-btn" id="importDataBtn">Importar</button>
+        </div>
+        <input type="file" id="importFileInput" accept="application/json" hidden>
+        <div class="field-row switch-row">
+          <span>Borrar todos los datos locales</span>
+          <button type="button" class="danger-btn" id="clearDataBtn">Borrar</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="projectOverlay" hidden>
+  <div class="modal project-modal" role="dialog" aria-modal="true" aria-labelledby="projectModalTitle">
+    <div class="modal-head">
+      <h2 id="projectModalTitle">New project</h2>
+      <button type="button" class="modal-close" id="projectModalClose" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="field-label" for="projectName">Nombre</label>
+      <input type="text" id="projectName" placeholder="p. ej. Sitio de marketing">
+      <label class="field-label" for="projectInstructions">Instrucciones / contexto</label>
+      <textarea id="projectInstructions" rows="5" placeholder="Instrucciones o contexto propio de este proyecto..."></textarea>
+      <label class="field-label">Archivos adjuntos</label>
+      <input type="file" id="projectFileInput" multiple hidden accept=".txt,.md,.csv,.json,.js,.ts,.jsx,.tsx,.py,.html,.css,.yml,.yaml">
+      <button type="button" id="projectFileBtn" class="secondary-btn">Agregar archivos</button>
+      <div id="projectFilesList" class="project-files-list"></div>
+      <div class="modal-actions">
+        <button type="button" id="projectDeleteBtn" class="danger-btn" hidden>Eliminar proyecto</button>
+        <button type="button" id="projectSaveBtn" class="primary-btn">Guardar proyecto</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="./config.js"></script>
+<script type="module" src="./app.js"></script>
+<script type="module" src="./voice.js"></script>
+</body>
+</html>

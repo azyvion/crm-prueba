@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.azyvion.twa",
+      "sha256_cert_fingerprints": [
+        "48:60:D2:08:26:AB:B2:E8:12:62:28:64:0F:3D:25:3A:4E:D7:B5:4F:CA:F8:B2:80:8E:EA:DC:B5:05:E9:3D:A7"
+      ]
+    }
+  }
+]
