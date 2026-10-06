@@ -589,45 +589,52 @@ function catFiltrarEmpresa(val) {
 /* ── Render de cada catálogo ── */
 function renderCatalogo(key) {
     const cfg = CATALOGOS[key];
-    const tbody = document.getElementById('cat-tbody-' + key);
-    if (!tbody) return;
     let rows = _catData[key] || [];
     if (_catEsSA && _catEmpFiltro) rows = rows.filter(r => r.organization_id === _catEmpFiltro);
 
-    const th = document.getElementById('cat-th-emp-' + key);
-    if (th) th.style.display = _catEsSA ? '' : 'none';
-    const cnt = document.getElementById('cat-count-' + key);
-    if (cnt) cnt.textContent = rows.length + (rows.length === 1 ? ' registro' : ' registros');
-
+    // Generar el HTML de las filas una vez, reutilizar en ambos contenedores
+    let rowsHtml;
     if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="6"><div class="cat-empty">
+        rowsHtml = `<tr><td colspan="6"><div class="cat-empty">
             <div class="cat-empty-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
             <div class="cat-empty-t">Aún no hay ${escHtml(cfg.plural.toLowerCase())}</div>
-            <div class="cat-empty-s">Crea ${escHtml(cfg.un)} para poder asignarla${key === 'tipos' ? '' : ''} a tus productos.<br>${escHtml(cfg.ejemplo)}</div>
+            <div class="cat-empty-s">Crea ${escHtml(cfg.un)} para poder asignarla a tus productos.<br>${escHtml(cfg.ejemplo)}</div>
             <button class="topbar-btn" onclick="nuevoCatalogo('${key}')" style="height:34px;font-size:12.5px">${escHtml(cfg.nueva)}</button>
         </div></td></tr>`;
-        return;
+    } else {
+        rowsHtml = rows.map(c => {
+            const usados = (_inventario || []).filter(i => i[cfg.campo] === c.id).length;
+            const estado = c.activa !== false ? '<span class="tag tag-success">Activa</span>' : '<span class="tag tag-gray">Inactiva</span>';
+            const ini = escHtml(String(c.nombre || '?').trim().charAt(0).toUpperCase());
+            return `<tr>
+                <td><div class="cat-row-name"><span class="cat-badge">${ini}</span><strong>${escHtml(c.nombre)}</strong></div></td>
+                <td style="color:var(--text-secondary)">${escHtml(c.descripcion || '—')}</td>
+                <td style="text-align:center">${usados}</td>
+                <td style="${_catEsSA ? '' : 'display:none'}"><span class="tag tag-gray">${escHtml(catEmpresaNombre(c.organization_id))}</span></td>
+                <td>${estado}</td>
+                <td style="text-align:right;white-space:nowrap">
+                    <button class="btn-icon" title="Editar" onclick="editarCatalogo('${key}','${escAttr(c.id)}')">
+                        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                    <button class="btn-icon btn-danger-icon" title="Eliminar" onclick="confirmarEliminarCatalogo('${key}','${escAttr(c.id)}')">
+                        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
     }
-    tbody.innerHTML = rows.map(c => {
-        const usados = (_inventario || []).filter(i => i[cfg.campo] === c.id).length;
-        const estado = c.activa !== false ? '<span class="tag tag-success">Activa</span>' : '<span class="tag tag-gray">Inactiva</span>';
-        const ini = escHtml(String(c.nombre || '?').trim().charAt(0).toUpperCase());
-        return `<tr>
-            <td><div class="cat-row-name"><span class="cat-badge">${ini}</span><strong>${escHtml(c.nombre)}</strong></div></td>
-            <td style="color:var(--text-secondary)">${escHtml(c.descripcion || '—')}</td>
-            <td style="text-align:center">${usados}</td>
-            <td style="${_catEsSA ? '' : 'display:none'}"><span class="tag tag-gray">${escHtml(catEmpresaNombre(c.organization_id))}</span></td>
-            <td>${estado}</td>
-            <td style="text-align:right;white-space:nowrap">
-                <button class="btn-icon" title="Editar" onclick="editarCatalogo('${key}','${escAttr(c.id)}')">
-                    <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </button>
-                <button class="btn-icon btn-danger-icon" title="Eliminar" onclick="confirmarEliminarCatalogo('${key}','${escAttr(c.id)}')">
-                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                </button>
-            </td>
-        </tr>`;
-    }).join('');
+
+    const countText = rows.length + (rows.length === 1 ? ' registro' : ' registros');
+
+    // Actualizar contenedores: panel unificado (cppanel) Y página independiente (-page)
+    ['', '-page'].forEach(suffix => {
+        const tbody = document.getElementById('cat-tbody-' + key + suffix);
+        if (tbody) tbody.innerHTML = rowsHtml;
+        const th = document.getElementById('cat-th-emp-' + key + suffix);
+        if (th) th.style.display = _catEsSA ? '' : 'none';
+        const cnt = document.getElementById('cat-count-' + key + suffix);
+        if (cnt) cnt.textContent = countText;
+    });
 }
 
 /* ── Formulario / modal de catálogo ── */

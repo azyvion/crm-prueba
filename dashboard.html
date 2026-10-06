@@ -1107,13 +1107,78 @@
                 </div>
             </div>
 
-            <!-- páginas de catálogo individuales mantenidas como alias para compatibilidad con enlaces internos -->
+            <!-- ══════════════════════ PÁGINAS DE CATÁLOGO INDEPENDIENTES ══════════════════════ -->
             <div class="page" id="page-categorias" style="display:none!important"></div>
-            <div class="page" id="page-catalogo-marcas" style="display:none!important"></div>
-            <div class="page" id="page-catalogo-lineas" style="display:none!important"></div>
-            <div class="page" id="page-catalogo-familias" style="display:none!important"></div>
-            <div class="page" id="page-catalogo-unidades" style="display:none!important"></div>
-            <div class="page" id="page-catalogo-tipos" style="display:none!important"></div>
+
+            <div class="page" id="page-catalogo-marcas">
+                <div class="table-card">
+                    <div class="table-toolbar" style="padding:14px 16px">
+                        <span style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Marcas <span class="cat-count" id="cat-count-marcas-page"></span></span>
+                        <button class="topbar-btn" onclick="nuevoCatalogo('marcas')" style="height:32px;font-size:12px">
+                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Nueva marca
+                        </button>
+                    </div>
+                    <table><thead><tr><th>Nombre</th><th>Descripción</th><th style="text-align:center">Ítems</th><th id="cat-th-emp-marcas-page" style="display:none">Empresa</th><th>Estado</th><th></th></tr></thead>
+                    <tbody id="cat-tbody-marcas-page"><tr class="skeleton-row"><td>&nbsp;</td><td></td><td></td><td style="display:none"></td><td></td><td></td></tr></tbody></table>
+                </div>
+            </div>
+
+            <div class="page" id="page-catalogo-lineas">
+                <div class="table-card">
+                    <div class="table-toolbar" style="padding:14px 16px">
+                        <span style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Líneas <span class="cat-count" id="cat-count-lineas-page"></span></span>
+                        <button class="topbar-btn" onclick="nuevoCatalogo('lineas')" style="height:32px;font-size:12px">
+                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Nueva línea
+                        </button>
+                    </div>
+                    <table><thead><tr><th>Nombre</th><th>Descripción</th><th style="text-align:center">Ítems</th><th id="cat-th-emp-lineas-page" style="display:none">Empresa</th><th>Estado</th><th></th></tr></thead>
+                    <tbody id="cat-tbody-lineas-page"><tr class="skeleton-row"><td>&nbsp;</td><td></td><td></td><td style="display:none"></td><td></td><td></td></tr></tbody></table>
+                </div>
+            </div>
+
+            <div class="page" id="page-catalogo-familias">
+                <div class="table-card">
+                    <div class="table-toolbar" style="padding:14px 16px">
+                        <span style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Familias <span class="cat-count" id="cat-count-familias-page"></span></span>
+                        <button class="topbar-btn" onclick="nuevoCatalogo('familias')" style="height:32px;font-size:12px">
+                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Nueva familia
+                        </button>
+                    </div>
+                    <table><thead><tr><th>Nombre</th><th>Descripción</th><th style="text-align:center">Ítems</th><th id="cat-th-emp-familias-page" style="display:none">Empresa</th><th>Estado</th><th></th></tr></thead>
+                    <tbody id="cat-tbody-familias-page"><tr class="skeleton-row"><td>&nbsp;</td><td></td><td></td><td style="display:none"></td><td></td><td></td></tr></tbody></table>
+                </div>
+            </div>
+
+            <div class="page" id="page-catalogo-unidades">
+                <div class="table-card">
+                    <div class="table-toolbar" style="padding:14px 16px">
+                        <span style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Unidades de negocio <span class="cat-count" id="cat-count-unidades-page"></span></span>
+                        <button class="topbar-btn" onclick="nuevoCatalogo('unidades')" style="height:32px;font-size:12px">
+                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Nueva unidad de negocio
+                        </button>
+                    </div>
+                    <table><thead><tr><th>Nombre</th><th>Descripción</th><th style="text-align:center">Ítems</th><th id="cat-th-emp-unidades-page" style="display:none">Empresa</th><th>Estado</th><th></th></tr></thead>
+                    <tbody id="cat-tbody-unidades-page"><tr class="skeleton-row"><td>&nbsp;</td><td></td><td></td><td style="display:none"></td><td></td><td></td></tr></tbody></table>
+                </div>
+            </div>
+
+            <div class="page" id="page-catalogo-tipos">
+                <div class="table-card">
+                    <div class="table-toolbar" style="padding:14px 16px">
+                        <span style="font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Tipos de producto <span class="cat-count" id="cat-count-tipos-page"></span></span>
+                        <button class="topbar-btn" onclick="nuevoCatalogo('tipos')" style="height:32px;font-size:12px">
+                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Nuevo tipo de producto
+                        </button>
+                    </div>
+                    <table><thead><tr><th>Nombre</th><th>Descripción</th><th style="text-align:center">Ítems</th><th id="cat-th-emp-tipos-page" style="display:none">Empresa</th><th>Estado</th><th></th></tr></thead>
+                    <tbody id="cat-tbody-tipos-page"><tr class="skeleton-row"><td>&nbsp;</td><td></td><td></td><td style="display:none"></td><td></td><td></td></tr></tbody></table>
+                </div>
+            </div>
 
             <!-- ── FICHA DE CLIENTE / PROSPECTO ── -->
             <div class="page" id="page-ficha">
@@ -2463,7 +2528,7 @@
         let _usuario = '';
 
         const PAGE_TITLES = {overview: 'Inicio', empleados: 'Empleados', pos: 'Punto de Venta (POS)', clientes: 'Clientes', prospectos: 'Prospectos', ficha: 'Ficha', cotizaciones: 'Cotizaciones', inventario: 'Inventario', 'crear-producto': 'Crear producto', categorias: 'Categorías', 'catalogo-marcas': 'Marcas', 'catalogo-lineas': 'Líneas', 'catalogo-familias': 'Familias', 'catalogo-unidades': 'Unidades de negocio', 'catalogo-tipos': 'Tipos de producto', encuestas: 'Encuestas', usuarios: 'Usuarios', contabilidad: 'Contabilidad', perfil: 'Ajustes', suscripciones: 'Suscripciones', 'sub-empresas': 'Empresas', 'sub-planes': 'Planes', 'sub-pagos': 'Pagos'};
-        const CTA_LABELS = {overview: '', empleados: 'Nuevo empleado', pos: 'Guardar venta', clientes: 'Nuevo cliente', prospectos: 'Nuevo prospecto', cotizaciones: 'Nueva cotización', inventario: 'Nuevo ítem', 'crear-producto': 'Nuevo producto', categorias: 'Nueva categoría', 'catalogo-marcas': 'Nueva marca', 'catalogo-lineas': 'Nueva línea', 'catalogo-familias': 'Nueva familia', 'catalogo-unidades': 'Nueva unidad de negocio', 'catalogo-tipos': 'Nuevo tipo de producto', encuestas: 'Nueva encuesta', usuarios: 'Nuevo usuario', contabilidad: 'Nueva cuenta bancaria', perfil: '', suscripciones: '', 'sub-empresas': 'Nueva empresa', 'sub-planes': 'Nuevo plan', 'sub-pagos': ''};
+        const CTA_LABELS = {overview: '', empleados: 'Nuevo empleado', pos: 'Guardar venta', clientes: 'Nuevo cliente', prospectos: 'Nuevo prospecto', cotizaciones: 'Nueva cotización', inventario: 'Nuevo ítem', 'crear-producto': 'Nuevo producto', categorias: 'Nueva categoría', 'catalogo-marcas': '', 'catalogo-lineas': '', 'catalogo-familias': '', 'catalogo-unidades': '', 'catalogo-tipos': '', encuestas: 'Nueva encuesta', usuarios: 'Nuevo usuario', contabilidad: 'Nueva cuenta bancaria', perfil: '', suscripciones: '', 'sub-empresas': 'Nueva empresa', 'sub-planes': 'Nuevo plan', 'sub-pagos': ''};
 
         const ETAPAS = ['Nuevo', 'Contactado', 'Calificado', 'Propuesta', 'Negociación', 'Perdido'];
         const ORIGENES = ['Referido', 'Sitio web', 'Llamada fría', 'Evento', 'Redes sociales', 'Otro'];
@@ -2853,31 +2918,7 @@
                 }
             } catch(e) {}
 
-            // Redirigir páginas de catálogo al módulo unificado
-            const _catTabMap = {categorias:'categorias','catalogo-marcas':'marcas','catalogo-lineas':'lineas','catalogo-familias':'familias','catalogo-unidades':'unidades','catalogo-tipos':'tipos'};
-            if (_catTabMap[id]) {
-                const origId = id;
-                const tab = _catTabMap[id];
-                id = 'crear-producto';
-                _currentPage = id;
-                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-                const pageEl = document.getElementById('page-crear-producto');
-                if (pageEl) pageEl.classList.add('active');
-                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-                document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
-                _openNavGroup('invGroup');
-                const si = (navEl && navEl.classList.contains('nav-subitem')) ? navEl : (document.getElementById('nav-' + origId) || document.getElementById('nav-crear-producto'));
-                if (si) si.classList.add('active');
-                if (typeof cpTab === 'function') cpTab(tab);
-                // cargar datos del catálogo
-                if (tab === 'categorias') { if (typeof loadCategorias === 'function') loadCategorias(); }
-                else { if (typeof renderCatalogo === 'function' && window.CATALOGO_POR_PAGE) { const key = Object.keys(CATALOGO_POR_PAGE||{}).find(k=>k===('catalogo-'+tab)||k===origId); if(key) renderCatalogo(CATALOGO_POR_PAGE[key]); } if (typeof loadCatalogos === 'function') loadCatalogos(); }
-                const titles = {marcas:'Marcas de Inventario',lineas:'Líneas de Inventario',familias:'Familias de Inventario',unidades:'Unidades de Negocio',tipos:'Tipos de Producto',categorias:'Categorías'};
-                document.getElementById('pageTitle').textContent = titles[tab] || 'Crear producto';
-                document.getElementById('ctaLabel').textContent = 'Nuevo ' + (tab === 'marcas' ? 'marca' : tab === 'lineas' ? 'línea' : tab === 'familias' ? 'familia' : 'producto');
-                document.getElementById('searchInput').value = '';
-                return;
-            }
+            // Las páginas de catálogo ahora son independientes (sin redirect al módulo unificado)
 
             _currentPage = id;
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -6043,15 +6084,15 @@ CREATE TABLE IF NOT EXISTS sub_auditoria (
     ═══════════════════════════════════════════════════════ -->
 
     <!-- Botón flotante IA -->
-    <button class="az-ai-fab" id="azAiFab" onclick="azAiToggle()" title="Asistente IA del CRM" style="display:flex;align-items:center;justify-content:center;padding:0">
-        <img src="logo-crm.png" alt="Azyvion AI" style="width:26px;height:26px;object-fit:contain">
+    <button class="az-ai-fab" id="azAiFab" onclick="azAiToggle()" title="Asistente IA del CRM">
+        <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/><circle cx="9" cy="14" r="1.5" fill="white" stroke="none"/><circle cx="15" cy="14" r="1.5" fill="white" stroke="none"/></svg>
     </button>
 
     <!-- Panel de chat IA -->
     <div class="az-ai-panel" id="azAiPanel">
         <div class="az-ai-panel-head">
-            <div class="az-ai-panel-icon" style="background:transparent;box-shadow:none;display:flex;align-items:center;justify-content:center">
-                <img src="logo-crm.png" alt="Azyvion Logo" style="width:26px;height:26px;object-fit:contain">
+            <div class="az-ai-panel-icon">
+                <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/><circle cx="9" cy="14" r="1.5" fill="white" stroke="none"/><circle cx="15" cy="14" r="1.5" fill="white" stroke="none"/></svg>
             </div>
             <div style="flex:1">
                 <div class="az-ai-panel-title">Azyvion AI · Oficial</div>
