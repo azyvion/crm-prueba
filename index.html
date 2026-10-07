@@ -950,7 +950,7 @@
 
     .kanban-cols {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 10px;
     }
 
@@ -971,7 +971,8 @@
     .kcol-1 .kanban-col-head { border-color: var(--blue); color: var(--blue); }
     .kcol-2 .kanban-col-head { border-color: var(--orange); color: var(--orange); }
     .kcol-3 .kanban-col-head { border-color: var(--purple); color: var(--purple); }
-    .kcol-4 .kanban-col-head { border-color: var(--green); color: var(--green); }
+    .kcol-4 .kanban-col-head { border-color: #e11d48; color: #e11d48; }
+    .kcol-5 .kanban-col-head { border-color: var(--green); color: var(--green); }
 
     .kanban-card {
       background: rgba(255,255,255,0.07);
@@ -987,7 +988,8 @@
 
     .kcol-2 .kc-bar { background: linear-gradient(90deg, var(--orange), transparent); }
     .kcol-3 .kc-bar { background: linear-gradient(90deg, var(--purple), transparent); }
-    .kcol-4 .kc-bar { background: linear-gradient(90deg, var(--green), transparent); }
+    .kcol-4 .kc-bar { background: linear-gradient(90deg, #e11d48, transparent); }
+    .kcol-5 .kc-bar { background: linear-gradient(90deg, var(--green), transparent); }
 
     .pipeline-text {}
 
@@ -1827,7 +1829,12 @@
         </div>
         <div class="kanban-cols">
           <div class="kcol-1">
-            <div class="kanban-col-head">Prospecto <span>4</span></div>
+            <div class="kanban-col-head">Prospecto <span>3</span></div>
+            <div class="kanban-card">
+              <div class="kc-company">Agrícola Vásquez</div>
+              <div class="kc-value">$5,600</div>
+              <div class="kc-bar" style="width:20%"></div>
+            </div>
             <div class="kanban-card">
               <div class="kc-company">Logística Norte</div>
               <div class="kc-value">$3,200</div>
@@ -1860,16 +1867,19 @@
               <div class="kc-bar" style="width:75%"></div>
             </div>
           </div>
-          <div class="kcol-4">
-            <div class="kanban-col-head">Cerrado <span>5</span></div>
+          <div class="kcol-4" style="--kanban-head-color:#e11d48;">
+            <div class="kanban-col-head" style="border-color:#e11d48;color:#e11d48;">Negociación <span>1</span></div>
+            <div class="kanban-card">
+              <div class="kc-company">Distribuidora RC</div>
+              <div class="kc-value">$4,100</div>
+              <div class="kc-bar" style="width:85%;background:#e11d48"></div>
+            </div>
+          </div>
+          <div class="kcol-5" style="--kanban-head-color:var(--green);">
+            <div class="kanban-col-head" style="border-color:var(--green);color:var(--green);">Cerrado <span>4</span></div>
             <div class="kanban-card">
               <div class="kc-company">Constructora Mérida</div>
               <div class="kc-value">$12,400</div>
-              <div class="kc-bar" style="width:100%"></div>
-            </div>
-            <div class="kanban-card">
-              <div class="kc-company">Agrícola Vásquez</div>
-              <div class="kc-value">$5,600</div>
               <div class="kc-bar" style="width:100%"></div>
             </div>
           </div>
@@ -2155,9 +2165,9 @@
       <div class="footer-bottom">
         <div class="footer-copy">© 2026 Azyvion. Todos los derechos reservados.</div>
         <div class="footer-legal">
-          <a href="#" onclick="openLegal('privacidad');return false;">Privacidad</a>
-          <a href="#" onclick="openLegal('terminos');return false;">Términos de uso</a>
-          <a href="#" onclick="openLegal('cookies');return false;">Cookies</a>
+          <a href="#" data-legal="privacidad">Privacidad</a>
+          <a href="#" data-legal="terminos">Términos de uso</a>
+          <a href="#" data-legal="cookies">Cookies</a>
         </div>
       </div>
     </div>
@@ -2177,6 +2187,11 @@
 <style>#legalModal.visible{display:flex!important;}</style>
 <script>
 (function(){
+  // event delegation para links data-legal
+  document.addEventListener('click', function(e) {
+    var el = e.target.closest('[data-legal]');
+    if (el) { e.preventDefault(); window.openLegal(el.getAttribute('data-legal')); }
+  });
   // auto-abrir si viene de login
   var _pending = sessionStorage.getItem('openLegal');
   if (_pending) { sessionStorage.removeItem('openLegal'); setTimeout(function(){ window.openLegal(_pending); }, 400); }
