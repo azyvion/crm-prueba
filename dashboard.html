@@ -1954,10 +1954,16 @@
                             <p id="orgSubtitle" style="margin:3px 0 0;font-size:13px;color:var(--text-secondary);">Estructura jerárquica de tu organización</p>
                         </div>
                     </div>
-                    <button class="btn-ghost" onclick="loadOrganigramaDynamic()" style="display:flex;align-items:center;gap:6px;font-size:13px;">
-                        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                        Actualizar
-                    </button>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn-ghost" onclick="showPage('empleados',document.getElementById('nav-empleados'))" style="display:flex;align-items:center;gap:6px;font-size:13px;">
+                            <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            Gestionar empleados
+                        </button>
+                        <button class="btn-ghost" onclick="loadOrganigramaDynamic()" style="display:flex;align-items:center;gap:6px;font-size:13px;">
+                            <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                            Actualizar
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Contenedor dinámico -->
@@ -2064,7 +2070,7 @@
                     var sub = document.getElementById('orgSubtitle');
                     if (sub) sub.textContent = orgName ? 'Estructura jerárquica de ' + orgName : 'Estructura jerárquica de tu organización';
 
-                    var q = sb.from('empleados').select('nombre,apellido,puesto,departamento,estado,cargo').eq('estado', 'Activo');
+                    var q = sb.from('empleados').select('nombre,apellido,puesto,departamento,estado').eq('estado', 'Activo');
                     if (org && !window._esSuperAdmin) q = q.eq('organization_id', org);
                     q = q.order('departamento').order('apellido');
 
