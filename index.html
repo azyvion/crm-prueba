@@ -1473,7 +1473,7 @@
                   <div class="lead-avatar" style="background:#22c55e">AV</div>
                   <div class="lead-name">Agrícola Vásquez</div>
                   <div class="lead-val">$5,600</div>
-                  <div class="lead-status new">Nuevo</div>
+                  <div class="lead-status new">Prospecto</div>
                 </div>
               </div>
             </div>
@@ -1690,7 +1690,7 @@
                     </div>
                     <div class="pscreen-lead-row">
                       <div class="pscreen-lead-av" style="background:#22c55e">AV</div>
-                      <div class="pscreen-lead-info"><div class="pscreen-lead-name">Agrícola Vásquez</div><div class="pscreen-lead-sub">$5,600 · Nuevo</div></div>
+                      <div class="pscreen-lead-info"><div class="pscreen-lead-name">Agrícola Vásquez</div><div class="pscreen-lead-sub">$5,600 · Prospecto</div></div>
                       <div class="pscreen-lead-badge new">●</div>
                     </div>
                   </div>
@@ -1723,13 +1723,12 @@
                 </div>
               </div>
               <!-- Kanban board preview -->
-              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;flex:1;overflow:hidden;">
+              <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;flex:1;overflow:hidden;">
                 <div class="pkboard-col">
-                  <div class="pkboard-head" style="border-color:#0A84FF;color:#0A84FF;">Prospecto <span>4</span></div>
+                  <div class="pkboard-head" style="border-color:#0A84FF;color:#0A84FF;">Prospecto <span>3</span></div>
                   <div class="pkboard-card"><div class="pkbc-co">Agrícola Vásquez</div><div class="pkbc-val">$5,600</div><div class="pkbc-bar" style="width:20%;background:#0A84FF"></div></div>
                   <div class="pkboard-card"><div class="pkbc-co">Logística Norte</div><div class="pkbc-val">$3,200</div><div class="pkbc-bar" style="width:30%;background:#0A84FF"></div></div>
                   <div class="pkboard-card"><div class="pkbc-co">Ferretería López</div><div class="pkbc-val">$1,800</div><div class="pkbc-bar" style="width:20%;background:#0A84FF"></div></div>
-                  <div class="pkboard-card"><div class="pkbc-co">Distribuidora RC</div><div class="pkbc-val">$4,100</div><div class="pkbc-bar" style="width:15%;background:#0A84FF"></div></div>
                 </div>
                 <div class="pkboard-col">
                   <div class="pkboard-head" style="border-color:#f97316;color:#f97316;">Calificado <span>3</span></div>
@@ -1739,6 +1738,10 @@
                 <div class="pkboard-col">
                   <div class="pkboard-head" style="border-color:#7c3aed;color:#7c3aed;">Propuesta <span>2</span></div>
                   <div class="pkboard-card"><div class="pkbc-co">TechParts S.A.</div><div class="pkbc-val">$8,200</div><div class="pkbc-bar" style="width:75%;background:#7c3aed"></div></div>
+                </div>
+                <div class="pkboard-col">
+                  <div class="pkboard-head" style="border-color:#e11d48;color:#e11d48;">Negociación <span>1</span></div>
+                  <div class="pkboard-card"><div class="pkbc-co">Distribuidora RC</div><div class="pkbc-val">$4,100</div><div class="pkbc-bar" style="width:85%;background:#e11d48"></div></div>
                 </div>
                 <div class="pkboard-col">
                   <div class="pkboard-head" style="border-color:#22c55e;color:#22c55e;">Cerrado ✓ <span>4</span></div>
@@ -2152,15 +2155,59 @@
       <div class="footer-bottom">
         <div class="footer-copy">© 2026 Azyvion. Todos los derechos reservados.</div>
         <div class="footer-legal">
-          <a href="#privacidad" id="privacidad">Privacidad</a>
-          <a href="#terminos" id="terminos">Términos de uso</a>
-          <a href="#cookies" id="cookies">Cookies</a>
+          <a href="#" onclick="openLegal('privacidad');return false;">Privacidad</a>
+          <a href="#" onclick="openLegal('terminos');return false;">Términos de uso</a>
+          <a href="#" onclick="openLegal('cookies');return false;">Cookies</a>
         </div>
       </div>
     </div>
   </footer>
 
 
-  
+
+<!-- ══ MODALES LEGALES BUG-02 ══ -->
+<div id="legalModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;">
+  <div style="background:#1c1c1e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;width:100%;max-width:640px;padding:36px 32px;position:relative;">
+    <button onclick="closeLegal()" style="position:absolute;top:16px;right:20px;background:none;border:none;color:rgba(255,255,255,0.4);font-size:24px;cursor:pointer;line-height:1;">×</button>
+    <h2 id="legalTitle" style="font-size:20px;font-weight:700;color:#fff;margin:0 0 20px;"></h2>
+    <div id="legalBody" style="font-size:14px;color:rgba(255,255,255,0.7);line-height:1.7;"></div>
+    <p style="margin-top:24px;font-size:12px;color:rgba(255,255,255,0.3);">Última actualización: octubre 2026 · <a href="mailto:legal@azyvion.com" style="color:#0A84FF;">legal@azyvion.com</a></p>
+  </div>
+</div>
+<style>#legalModal.visible{display:flex!important;}</style>
+<script>
+(function(){
+  // auto-abrir si viene de login
+  var _pending = sessionStorage.getItem('openLegal');
+  if (_pending) { sessionStorage.removeItem('openLegal'); setTimeout(function(){ window.openLegal(_pending); }, 400); }
+  var content = {
+    privacidad: {
+      title: 'Política de Privacidad',
+      body: '<p><strong>1. Datos que recopilamos.</strong> Recopilamos la información que nos proporcionas al registrarte (nombre, correo, empresa), datos de uso del servicio y, en su caso, información de facturación procesada por nuestro proveedor de pagos. No vendemos ni cedemos tus datos a terceros con fines comerciales.</p><p><strong>2. Uso de los datos.</strong> Utilizamos tu información para operar y mejorar el servicio, enviarte comunicaciones relacionadas con tu cuenta y cumplir obligaciones legales.</p><p><strong>3. Almacenamiento.</strong> Tus datos se almacenan en servidores seguros ubicados en la región de tu elección. Aplicamos cifrado en tránsito (TLS) y en reposo.</p><p><strong>4. Tus derechos.</strong> Puedes solicitar acceso, rectificación, eliminación o portabilidad de tus datos escribiendo a <a href="mailto:legal@azyvion.com" style="color:#0A84FF;">legal@azyvion.com</a>. Atendemos solicitudes en un plazo máximo de 30 días hábiles.</p><p><strong>5. Cookies.</strong> Usamos cookies esenciales para el funcionamiento del servicio y cookies analíticas propias. Puedes gestionar tus preferencias en la configuración de tu navegador.</p><p><strong>6. Cambios.</strong> Notificaremos cualquier modificación relevante a esta política mediante correo electrónico con al menos 15 días de anticipación.</p>'
+    },
+    terminos: {
+      title: 'Términos de Uso',
+      body: '<p><strong>1. Aceptación.</strong> Al crear una cuenta o usar Azyvion CRM aceptas estos términos. Si usas el servicio en nombre de una empresa, declaras tener autoridad para vincularla.</p><p><strong>2. Servicio.</strong> Azyvion te otorga una licencia limitada, no exclusiva e intransferible para usar la plataforma durante la vigencia de tu suscripción o período de prueba.</p><p><strong>3. Prueba gratuita.</strong> El período de prueba es de 14 días a partir del registro. Al finalizar, el acceso se suspende salvo que contrates un plan.</p><p><strong>4. Uso aceptable.</strong> Está prohibido usar el servicio para actividades ilegales, enviar spam, vulnerar sistemas de terceros o revender el acceso sin autorización.</p><p><strong>5. Propiedad intelectual.</strong> Todo el software, diseño y contenido de Azyvion son propiedad de Azyvion S.A. Tus datos son y seguirán siendo tuyos.</p><p><strong>6. Limitación de responsabilidad.</strong> El servicio se ofrece "tal cual". Azyvion no será responsable por daños indirectos o pérdida de negocio derivados del uso o imposibilidad de uso del servicio.</p><p><strong>7. Legislación aplicable.</strong> Estos términos se rigen por las leyes aplicables en la jurisdicción de constitución de Azyvion S.A. Cualquier controversia se someterá a arbitraje.</p>'
+    },
+    cookies: {
+      title: 'Política de Cookies',
+      body: '<p><strong>¿Qué son las cookies?</strong> Las cookies son pequeños archivos de texto que se almacenan en tu dispositivo al visitar un sitio web. Nos permiten reconocerte y mejorar tu experiencia.</p><p><strong>Cookies que usamos:</strong></p><p><em>Esenciales:</em> necesarias para el funcionamiento del servicio (sesión, autenticación, preferencias de idioma). No pueden desactivarse.</p><p><em>Analíticas propias:</em> recopilamos datos agregados y anonimizados sobre el uso de la plataforma para mejorarla. No compartimos estos datos con terceros.</p><p><em>No usamos</em> cookies publicitarias ni de seguimiento de terceros.</p><p><strong>Control.</strong> Puedes eliminar o bloquear cookies desde la configuración de tu navegador. Bloquear cookies esenciales puede afectar el funcionamiento del servicio.</p><p><strong>Retención.</strong> Las cookies de sesión se eliminan al cerrar el navegador. Las cookies analíticas se conservan por un máximo de 12 meses.</p>'
+    }
+  };
+  window.openLegal = function(key) {
+    var d = content[key];
+    document.getElementById('legalTitle').textContent = d.title;
+    document.getElementById('legalBody').innerHTML = d.body;
+    document.getElementById('legalModal').classList.add('visible');
+  };
+  window.closeLegal = function() {
+    document.getElementById('legalModal').classList.remove('visible');
+  };
+  document.getElementById('legalModal').addEventListener('click', function(e){
+    if (e.target === this) window.closeLegal();
+  });
+})();
+</script>
+
 </body>
 </html>
