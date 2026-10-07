@@ -1937,129 +1937,164 @@
 
         <!-- ══ ORGANIGRAMA ════════════════════════════════════════ -->
         <div class="page" id="page-organigrama">
-            <div style="padding:28px 24px 40px;max-width:960px;margin:0 auto;">
+            <div style="padding:28px 24px 40px;max-width:1100px;margin:0 auto;">
 
                 <!-- Header -->
-                <div style="display:flex;align-items:center;gap:14px;margin-bottom:36px;">
-                    <div style="width:44px;height:44px;background:linear-gradient(135deg,#3B6EF5,#6C47FF);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;">
-                            <rect x="9" y="2" width="6" height="4" rx="1"/><rect x="2" y="18" width="6" height="4" rx="1"/><rect x="9" y="18" width="6" height="4" rx="1"/><rect x="16" y="18" width="6" height="4" rx="1"/>
-                            <line x1="12" y1="6" x2="12" y2="11"/><line x1="5" y1="11" x2="19" y2="11"/>
-                            <line x1="5" y1="11" x2="5" y2="18"/><line x1="12" y1="11" x2="12" y2="18"/><line x1="19" y1="11" x2="19" y2="18"/>
-                        </svg>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:28px;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:14px;">
+                        <div style="width:44px;height:44px;background:linear-gradient(135deg,#3B6EF5,#6C47FF);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;">
+                                <rect x="9" y="2" width="6" height="4" rx="1"/><rect x="2" y="18" width="6" height="4" rx="1"/><rect x="9" y="18" width="6" height="4" rx="1"/><rect x="16" y="18" width="6" height="4" rx="1"/>
+                                <line x1="12" y1="6" x2="12" y2="11"/><line x1="5" y1="11" x2="19" y2="11"/>
+                                <line x1="5" y1="11" x2="5" y2="18"/><line x1="12" y1="11" x2="12" y2="18"/><line x1="19" y1="11" x2="19" y2="18"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 style="margin:0;font-size:20px;font-weight:700;color:var(--text-primary);">Organigrama Corporativo</h2>
+                            <p id="orgSubtitle" style="margin:3px 0 0;font-size:13px;color:var(--text-secondary);">Estructura jerárquica de tu organización</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 style="margin:0;font-size:20px;font-weight:700;color:var(--text-primary);">Organigrama Corporativo</h2>
-                        <p style="margin:3px 0 0;font-size:13px;color:var(--text-secondary);">Estructura jerárquica de Azyvion</p>
-                    </div>
+                    <button class="btn-ghost" onclick="loadOrganigramaDynamic()" style="display:flex;align-items:center;gap:6px;font-size:13px;">
+                        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        Actualizar
+                    </button>
                 </div>
 
-                <!-- SVG Tree -->
-                <div style="overflow-x:auto;">
-                <svg id="orgSvg" viewBox="0 0 860 480" style="width:100%;min-width:700px;display:block;" xmlns="http://www.w3.org/2000/svg">
-                    <style>
-                        #orgSvg { font-family: inherit; }
-                        .org-line { stroke: #C8CCDA; stroke-width: 1.5; fill: none; }
-                        [data-theme="dark"] .org-line, :root:not([data-theme="light"]) .org-line { stroke: rgba(255,255,255,0.15); }
-                        .org-box { fill: var(--card, #fff); stroke: #E2E5EF; stroke-width: 1.5; rx: 14; }
-                        .org-box-ceo { fill: var(--card, #fff); stroke: #3B6EF5; stroke-width: 2; }
-                        [data-theme="dark"] .org-box, :root:not([data-theme="light"]) .org-box { fill: #161921; stroke: rgba(255,255,255,0.10); }
-                        [data-theme="dark"] .org-box-ceo, :root:not([data-theme="light"]) .org-box-ceo { fill: #161921; }
-                        .org-name { font-size: 13px; font-weight: 700; fill: #0D0F14; }
-                        [data-theme="dark"] .org-name, :root:not([data-theme="light"]) .org-name { fill: #F0F2F8; }
-                        .org-country { font-size: 11px; fill: #B0B3C1; }
-                    </style>
-
-                    <!-- ── CONNECTOR LINES ── -->
-                    <!-- CEO down -->
-                    <line class="org-line" x1="430" y1="98" x2="430" y2="140"/>
-                    <!-- horizontal bar: Pablo(215) · Luis(430) · Karla(645) -->
-                    <line class="org-line" x1="215" y1="140" x2="645" y2="140"/>
-                    <!-- drops to level-2 -->
-                    <line class="org-line" x1="215" y1="140" x2="215" y2="178"/>
-                    <line class="org-line" x1="430" y1="140" x2="430" y2="178"/>
-                    <line class="org-line" x1="645" y1="140" x2="645" y2="178"/>
-                    <!-- Luis down to Cielo -->
-                    <line class="org-line" x1="430" y1="276" x2="430" y2="314"/>
-
-                    <!-- ── CEO: Héctor Reyes  cx=430 y=20..98 ── -->
-                    <rect class="org-box org-box-ceo" x="320" y="20" width="220" height="78" rx="14"/>
-                    <circle cx="360" cy="59" r="23" fill="url(#gradHR)"/>
-                    <text x="360" y="64" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">HR</text>
-                    <text class="org-name" x="392" y="48">Héctor Reyes</text>
-                    <text x="392" y="64" font-size="11" font-weight="600" fill="#3B6EF5">CEO &amp; Fundador</text>
-                    <text class="org-country" x="392" y="80">📍 Guatemala</text>
-
-                    <!-- ── Pablo García  cx=215 y=178..256 ── -->
-                    <rect class="org-box" x="105" y="178" width="220" height="78" rx="14"/>
-                    <circle cx="145" cy="217" r="23" fill="url(#gradPG)"/>
-                    <text x="145" y="222" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">PG</text>
-                    <text class="org-name" x="177" y="206">Pablo García</text>
-                    <text x="177" y="222" font-size="11" font-weight="600" fill="#22C55E">Gte. Inversiones</text>
-                    <text class="org-country" x="177" y="238">📍 Guatemala</text>
-
-                    <!-- ── Luis Maza  cx=430 y=178..256 ── -->
-                    <rect class="org-box" x="320" y="178" width="220" height="78" rx="14"/>
-                    <circle cx="360" cy="217" r="23" fill="url(#gradLM)"/>
-                    <text x="360" y="222" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">LM</text>
-                    <text class="org-name" x="392" y="206">Luis Maza</text>
-                    <text x="392" y="222" font-size="11" font-weight="600" fill="#F59E0B">Gerente de IT</text>
-                    <text class="org-country" x="392" y="238">📍 Colombia</text>
-
-                    <!-- ── Karla Pacheco  cx=645 y=314..392 (reporta a Héctor, mismo nivel que Cielo) ── -->
-                    <!-- línea vertical: desde la barra horizontal (y=140) baja hasta Karla (y=314) -->
-                    <line class="org-line" x1="645" y1="140" x2="645" y2="314"/>
-                    <rect class="org-box" x="535" y="314" width="220" height="78" rx="14"/>
-                    <circle cx="575" cy="353" r="23" fill="url(#gradKP)"/>
-                    <text x="575" y="358" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">KP</text>
-                    <text class="org-name" x="607" y="342">Karla Pacheco</text>
-                    <text x="607" y="358" font-size="11" font-weight="600" fill="#8B5CF6">Ejecutiva de Ventas</text>
-                    <text class="org-country" x="607" y="374">📍 Guatemala</text>
-
-                    <!-- ── Cielo Molleda  cx=430 y=314..392 ── -->
-                    <rect class="org-box" x="320" y="314" width="220" height="78" rx="14"/>
-                    <circle cx="360" cy="353" r="23" fill="url(#gradCM)"/>
-                    <text x="360" y="358" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">CM</text>
-                    <text class="org-name" x="392" y="342">Cielo Molleda</text>
-                    <text x="392" y="358" font-size="11" font-weight="600" fill="#EC4899">Dev. Software Jr.</text>
-                    <text class="org-country" x="392" y="374">📍 Perú</text>
-
-                    <!-- Gradients -->
-                    <defs>
-                        <linearGradient id="gradHR" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#3B6EF5"/><stop offset="100%" stop-color="#6C47FF"/>
-                        </linearGradient>
-                        <linearGradient id="gradPG" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#22C55E"/><stop offset="100%" stop-color="#16A34A"/>
-                        </linearGradient>
-                        <linearGradient id="gradLM" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#F59E0B"/><stop offset="100%" stop-color="#D97706"/>
-                        </linearGradient>
-                        <linearGradient id="gradCM" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#EC4899"/><stop offset="100%" stop-color="#BE185D"/>
-                        </linearGradient>
-                        <linearGradient id="gradKP" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#8B5CF6"/><stop offset="100%" stop-color="#6D28D9"/>
-                        </linearGradient>
-                    </defs>
-                </svg>
-                </div>
-
-                <!-- Leyenda -->
-                <div style="margin-top:28px;padding:14px 20px;background:var(--card);border:1px solid var(--border);border-radius:12px;display:flex;flex-wrap:wrap;gap:20px;align-items:center;">
-                    <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Leyenda</span>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#3B6EF5,#6C47FF);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;">HR</div>
-                        <span style="font-size:12px;color:var(--text-secondary);">CEO / Fundador</span>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#22C55E,#16A34A);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;">G</div>
-                        <span style="font-size:12px;color:var(--text-secondary);">Gerencia</span>
+                <!-- Contenedor dinámico -->
+                <div id="orgContainer">
+                    <div style="text-align:center;padding:60px 20px;color:var(--text-muted);">
+                        <svg viewBox="0 0 24 24" style="width:40px;height:40px;stroke:currentColor;fill:none;stroke-width:1.5;margin-bottom:12px;opacity:.4;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        <p style="margin:0;font-size:14px;">Cargando organigrama…</p>
                     </div>
                 </div>
 
             </div>
         </div>
+        <!-- /ORGANIGRAMA -->
+
+        <script>
+        /* ── ORGANIGRAMA DINÁMICO ── */
+        (function(){
+            var _orgLoaded = false;
+
+            var DEPT_COLORS = [
+                ['#3B6EF5','#6C47FF'],['#22C55E','#16A34A'],['#F59E0B','#D97706'],
+                ['#EC4899','#BE185D'],['#8B5CF6','#6D28D9'],['#06B6D4','#0891B2'],
+                ['#EF4444','#DC2626'],['#F97316','#EA580C']
+            ];
+
+            function _colorForDept(dept, idx) {
+                var i = idx % DEPT_COLORS.length;
+                return DEPT_COLORS[i];
+            }
+
+            function _initials(nombre, apellido) {
+                return ((nombre||'')[0]||'') + ((apellido||'')[0]||'');
+            }
+
+            function _esc(s) { return String(s||'').replace(/[&<>"]/g, function(c){ return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]); }); }
+
+            function renderEmpty(orgName) {
+                document.getElementById('orgContainer').innerHTML =
+                    '<div style="text-align:center;padding:80px 20px;color:var(--text-muted);">' +
+                    '<svg viewBox="0 0 24 24" style="width:48px;height:48px;stroke:currentColor;fill:none;stroke-width:1.5;margin-bottom:16px;opacity:.35;"><rect x="9" y="2" width="6" height="4" rx="1"/><rect x="2" y="18" width="6" height="4" rx="1"/><rect x="9" y="18" width="6" height="4" rx="1"/><rect x="16" y="18" width="6" height="4" rx="1"/><line x1="12" y1="6" x2="12" y2="11"/><line x1="5" y1="11" x2="19" y2="11"/><line x1="5" y1="11" x2="5" y2="18"/><line x1="12" y1="11" x2="12" y2="18"/><line x1="19" y1="11" x2="19" y2="18"/></svg>' +
+                    '<p style="margin:0 0 6px;font-size:15px;font-weight:600;color:var(--text-primary);">Sin empleados registrados</p>' +
+                    '<p style="margin:0;font-size:13px;">Agrega empleados en el módulo <strong>Empleados</strong> para visualizar el organigrama.</p>' +
+                    '</div>';
+            }
+
+            function renderOrg(empleados, orgName) {
+                // Agrupar por departamento
+                var depts = {};
+                empleados.forEach(function(e){
+                    var d = e.departamento || 'Sin departamento';
+                    if (!depts[d]) depts[d] = [];
+                    depts[d].push(e);
+                });
+
+                var deptKeys = Object.keys(depts);
+                var html = '';
+
+                // Tarjeta por departamento
+                deptKeys.forEach(function(dept, di){
+                    var col = _colorForDept(dept, di);
+                    var emps = depts[dept];
+                    html += '<div style="margin-bottom:28px;">';
+                    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">';
+                    html += '<div style="width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,'+col[0]+','+col[1]+');flex-shrink:0;"></div>';
+                    html += '<span style="font-size:13px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;">'+_esc(dept)+'</span>';
+                    html += '<span style="font-size:12px;color:var(--text-muted);">('+emps.length+')</span>';
+                    html += '</div>';
+                    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">';
+                    emps.forEach(function(e){
+                        var ini = (_initials(e.nombre, e.apellido) || '?').toUpperCase();
+                        html += '<div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:16px;display:flex;align-items:center;gap:12px;">';
+                        html += '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,'+col[0]+','+col[1]+');display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;">'+_esc(ini)+'</div>';
+                        html += '<div style="min-width:0;">';
+                        html += '<div style="font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_esc((e.nombre||'')+' '+(e.apellido||''))+'</div>';
+                        html += '<div style="font-size:11px;font-weight:600;color:'+col[0]+';margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_esc(e.puesto||'—')+'</div>';
+                        if (e.estado) html += '<div style="font-size:11px;color:var(--text-muted);">'+_esc(e.estado)+'</div>';
+                        html += '</div></div>';
+                    });
+                    html += '</div></div>';
+                });
+
+                document.getElementById('orgContainer').innerHTML = html;
+            }
+
+            window.loadOrganigramaDynamic = async function() {
+                var container = document.getElementById('orgContainer');
+                container.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-muted);"><p style="margin:0;font-size:14px;">Cargando…</p></div>';
+
+                try {
+                    var sb  = window._sb;
+                    var org = (typeof window._getEffectiveOrgId === 'function' ? window._getEffectiveOrgId() : null) || window._currentOrgId;
+                    var orgName = '';
+
+                    // Obtener nombre de la org desde la sesión
+                    try {
+                        var sesRaw = localStorage.getItem('azyvion_session');
+                        if (sesRaw) {
+                            var ses = JSON.parse(sesRaw);
+                            orgName = ses.orgNombre || ses.empresa || '';
+                        }
+                    } catch(_){}
+
+                    // Actualizar subtítulo
+                    var sub = document.getElementById('orgSubtitle');
+                    if (sub) sub.textContent = orgName ? 'Estructura jerárquica de ' + orgName : 'Estructura jerárquica de tu organización';
+
+                    var q = sb.from('empleados').select('nombre,apellido,puesto,departamento,estado,cargo').eq('estado', 'Activo');
+                    if (org && !window._esSuperAdmin) q = q.eq('organization_id', org);
+                    q = q.order('departamento').order('apellido');
+
+                    var res = await q;
+                    if (res.error) throw res.error;
+
+                    var data = res.data || [];
+                    if (!data.length) { renderEmpty(orgName); return; }
+                    renderOrg(data, orgName);
+
+                } catch(err) {
+                    container.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-muted);"><p style="margin:0;font-size:14px;color:#EF4444;">Error al cargar el organigrama.</p></div>';
+                    console.error('[organigrama]', err);
+                }
+            };
+
+            // Auto-cargar al navegar a la página
+            var _orgOrigShowPage = window.showPage;
+            document.addEventListener('DOMContentLoaded', function(){
+                // Hook en showPage para detectar cuando se abre organigrama
+                var _origShow = window.showPage;
+                window.showPage = function(page, el) {
+                    if (typeof _origShow === 'function') _origShow(page, el);
+                    if (page === 'organigrama') {
+                        setTimeout(window.loadOrganigramaDynamic, 50);
+                    }
+                };
+            });
+        })();
+        </script>
         <!-- /ORGANIGRAMA -->
 
         <!-- ══ SUSCRIPCIONES ════════════════════════════════════════ -->
