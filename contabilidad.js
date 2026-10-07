@@ -1151,26 +1151,33 @@
 
                     if (tbody) {
                         tbody.innerHTML = d.map(function(s) {
-                            totTrx += s.transacciones;
-                            totEf += s.efectivo;
-                            totTar += s.tarjeta;
-                            totTrans += s.transferencia;
-                            totOtr += s.otros;
+                            const numTrx = Number(s.transacciones ?? s.cantidadTransacciones ?? 0);
+                            const numEf = Number(s.efectivo ?? 0);
+                            const numTar = Number(s.tarjeta ?? 0);
+                            const numTrans = Number(s.transferencia ?? 0);
+                            const numOtr = Number(s.otros ?? 0);
+                            const numTot = Number(s.total ?? s.totalVentas ?? 0);
 
-                            const pct = granTotal > 0 ? ((s.total / granTotal) * 100).toFixed(1) : '0.0';
+                            totTrx += numTrx;
+                            totEf += numEf;
+                            totTar += numTar;
+                            totTrans += numTrans;
+                            totOtr += numOtr;
+
+                            const pct = granTotal > 0 ? ((numTot / granTotal) * 100).toFixed(1) : '0.0';
 
                             return `<tr>
                                 <td style="font-weight:700">
-                                    ${escHtml(s.nombre)}
+                                    ${escHtml(s.nombre || 'Sin nombre')}
                                     ${s.es_central ? '<span class="tag tag-accent" style="margin-left:6px;font-size:10px">Central</span>' : ''}
                                 </td>
                                 <td style="font-size:12px;color:var(--text-secondary)">${escHtml(s.codigo || '—')}</td>
-                                <td class="cell-num">${s.transacciones}</td>
-                                <td class="cell-num font-mono">${fQ(s.efectivo)}</td>
-                                <td class="cell-num font-mono">${fQ(s.tarjeta)}</td>
-                                <td class="cell-num font-mono">${fQ(s.transferencia)}</td>
-                                <td class="cell-num font-mono">${fQ(s.otros)}</td>
-                                <td class="cell-num font-mono" style="font-weight:800;color:var(--text-primary)">${fQ(s.total)}</td>
+                                <td class="cell-num">${numTrx}</td>
+                                <td class="cell-num font-mono">${fQ(numEf)}</td>
+                                <td class="cell-num font-mono">${fQ(numTar)}</td>
+                                <td class="cell-num font-mono">${fQ(numTrans)}</td>
+                                <td class="cell-num font-mono">${fQ(numOtr)}</td>
+                                <td class="cell-num font-mono" style="font-weight:800;color:var(--text-primary)">${fQ(numTot)}</td>
                                 <td>
                                     <div style="display:flex;align-items:center;gap:8px">
                                         <div style="flex:1;background:var(--border);height:8px;border-radius:4px;overflow:hidden">

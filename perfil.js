@@ -808,8 +808,66 @@
                     showToast('Configuración de empresa y FEL guardada ✓', '#30D158');
                 })
                 .withFailureHandler(function(e) { resetBtns(); showToast('Error: ' + e.message, '#FF453A'); })
-                .saveOrgConfig(datos);
         }
+        window.guardarOrgConfig = guardarOrgConfig;
+
+        function probarConexionFel() {
+            const btn = document.getElementById('btnProbarFel');
+            const txt = document.getElementById('felEstadoConexionTxt');
+            const nit = ((document.getElementById('felNitEmisor') || {}).value || '').trim();
+            const key = ((document.getElementById('felApiKey') || {}).value || '').trim();
+            const cert = ((document.getElementById('felCertificador') || {}).value || 'INFILE').trim();
+            const entorno = ((document.getElementById('felEntorno') || {}).value || 'Pruebas').trim();
+
+            if (!nit || !key) {
+                showToast('Ingresa el NIT y la clave API antes de probar la conexión', '#FF9F0A');
+                if (txt) {
+                    txt.style.color = '#FF9F0A';
+                    txt.textContent = '⚠️ Ingresa el NIT y el API Key para realizar la verificación.';
+                }
+                return;
+            }
+
+            if (btn) { btn.disabled = true; btn.textContent = 'Verificando…'; }
+            if (txt) {
+                txt.style.color = 'var(--text-secondary)';
+                txt.textContent = 'Conectando con el servidor de ' + cert + ' (' + entorno + ')…';
+            }
+
+            window.api
+                .withSuccessHandler(function(r) {
+                    if (btn) { btn.disabled = false; btn.textContent = 'Probar conexión'; }
+                    if (!r || !r.ok) {
+                        const errMsg = (r && r.error) || 'Error de conexión con el certificador';
+                        if (txt) {
+                            txt.style.color = 'var(--danger)';
+                            txt.textContent = '❌ ' + errMsg;
+                        }
+                        showToast(errMsg, '#FF453A');
+                        return;
+                    }
+                    if (txt) {
+                        txt.style.color = '#30D158';
+                        txt.textContent = '✅ ' + (r.mensaje || 'Conexión verificada exitosamente.');
+                    }
+                    showToast(r.mensaje || 'Conexión FEL verificada ✓', '#30D158');
+                })
+                .withFailureHandler(function(e) {
+                    if (btn) { btn.disabled = false; btn.textContent = 'Probar conexión'; }
+                    if (txt) {
+                        txt.style.color = 'var(--danger)';
+                        txt.textContent = '❌ Error de comunicación: ' + e.message;
+                    }
+                    showToast('Error: ' + e.message, '#FF453A');
+                })
+                .probarConexionFel({
+                    certificador: cert,
+                    nit: nit,
+                    apiKey: key,
+                    entorno: entorno
+                });
+        }
+        window.probarConexionFel = probarConexionFel;
 
         function onSeleccionLogoOrg(event) {
             const file = event.target.files && event.target.files[0];

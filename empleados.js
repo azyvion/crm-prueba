@@ -505,14 +505,31 @@ async function _empGuardar(id) {
             if (orgId) payload.organization_id = orgId;
             ({ error } = await _empSb().from('empleados').insert(payload));
         }
-        if (error) throw error;
+
+        // Si falla por columna ciudad inexistente en el esquema de la BD (PGRST204)
+        if (error && (error.code === 'PGRST204' || (error.message && error.message.toLowerCase().includes('ciudad')))) {
+            console.warn('[Empleados] Columna "ciudad" no encontrada en Supabase. Reintentando guardado sin "ciudad" mientras se aplica la migración SQL...', error);
+            const fallbackPayload = { ...payload };
+            delete fallbackPayload.ciudad;
+            if (id) {
+                ({ error } = await _empSb().from('empleados').update(fallbackPayload).eq('id', id));
+            } else {
+                ({ error } = await _empSb().from('empleados').insert(fallbackPayload));
+            }
+        }
+
+        if (error) {
+            console.error('[Empleados] Error guardando empleado:', error);
+            throw error;
+        }
 
         document.getElementById('modal').classList.remove('open');
-        showToast(id ? 'Empleado actualizado' : 'Empleado creado', '#30D158');
+        showToast(id ? 'Empleado actualizado correctamente' : 'Empleado registrado correctamente', '#30D158');
         await loadEmpleados();
 
     } catch (err) {
-        showToast('Error: ' + err.message, '#FF453A');
+        console.error('[Empleados] Error en guardarEmpleado:', err);
+        showToast('Error al guardar empleado: ' + (err.message || 'Error de conexión'), '#FF453A');
     } finally {
         if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
     }

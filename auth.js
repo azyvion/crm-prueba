@@ -752,23 +752,41 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
 
         async function _getOrgConfig(p) {
             try {
-                const {data, error} = await _sb.from('Organizations').select('*').eq('id', _currentOrgId).maybeSingle();
-                if (error) return {ok:false, error: error.message};
+                const orgId = _getEffectiveOrgId() || _currentOrgId;
+                let data = null;
+                if (orgId) {
+                    const res = await _sb.from('Organizations').select('*').eq('id', orgId).maybeSingle();
+                    if (!res.error && res.data) data = res.data;
+                }
+                if (!data) {
+                    const resFirst = await _sb.from('Organizations').select('*').limit(1);
+                    if (resFirst.data && resFirst.data.length) data = resFirst.data[0];
+                }
                 let extraLocal = {};
                 try { extraLocal = JSON.parse(localStorage.getItem('azyvion_org_extra') || '{}'); } catch(e) {}
-                const resData = data ? {
-                    ...data,
-                    iva_pct: data.iva_pct !== undefined ? data.iva_pct : (extraLocal.iva_pct !== undefined ? extraLocal.iva_pct : 12),
-                    iva_modalidad: data.iva_modalidad || extraLocal.iva_modalidad || 'incluido',
-                    dias_vigencia_cotizacion: data.dias_vigencia_cotizacion !== undefined ? data.dias_vigencia_cotizacion : (extraLocal.dias_vigencia_cotizacion !== undefined ? extraLocal.dias_vigencia_cotizacion : 15),
-                    pie_ticket: data.pie_ticket !== undefined ? data.pie_ticket : (extraLocal.pie_ticket || '')
-                } : null;
+                let felLocal = {};
+                try { felLocal = JSON.parse(localStorage.getItem('azyvion_fel_config') || '{}'); } catch(e) {}
+                const resData = {
+                    ...(data || {}),
+                    iva_pct: (data && data.iva_pct !== undefined) ? data.iva_pct : (extraLocal.iva_pct !== undefined ? extraLocal.iva_pct : 12),
+                    iva_modalidad: (data && data.iva_modalidad) || extraLocal.iva_modalidad || 'incluido',
+                    dias_vigencia_cotizacion: (data && data.dias_vigencia_cotizacion !== undefined) ? data.dias_vigencia_cotizacion : (extraLocal.dias_vigencia_cotizacion !== undefined ? extraLocal.dias_vigencia_cotizacion : 15),
+                    pie_ticket: (data && data.pie_ticket !== undefined) ? data.pie_ticket : (extraLocal.pie_ticket || ''),
+                    ...felLocal
+                };
                 return {ok:true, data: resData};
-            } catch(e) { return {ok:false, error: e.message}; }
+            } catch(e) {
+                console.error('[Ajustes] Error en _getOrgConfig:', e);
+                return {ok:false, error: e.message};
+            }
         }
 
         async function _saveOrgConfig(p, sess) {
-            if (!['Admin','ADMIN','SUPER_ADMIN'].includes(_currentUserRole)) return {ok:false, error:'Solo los administradores pueden modificar la configuración de empresa.'};
+            const role = String(_currentUserRole || (readSession() && readSession().rol) || '').toUpperCase();
+            if (!['ADMIN','SUPER_ADMIN','GERENTE'].includes(role) && !window._esSuperAdmin) {
+                return {ok:false, error:'Solo los administradores pueden modificar la configuración de empresa.'};
+            }
+            const orgId = _getEffectiveOrgId() || _currentOrgId;
             const up = {};
             if (p.nombre !== undefined) up.nombre = String(p.nombre).trim();
             if (p.eslogan !== undefined) up.eslogan = String(p.eslogan).trim();
@@ -810,14 +828,29 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 }));
             } catch(e) {}
             try {
-                const {data: existing} = await _sb.from('Organizations').select('id').eq('id', _currentOrgId).maybeSingle();
+                let targetOrgId = orgId;
+                let existing = null;
+                if (targetOrgId) {
+                    const exRes = await _sb.from('Organizations').select('id').eq('id', targetOrgId).maybeSingle();
+                    if (exRes.data) existing = exRes.data;
+                }
+                if (!existing) {
+                    const firstOrg = await _sb.from('Organizations').select('id').limit(1);
+                    if (firstOrg.data && firstOrg.data.length) {
+                        existing = firstOrg.data[0];
+                        targetOrgId = existing.id;
+                    }
+                }
+
                 let error;
                 if (existing) {
-                    ({error} = await _sb.from('Organizations').update(up).eq('id', _currentOrgId));
+                    ({error} = await _sb.from('Organizations').update(up).eq('id', targetOrgId));
                 } else {
-                    ({error} = await _sb.from('Organizations').insert({id: _currentOrgId, ...up}));
+                    targetOrgId = targetOrgId || _uuid();
+                    ({error} = await _sb.from('Organizations').insert({id: targetOrgId, ...up}));
                 }
                 if (error) {
+                    console.warn('[Ajustes] Advertencia actualizando Organizations en Supabase, reintentando con campos base:', error);
                     if (error.message && (error.message.includes('column') || error.message.includes('does not exist') || error.code === '42703')) {
                         const baseUp = {
                             nombre: up.nombre, eslogan: up.eslogan, nit: up.nit,
@@ -826,9 +859,12 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                             updated_at: up.updated_at
                         };
                         Object.keys(baseUp).forEach(k => baseUp[k] === undefined && delete baseUp[k]);
-                        const r2 = existing ? await _sb.from('Organizations').update(baseUp).eq('id', _currentOrgId)
-                                            : await _sb.from('Organizations').insert({id: _currentOrgId, ...baseUp});
-                        if (r2.error) return {ok:false, error: r2.error.message};
+                        const r2 = existing ? await _sb.from('Organizations').update(baseUp).eq('id', targetOrgId)
+                                            : await _sb.from('Organizations').insert({id: targetOrgId, ...baseUp});
+                        if (r2.error) {
+                            console.error('[Ajustes] Error guardando baseUp en Organizations:', r2.error);
+                            return {ok:false, error: r2.error.message};
+                        }
                         try {
                             localStorage.setItem('azyvion_fel_config', JSON.stringify({
                                 fel_habilitado: up.fel_habilitado,
@@ -963,11 +999,13 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if (!Array.isArray(a)) a = [];
             return a.map(it => {
                 const c = Number(it.cantidad) || 0, p = Number(it.precioUnit) || 0, dp = Math.min(Math.max(Number(it.descuentoPct) || 0, 0), 100), b = c * p;
+                const itemIdClean = (it.itemId && String(it.itemId).trim() !== '' && String(it.itemId).trim() !== 'null' && String(it.itemId).trim() !== 'undefined') ? String(it.itemId).trim() : null;
                 return {
-                    itemId: it.itemId || '',
+                    itemId: itemIdClean,
                     tipo: it.tipo === 'Servicio' ? 'Servicio' : 'Producto',
                     descripcion: String(it.descripcion || '').trim(),
                     detalle: String(it.detalle || '').trim(),
+                    unidadMedida: String(it.unidadMedida || 'UND').trim(),
                     cantidad: c,
                     precioUnit: p,
                     descuentoPct: dp,
@@ -1007,10 +1045,16 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 organization_id: orgId
             };
             const {error} = await _sb.from('Cotizaciones').insert(r);
-            if (error) return {ok: false, error: error.message};
+            if (error) {
+                console.error('[Cotizaciones] Error creando cotización:', error);
+                return {ok: false, error: error.message};
+            }
             if (items.length) {
                 const ir = items.map(it => ({id: _uuid(), cotizacionId: id, ...it, organization_id: orgId}));
-                await _sb.from('CotizacionItems').insert(ir);
+                const {error: itemErr} = await _sb.from('CotizacionItems').insert(ir);
+                if (itemErr) {
+                    console.error('[Cotizaciones] Error insertando items:', itemErr);
+                }
             }
             return {ok: true, id, numero: num};
         }
@@ -1042,10 +1086,16 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             let qUp = _sb.from('Cotizaciones').update(up).eq('id', p.id);
             if (orgId) qUp = qUp.eq('organization_id', orgId);
             const {error} = await qUp;
-            if (error) return {ok: false, error: error.message};
+            if (error) {
+                console.error('[Cotizaciones] Error actualizando cotización:', error);
+                return {ok: false, error: error.message};
+            }
             await _sb.from('CotizacionItems').delete().eq('cotizacionId', p.id);
             if (items.length) {
-                await _sb.from('CotizacionItems').insert(items.map(it => ({id: _uuid(), cotizacionId: p.id, ...it, organization_id: orgId})));
+                const {error: upItemErr} = await _sb.from('CotizacionItems').insert(items.map(it => ({id: _uuid(), cotizacionId: p.id, ...it, organization_id: orgId})));
+                if (upItemErr) {
+                    console.error('[Cotizaciones] Error reinsertando items:', upItemErr);
+                }
             }
             return {ok: true};
         }
@@ -1174,6 +1224,32 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
 
         async function _registrarVentaPos(p, u) {
             if (!p || !p.items || !p.items.length) return {ok: false, error: 'Agrega al menos un producto a la venta.'};
+
+            // Validar consistencia matemática y financiera estricta
+            let checkSubtotal = 0;
+            for (const it of p.items) {
+                const c = Number(it.cantidad);
+                const pu = Number(it.precioUnit);
+                if (isNaN(c) || c <= 0 || isNaN(pu) || pu < 0) {
+                    return {ok: false, error: 'Línea de venta con cantidad o precio unitario inválido.'};
+                }
+                checkSubtotal += Math.round(c * pu * 100) / 100;
+            }
+            checkSubtotal = Math.round(checkSubtotal * 100) / 100;
+            if (checkSubtotal <= 0) {
+                return {ok: false, error: 'El subtotal de la venta debe ser mayor a cero.'};
+            }
+
+            const descMonto = Math.max(0, Math.round(Number(p.descuento || 0) * 100) / 100);
+            if (descMonto >= checkSubtotal && (p.descuentoPct > 100 || descMonto > checkSubtotal)) {
+                return {ok: false, error: 'El descuento no puede superar el 100% ni el subtotal de la venta.'};
+            }
+
+            const expectedTotal = Math.round((checkSubtotal - descMonto) * 100) / 100;
+            if (expectedTotal <= 0) {
+                return {ok: false, error: 'No se permite registrar una venta con total menor o igual a cero por un descuento inválido.'};
+            }
+
             await _loadOrgConfig();
             const orgId = _getEffectiveOrgId();
             const y = new Date().getFullYear();
@@ -1708,13 +1784,16 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 let q = _sb.from('Sucursales').select('*').order('es_central', { ascending: false }).order('nombre');
                 if (orgId) q = q.eq('organization_id', orgId);
                 const { data, error } = await q;
+                if (error) {
+                    console.error('[Sucursales] Error obteniendo sucursales:', error);
+                }
                 if (!error && data && data.length > 0) {
                     return { ok: true, data: data };
                 }
                 // Si no hay sucursales, auto-crear la sucursal Central por defecto
                 if (orgId) {
                     const central = {
-                        id: 'SUC-CENTRAL-' + orgId.substring(0, 8),
+                        id: _uuid(),
                         organization_id: orgId,
                         nombre: 'Central',
                         codigo: '001',
@@ -1724,17 +1803,23 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                         activa: true,
                         creado_en: new Date().toISOString()
                     };
-                    await _sb.from('Sucursales').insert(central);
-                    return { ok: true, data: [central] };
+                    const { error: insErr } = await _sb.from('Sucursales').insert(central);
+                    if (insErr) {
+                        console.warn('[Sucursales] No se pudo auto-insertar central:', insErr);
+                    } else {
+                        return { ok: true, data: [central] };
+                    }
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.error('[Sucursales] Excepción en _getSucursales:', e);
+            }
             return { ok: true, data: [{ id: 'central', nombre: 'Central', es_central: true, activa: true }] };
         }
 
         async function _addSucursal(p, u) {
             const orgId = _getEffectiveOrgId();
             if (!p.nombre) return { ok: false, error: 'El nombre de la sucursal es requerido.' };
-            const id = 'SUC-' + Date.now();
+            const id = _uuid();
             const r = {
                 id: id,
                 organization_id: orgId,
@@ -1748,9 +1833,15 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             };
             try {
                 const { error } = await _sb.from('Sucursales').insert(r);
-                if (error) return { ok: false, error: error.message };
+                if (error) {
+                    console.error('[Sucursales] Error agregando sucursal:', error);
+                    return { ok: false, error: error.message };
+                }
                 return { ok: true, data: r };
-            } catch(e) { return { ok: false, error: e.message }; }
+            } catch(e) {
+                console.error('[Sucursales] Error en _addSucursal:', e);
+                return { ok: false, error: e.message };
+            }
         }
 
         async function _updateSucursal(id, p, u) {
@@ -1773,13 +1864,21 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
 
         async function _deleteSucursal(p, u) {
             const orgId = _getEffectiveOrgId();
+            const id = (typeof p === 'object' && p !== null) ? p.id : p;
+            if (!id) return { ok: false, error: 'ID de sucursal no especificado.' };
             try {
-                let q = _sb.from('Sucursales').delete().eq('id', p.id);
+                let q = _sb.from('Sucursales').delete().eq('id', id);
                 if (orgId) q = q.eq('organization_id', orgId);
                 const { error } = await q;
-                if (error) return { ok: false, error: error.message };
+                if (error) {
+                    console.error('[Sucursales] Error al eliminar:', error);
+                    return { ok: false, error: error.message };
+                }
                 return { ok: true };
-            } catch(e) { return { ok: false, error: e.message }; }
+            } catch(e) {
+                console.error('[Sucursales] Error en _deleteSucursal:', e);
+                return { ok: false, error: e.message };
+            }
         }
 
         /* ─── REPORTE DE VENTAS POR SUCURSAL ───────────────────────────── */
@@ -1793,7 +1892,10 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 if (orgId) q = q.eq('organization_id', orgId);
                 if (p && p.desde) q = q.gte('fecha', p.desde);
                 if (p && p.hasta) q = q.lte('fecha', p.hasta);
-                const { data: trx } = await q;
+                const { data: trx, error: trxErr } = await q;
+                if (trxErr) {
+                    console.error('[Contabilidad] Error consultando transacciones:', trxErr);
+                }
 
                 const sucMap = {};
                 sucursales.forEach(s => {
@@ -1804,7 +1906,9 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                         direccion: s.direccion || '',
                         telefono: s.telefono || '',
                         es_central: !!s.es_central,
+                        total: 0,
                         totalVentas: 0,
+                        transacciones: 0,
                         cantidadTransacciones: 0,
                         efectivo: 0,
                         tarjeta: 0,
@@ -1820,7 +1924,9 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                     direccion: '—',
                     telefono: '—',
                     es_central: false,
+                    total: 0,
                     totalVentas: 0,
+                    transacciones: 0,
                     cantidadTransacciones: 0,
                     efectivo: 0,
                     tarjeta: 0,
@@ -1832,7 +1938,9 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                     const m = Number(t.monto || 0);
                     const sId = t.sucursal_id;
                     const dest = (sId && sucMap[sId]) ? sucMap[sId] : sinSucursal;
+                    dest.total += m;
                     dest.totalVentas += m;
+                    dest.transacciones += 1;
                     dest.cantidadTransacciones += 1;
                     const c = (t.concepto || '').toLowerCase();
                     if (c.includes('tarjeta') || c.includes('pos tarjeta') || c.includes('visa') || c.includes('card')) {
@@ -1850,8 +1958,21 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 if (sinSucursal.cantidadTransacciones > 0) {
                     lista.push(sinSucursal);
                 }
-                return { ok: true, data: lista };
+
+                lista.forEach(s => {
+                    s.total = Math.round(s.total * 100) / 100;
+                    s.totalVentas = s.total;
+                    s.efectivo = Math.round(s.efectivo * 100) / 100;
+                    s.tarjeta = Math.round(s.tarjeta * 100) / 100;
+                    s.transferencia = Math.round(s.transferencia * 100) / 100;
+                    s.otros = Math.round(s.otros * 100) / 100;
+                });
+
+                const granTotal = Math.round(lista.reduce((sum, item) => sum + (Number(item.total) || 0), 0) * 100) / 100;
+
+                return { ok: true, data: lista, granTotal: granTotal };
             } catch(e) {
+                console.error('[Contabilidad] Error en _getReporteVentasSucursal:', e);
                 return { ok: false, error: e.message };
             }
         }

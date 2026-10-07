@@ -382,9 +382,15 @@ let _cotClienteListaPrecio = 'Publico';
                     _cotClienteListaPrecio = (cl && cl.lista_precio) ? cl.lista_precio : 'Publico';
 
                     _cotItems = (r.items || []).map(i => ({
-                        itemId: i.itemId, tipo: i.tipo, descripcion: i.descripcion, detalle: i.detalle,
-                        cantidad: Number(i.cantidad) || 0, precioUnit: Number(i.precioUnit) || 0,
-                        descuentoPct: Number(i.descuentoPct) || 0
+                        itemId: (i.itemId && String(i.itemId).trim() !== '') ? String(i.itemId).trim() : null,
+                        tipo: i.tipo || 'Producto',
+                        descripcion: i.descripcion || '',
+                        detalle: i.detalle || '',
+                        cantidad: Number(i.cantidad) || 0,
+                        precioUnit: Number(i.precioUnit) || 0,
+                        descuentoPct: Number(i.descuentoPct) || 0,
+                        total: Number(i.total) || cotTotalLinea(i),
+                        unidadMedida: i.unidadMedida || (i.tipo === 'Servicio' ? 'Servicio' : 'Unidad')
                     }));
                     document.getElementById('cotBuilderTitle').textContent = 'Editar ' + c.numero;
                     document.getElementById('cotBuilderSub').textContent = 'Los cambios se guardan sobre la misma cotización';
@@ -478,7 +484,9 @@ let _cotClienteListaPrecio = 'Publico';
         function cotTotalLinea(it) {
             const cant = Number(it.cantidad) || 0;
             const precio = Number(it.precioUnit) || 0;
-            return cotR2(cant * precio);
+            const desc = Math.min(Math.max(Number(it.descuentoPct) || 0, 0), 100);
+            const base = cant * precio;
+            return cotR2(base - (base * desc / 100));
         }
 
         function cotRenderItems() {
@@ -540,10 +548,13 @@ let _cotClienteListaPrecio = 'Publico';
             </div>
           </div>
           <input class="form-input" type="number" min="${minVal}" step="${stepVal}" style="height:34px;font-size:13px"
-                 value="${it.cantidad}" oninput="cotSet(${idx},'cantidad',this.value)" title="Unidad de medida: ${escAttr(um)}"/>
+                 value="${it.cantidad}" oninput="cotSet(${idx},'cantidad',this.value)" title="Cantidad (Unidad: ${escAttr(um)})"/>
           <input class="form-input" type="number" min="0" step="0.01"
                  style="height:34px;font-size:13px;font-weight:600;${esItemInventario ? 'background:var(--bg-secondary);cursor:not-allowed;' : ''}"
                  value="${it.precioUnit}" ${esItemInventario ? 'readonly tabindex="-1" title="El precio unitario del inventario no es editable"' : `oninput="cotSet(${idx},'precioUnit',this.value)" title="Precio unitario"`}/>
+          <input class="form-input" type="number" min="0" max="100" step="1"
+                 style="height:34px;font-size:13px;font-weight:600;text-align:right"
+                 value="${it.descuentoPct || 0}" oninput="cotSet(${idx},'descuentoPct',this.value)" placeholder="0%" title="Descuento %"/>
           <div class="cot-item-total" id="cotRowTot-${idx}">${cotQ(cotTotalLinea(it))}</div>
           <button class="cot-item-del" title="Quitar ítem" onclick="cotEliminarItem(${idx})">&times;</button>
         </div>`;
@@ -761,16 +772,27 @@ ${v('cotNotas') ? `
             const cliente = (v('cotCliente') || '').trim();
             if (!cliente) { showToast('El nombre del cliente es requerido', '#FF9F0A'); return; }
 
+            // Sincronizar todos los ítems asegurando descripción, cantidad, precio, descuento y total
             const items = _cotItems
-                .map(it => ({
-                    itemId: it.itemId || '',
-                    tipo: it.tipo === 'Servicio' ? 'Servicio' : 'Producto',
-                    descripcion: String(it.descripcion || '').trim(),
-                    detalle: String(it.detalle || '').trim(),
-                    cantidad: Number(it.cantidad) || 0,
-                    precioUnit: Number(it.precioUnit) || 0,
-                    descuentoPct: 0
-                }))
+                .map((it, idx) => {
+                    const descEl = document.getElementById('cotDesc-' + idx);
+                    const descVal = descEl ? descEl.value.trim() : String(it.descripcion || '').trim();
+                    const cant = Number(it.cantidad) || 0;
+                    const precio = Number(it.precioUnit) || 0;
+                    const descPct = Math.min(Math.max(Number(it.descuentoPct) || 0, 0), 100);
+                    const totLinea = cotR2((cant * precio) * (1 - descPct / 100));
+                    return {
+                        itemId: (it.itemId && String(it.itemId).trim() !== '') ? String(it.itemId).trim() : null,
+                        tipo: it.tipo === 'Servicio' ? 'Servicio' : 'Producto',
+                        descripcion: descVal,
+                        detalle: String(it.detalle || '').trim(),
+                        cantidad: cant,
+                        precioUnit: precio,
+                        descuentoPct: descPct,
+                        total: totLinea,
+                        unidadMedida: it.unidadMedida || (it.tipo === 'Servicio' ? 'Servicio' : 'Unidad')
+                    };
+                })
                 .filter(it => it.descripcion && it.cantidad > 0);
 
             if (!items.length) { showToast('Agrega al menos un ítem con descripción y cantidad', '#FF9F0A'); return; }
@@ -799,16 +821,20 @@ ${v('cotNotas') ? `
 
             const done = function (r) {
                 if (btn) { btn.disabled = false; btn.textContent = textoOriginal; }
-                if (!r || !r.ok) { showToast((r && r.error) || 'No se pudo guardar', '#FF453A'); return; }
+                if (!r || !r.ok) { showToast((r && r.error) || 'No se pudo guardar la cotización', '#FF453A'); return; }
+                
+                // 1. Cerrar formulario
                 closeCotBuilder();
-                showToast(_cotEditId ? 'Cotización actualizada' : 'Cotización ' + (r.numero || '') + ' creada', '#30D158');
-                const savedId = r.id || (_cotEditId);
+                showToast(_cotEditId ? 'Cotización actualizada ✓' : 'Cotización ' + (r.numero || '') + ' creada ✓', '#30D158');
+                
+                const savedId = r.id || _cotEditId;
                 _cotEditId = null;
                 loadCotizaciones();
                 loadActividad();
-                // Abrir automáticamente la vista previa real (PDF) de la cotización guardada
+
+                // 2. Mostrar la vista previa con el detalle completo
                 if (savedId && typeof verCotizacion === 'function') {
-                    setTimeout(function() { verCotizacion(savedId); }, 400);
+                    verCotizacion(savedId);
                 }
             };
             const fail = function (e) {
@@ -854,21 +880,62 @@ ${v('cotNotas') ? `
         }
 
         /* ── Documento / PDF ───────────────────────────────────── */
-        function verCotizacion(id) {
-            const win = window.open('', '_blank');
-            if (win) {
-                win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Generando…</title></head>' +
-                    '<body style="font-family:-apple-system,Segoe UI,Arial,sans-serif;padding:40px;color:#555">' +
-                    'Generando la cotización…</body></html>');
+        function _mostrarCotizacionModalPreview(html) {
+            let modal = document.getElementById('cotPreviewModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'cotPreviewModal';
+                modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.65);z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;';
+                modal.innerHTML = `
+                    <div style="background:var(--card-bg, #fff);width:100%;max-width:900px;height:90vh;max-height:850px;border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.4);border:1px solid var(--border-color, #e5e5ea);">
+                        <div style="padding:12px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color,#e5e5ea);background:var(--bg-secondary,#f9f9fb);">
+                            <span style="font-weight:700;font-size:15px;color:var(--text-primary,#1c1c1e)">Vista Previa de Cotización</span>
+                            <div style="display:flex;gap:8px;">
+                                <button type="button" id="cotModalPrintBtn" style="padding:7px 14px;border-radius:8px;background:var(--primary,#0A84FF);color:#fff;border:0;font-weight:600;font-size:13px;cursor:pointer;">Imprimir / Guardar PDF</button>
+                                <button type="button" onclick="document.getElementById('cotPreviewModal').style.display='none'" style="padding:7px 14px;border-radius:8px;background:transparent;border:1px solid var(--border-color,#ccc);font-size:13px;cursor:pointer;">Cerrar</button>
+                            </div>
+                        </div>
+                        <iframe id="cotModalIframe" style="flex:1;border:0;width:100%;background:#fff;" title="Cotizacion PDF Preview"></iframe>
+                    </div>
+                `;
+                document.body.appendChild(modal);
             }
+            modal.style.display = 'flex';
+            const ifr = document.getElementById('cotModalIframe');
+            if (ifr) {
+                ifr.srcdoc = html;
+                const pBtn = document.getElementById('cotModalPrintBtn');
+                if (pBtn) {
+                    pBtn.onclick = function() {
+                        if (ifr.contentWindow) {
+                            ifr.contentWindow.focus();
+                            ifr.contentWindow.print();
+                        }
+                    };
+                }
+            }
+        }
+
+        function verCotizacion(id) {
+            let win = null;
+            try {
+                win = window.open('', '_blank');
+                if (win) {
+                    win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Generando…</title></head>' +
+                        '<body style="font-family:-apple-system,Segoe UI,Arial,sans-serif;padding:40px;color:#555">' +
+                        'Generando la cotización…</body></html>');
+                }
+            } catch (e) {
+                console.warn('[Cotizaciones] Popup bloqueado o no soportado:', e);
+            }
+
             window.api
                 .withSuccessHandler(function (r) {
                     if (!r || !r.ok) {
-                        if (win) win.close();
+                        if (win && !win.closed) win.close();
                         showToast((r && r.error) || 'No se pudo generar el documento', '#FF453A');
                         return;
                     }
-                    if (!win) { showToast('Permite las ventanas emergentes para ver el PDF', '#FF9F0A'); return; }
                     const barra =
                         '<style>@media print{.cot-print-bar{display:none !important}}</style>' +
                         '<div class="cot-print-bar" style="position:fixed;top:14px;right:14px;display:flex;gap:8px;z-index:99">' +
@@ -877,12 +944,22 @@ ${v('cotNotas') ? `
                         '<button onclick="window.close()" style="padding:9px 16px;border:1px solid #d1d1d6;border-radius:8px;' +
                         'background:#fff;font-size:13px;cursor:pointer;font-family:inherit">Cerrar</button></div>';
                     const html = String(r.html).replace('</body>', barra + '</body>');
-                    win.document.open();
-                    win.document.write(html);
-                    win.document.close();
+
+                    if (win && !win.closed) {
+                        try {
+                            win.document.open();
+                            win.document.write(html);
+                            win.document.close();
+                            return;
+                        } catch (e) {
+                            console.warn('[Cotizaciones] Error cargando html en popup, usando modal fallback:', e);
+                        }
+                    }
+
+                    _mostrarCotizacionModalPreview(html);
                 })
                 .withFailureHandler(function (e) {
-                    if (win) win.close();
+                    if (win && !win.closed) win.close();
                     showToast('Error: ' + e.message, '#FF453A');
                 })
                 .getCotizacionHtml({id: id});

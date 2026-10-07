@@ -271,6 +271,16 @@
       justify-content: center;
       margin: 0 auto 20px;
     }
+    @media (max-width: 600px) {
+      body { padding: 14px 10px; }
+      .survey-header-card { padding: 22px 16px; border-radius: 14px; }
+      .survey-title { font-size: 20px; }
+      .card { padding: 18px 14px; border-radius: 14px; }
+      .card-title { font-size: 15px; }
+      .star-btn { width: 40px; height: 40px; font-size: 16px; }
+      .star-rating { gap: 6px; }
+      .submit-btn { padding: 14px; font-size: 15px; border-radius: 12px; }
+    }
   </style>
 </head>
 <body>
@@ -401,7 +411,13 @@
                 `).join('')}
               </div>`;
           } else if (q.tipo === 'opcion_multiple') {
-            const opciones = Array.isArray(q.opciones) ? q.opciones : (String(q.opciones || '').split(',').map(s=>s.trim()).filter(Boolean));
+            let opciones = [];
+            if (Array.isArray(q.opciones)) {
+              opciones = q.opciones;
+            } else if (typeof q.opciones === 'string') {
+              try { opciones = JSON.parse(q.opciones); } catch(e) { opciones = q.opciones.split(',').map(s=>s.trim()).filter(Boolean); }
+            }
+            if (!Array.isArray(opciones)) opciones = [];
             inputContent = `
               <div class="options-grid" id="opt_${qId}">
                 ${opciones.map(opt => `

@@ -450,10 +450,19 @@ function renderPosCarrito() {
         return;
     }
 
-    const subtotal = _posCarrito.reduce((s, it) => s + it.total, 0);
-    const descPct = Number(document.getElementById('posDescuentoPct')?.value || 0);
+    const descInp = document.getElementById('posDescuentoPct');
+    let descPct = Number(descInp?.value || 0);
+    if (isNaN(descPct) || descPct < 0) {
+        descPct = 0;
+        if (descInp) descInp.value = 0;
+    } else if (descPct > 100) {
+        descPct = 100;
+        if (descInp) descInp.value = 100;
+    }
+
+    const subtotal = Math.round(_posCarrito.reduce((s, it) => s + (Number(it.cantidad || 0) * Number(it.precioUnit || 0)), 0) * 100) / 100;
     const descuentoMonto = Math.round((subtotal * (descPct / 100)) * 100) / 100;
-    const total = Math.max(0, subtotal - descuentoMonto);
+    const total = Math.round((subtotal - descuentoMonto) * 100) / 100;
 
     tbody.innerHTML = _posCarrito.map(it => `
         <tr>
@@ -497,10 +506,37 @@ function posAbrirModalCobro() {
         showToast('Agrega productos al carrito antes de guardar la venta', '#FF9F0A');
         return;
     }
-    const subtotal = _posCarrito.reduce((s, it) => s + it.total, 0);
-    const descPct = Number(document.getElementById('posDescuentoPct')?.value || 0);
+
+    // Validar ítems
+    for (const it of _posCarrito) {
+        if (!it.cantidad || Number(it.cantidad) <= 0 || isNaN(Number(it.precioUnit)) || Number(it.precioUnit) < 0) {
+            showToast('Revisa los ítems: la cantidad y precio unitario deben ser válidos', '#FF453A');
+            return;
+        }
+    }
+
+    const descInp = document.getElementById('posDescuentoPct');
+    const descRaw = descInp ? descInp.value.trim() : '0';
+    const descPct = Number(descRaw);
+    if (isNaN(descPct) || descPct < 0 || descPct > 100) {
+        showToast('El descuento porcentual debe ser un número entre 0% y 100%', '#FF453A');
+        if (descInp) descInp.focus();
+        return;
+    }
+
+    const subtotal = Math.round(_posCarrito.reduce((s, it) => s + (Number(it.cantidad || 0) * Number(it.precioUnit || 0)), 0) * 100) / 100;
+    if (subtotal <= 0) {
+        showToast('El subtotal de la venta debe ser mayor a cero', '#FF453A');
+        return;
+    }
+
     const descuentoMonto = Math.round((subtotal * (descPct / 100)) * 100) / 100;
-    const total = Math.max(0, subtotal - descuentoMonto);
+    const total = Math.round((subtotal - descuentoMonto) * 100) / 100;
+
+    if (total <= 0) {
+        showToast('El total a cobrar no puede ser cero o negativo por un descuento inválido', '#FF453A');
+        return;
+    }
 
     // Reiniciar método de pago a Efectivo para cada nueva venta
     _posMetodoPago = 'Efectivo';
@@ -625,16 +661,66 @@ async function posConfirmarVenta(total, descuentoMonto, subtotal) {
     const sBtn = document.getElementById('modalSaveBtn');
     if (sBtn) { sBtn.disabled = true; sBtn.textContent = 'Guardando…'; }
 
-    // Si los parámetros no vinieron explícitos, calcular desde el carrito actual
-    if (total === undefined || isNaN(total)) {
-        subtotal = _posCarrito.reduce((s, it) => s + it.total, 0);
-        const descPct = Number(document.getElementById('posDescuentoPct')?.value || 0);
-        descuentoMonto = Math.round((subtotal * (descPct / 100)) * 100) / 100;
-        total = Math.max(0, subtotal - descuentoMonto);
+    // Validación y cálculo riguroso de líneas
+    if (!_posCarrito || !_posCarrito.length) {
+        showToast('El carrito está vacío. Agrega productos antes de guardar la venta.', '#FF9F0A');
+        if (sBtn) { sBtn.disabled = false; sBtn.textContent = 'GUARDAR'; }
+        return;
     }
 
+    let calcSubtotal = 0;
+    const validatedItems = [];
+    for (const it of _posCarrito) {
+        const cant = Number(it.cantidad || 0);
+        const pu = Number(it.precioUnit || 0);
+        if (isNaN(cant) || cant <= 0 || isNaN(pu) || pu < 0) {
+            showToast(`Ítem "${it.producto || 'Desconocido'}" tiene cantidad o precio inválido.`, '#FF453A');
+            if (sBtn) { sBtn.disabled = false; sBtn.textContent = 'GUARDAR'; }
+            return;
+        }
+        const itemTot = Math.round(cant * pu * 100) / 100;
+        calcSubtotal += itemTot;
+        validatedItems.push({
+            id: it.id,
+            descripcion: it.producto,
+            tipo: it.tipo || 'Producto',
+            sku: it.sku || '',
+            cantidad: cant,
+            precioUnit: pu,
+            total: itemTot
+        });
+    }
+
+    calcSubtotal = Math.round(calcSubtotal * 100) / 100;
+    if (calcSubtotal <= 0) {
+        showToast('El subtotal de la venta debe ser mayor a cero.', '#FF453A');
+        if (sBtn) { sBtn.disabled = false; sBtn.textContent = 'GUARDAR'; }
+        return;
+    }
+
+    const descInp = document.getElementById('posDescuentoPct');
+    let descPct = Number(descInp ? descInp.value : 0);
+    if (isNaN(descPct) || descPct < 0 || descPct > 100) {
+        showToast('El descuento porcentual debe estar entre 0% y 100%.', '#FF453A');
+        if (sBtn) { sBtn.disabled = false; sBtn.textContent = 'GUARDAR'; }
+        return;
+    }
+
+    const calcDescuento = Math.round((calcSubtotal * (descPct / 100)) * 100) / 100;
+    const calcTotal = Math.round((calcSubtotal - calcDescuento) * 100) / 100;
+
+    if (calcTotal <= 0) {
+        showToast('No se permite guardar una venta cuyo total sea cero o negativo por un descuento inválido.', '#FF453A');
+        if (sBtn) { sBtn.disabled = false; sBtn.textContent = 'GUARDAR'; }
+        return;
+    }
+
+    subtotal = calcSubtotal;
+    descuentoMonto = calcDescuento;
+    total = calcTotal;
+
     const recibido = Number(document.getElementById('posMontoRecibido')?.value || total);
-    const cambio = Math.max(0, recibido - total);
+    const cambio = Math.max(0, Math.round((recibido - total) * 100) / 100);
     const rawBanco = document.getElementById('posCuentaBancariaSel')?.value;
     const cuentaBancoId = (_posMetodoPago === 'Transferencia' && rawBanco && String(rawBanco).trim() !== '') ? String(rawBanco).trim() : null;
 
@@ -648,19 +734,12 @@ async function posConfirmarVenta(total, descuentoMonto, subtotal) {
         metodoPago: _posMetodoPago || 'Efectivo',
         cuentaBancariaId: cuentaBancoId,
         subtotal: subtotal,
+        descuentoPct: descPct,
         descuento: descuentoMonto,
         total: total,
         montoRecibido: recibido,
         cambio: cambio,
-        items: _posCarrito.map(it => ({
-            id: it.id,
-            descripcion: it.producto,
-            tipo: it.tipo,
-            sku: it.sku,
-            cantidad: it.cantidad,
-            precioUnit: it.precioUnit,
-            total: it.total
-        }))
+        items: validatedItems
     };
 
     try {

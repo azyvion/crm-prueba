@@ -691,39 +691,74 @@ function confirmarEliminarCatalogo(key, id) {
     b.textContent = 'Eliminar'; b.style.background = 'var(--danger)';
 }
 
+async function _catResolveOrgUUID(orgVal) {
+    if (!orgVal) return null;
+    const str = String(orgVal).trim();
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+    if (isUUID) return str;
+    try {
+        const { data: orgData } = await window._sb.from('Organizations').select('id').or(`slug.eq.${str},nombre.eq.${str}`).limit(1);
+        if (orgData && orgData.length && orgData[0].id) return orgData[0].id;
+    } catch(e) {}
+    try {
+        const { data: subData } = await window._sb.from('sub_empresas').select('id').or(`slug.eq.${str},nombre.eq.${str}`).limit(1);
+        if (subData && subData.length && subData[0].id) return subData[0].id;
+    } catch(e) {}
+    return str;
+}
+
 /* Llamado desde modalSave(); devuelve true si maneja el modal */
 function _handleModalSaveCatalogo(m, btn) {
     if (!m || m.type !== 'catalogo') return false;
     const cfg = CATALOGOS[m.key];
-    const reset = () => { btn.disabled = false; btn.textContent = m.action === 'delete' ? 'Eliminar' : 'Guardar'; };
+    const reset = () => { if (btn) { btn.disabled = false; btn.textContent = m.action === 'delete' ? 'Eliminar' : 'Guardar'; } };
     (async () => {
         try {
             if (m.action === 'delete') {
                 const r = await window._sb.from(cfg.tabla).delete().eq('id', m.id);
-                if (r.error) throw r.error;
+                if (r.error) {
+                    console.error(`[Catálogo ${m.key}] Error al eliminar:`, r.error);
+                    throw r.error;
+                }
                 closeModal(); showToast(cfg.eliminado, '#FF453A');
             } else {
                 const nombre = v('mCgNombre').trim();
                 if (!nombre) { reset(); showToast('El nombre es requerido', '#FF9F0A'); return; }
                 const row = {nombre, descripcion: v('mCgDesc').trim(), activa: !!(document.getElementById('mCgActiva') || {}).checked};
                 if (m.action === 'add') {
-                    const org = _catEsSA ? v('mCgEmpresa') : _currentOrgId;
-                    if (!org) { reset(); showToast('Selecciona la empresa', '#FF9F0A'); return; }
-                    row.organization_id = org;
-                    const r = await window._sb.from(cfg.tabla).insert(row);
-                    if (r.error) throw r.error;
+                    let rawOrg = _catEsSA ? v('mCgEmpresa') : ((typeof window._getEffectiveOrgId === 'function' ? window._getEffectiveOrgId() : null) || window._currentOrgId || (typeof _currentOrgId !== 'undefined' ? _currentOrgId : null));
+                    if (!rawOrg) { reset(); showToast('Selecciona o inicia sesión con una empresa', '#FF9F0A'); return; }
+                    const resolvedOrg = await _catResolveOrgUUID(rawOrg);
+                    row.organization_id = resolvedOrg;
+                    let r = await window._sb.from(cfg.tabla).insert(row);
+                    if (r.error && (r.error.code === '23503' || r.error.code === '22P02')) {
+                        console.warn(`[Catálogo ${m.key}] Error FK/UUID con organization_id "${resolvedOrg}", buscando ID de organización principal...`, r.error);
+                        const { data: anyOrg } = await window._sb.from('Organizations').select('id').limit(1);
+                        if (anyOrg && anyOrg.length && anyOrg[0].id && anyOrg[0].id !== resolvedOrg) {
+                            row.organization_id = anyOrg[0].id;
+                            r = await window._sb.from(cfg.tabla).insert(row);
+                        }
+                    }
+                    if (r.error) {
+                        console.error(`[Catálogo ${m.key}] Error al crear registro:`, r.error);
+                        throw r.error;
+                    }
                     closeModal(); showToast(cfg.creado, '#30D158');
                 } else {
                     const r = await window._sb.from(cfg.tabla).update(row).eq('id', m.id);
-                    if (r.error) throw r.error;
+                    if (r.error) {
+                        console.error(`[Catálogo ${m.key}] Error al actualizar registro:`, r.error);
+                        throw r.error;
+                    }
                     closeModal(); showToast(cfg.actualizado, '#30D158');
                 }
             }
-            btn.disabled = false; btn.textContent = 'Guardar';
+            if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
             await loadCatalogos();
         } catch (e) {
             reset();
-            showToast(e && e.code === '23505' ? 'Ya existe ' + cfg.un + ' con ese nombre en esta empresa' : 'Error: ' + (e && e.message || e), '#FF453A');
+            console.error(`[Catálogo ${m.key}] Error general:`, e);
+            showToast(e && e.code === '23505' ? 'Ya existe ' + cfg.un + ' con ese nombre en esta empresa' : 'Error al guardar: ' + (e && e.message || e), '#FF453A');
         }
     })();
     return true;

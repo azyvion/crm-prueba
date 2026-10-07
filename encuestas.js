@@ -621,22 +621,33 @@ window.guardarNuevaPregunta = async function(encuestaId) {
     const orgId = _encOrgId();
 
     try {
-        const { error } = await _encSb().from('encuesta_preguntas').insert({
+        const payload = {
             encuesta_id: encuestaId,
             titulo: titulo,
             tipo: tipo,
             orden: orden,
             opciones: opciones,
             organization_id: orgId
-        });
-        if (error) throw error;
+        };
+        let { error } = await _encSb().from('encuesta_preguntas').insert(payload);
+        if (error && (error.code === 'PGRST204' || (error.message && error.message.toLowerCase().includes('opciones')))) {
+            console.warn('[Encuestas] Columna "opciones" no encontrada en Supabase, guardando sin opciones...', error);
+            const fallbackPayload = { ...payload };
+            delete fallbackPayload.opciones;
+            ({ error } = await _encSb().from('encuesta_preguntas').insert(fallbackPayload));
+        }
+        if (error) {
+            console.error('[Encuestas] Error insertando pregunta:', error);
+            throw error;
+        }
         showToast('Pregunta agregada ✓', '#30D158');
         document.getElementById('mNuevaPregTitulo').value = '';
         if (document.getElementById('mNuevaPregOpciones')) document.getElementById('mNuevaPregOpciones').value = '';
         await cargarListaPreguntas(encuestaId);
         await loadEncuestas();
     } catch (e) {
-        showToast('Error al guardar: ' + (e.message || e), '#FF453A');
+        console.error('[Encuestas] Error en guardarNuevaPregunta:', e);
+        showToast('Error al guardar pregunta: ' + (e.message || e), '#FF453A');
     }
 };
 
