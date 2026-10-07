@@ -1443,8 +1443,8 @@
             }
         }
 
-        /* ── Responsive (tablet / desktop) — restaura layout de 2+ cols ── */
-        @media(min-width:768px) {
+        /* ── Responsive (desktop >= 992px) — layout de escritorio ── */
+        @media(min-width:992px) {
             .kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; }
             .two-col { grid-template-columns: 1fr 280px; }
             .survey-grid { grid-template-columns: 1fr 1fr; }
@@ -2330,27 +2330,24 @@ body.densidad-compacta .cell-sub { margin-top: 1px; }
 }
 .mob-funnel-toggle.open svg { transform: rotate(180deg); }
 
-/* Responsive: activar vistas móviles */
+/* Responsive: tablas y KPIs de clientes y prospectos */
 @media (max-width: 767px) {
     #page-clientes .kpi-grid,
-    #page-prospectos .kpi-grid { display: none !important; }
+    #page-prospectos .kpi-grid { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
     #page-clientes .table-card,
-    #page-prospectos .table-card { display: none !important; }
-    #page-prospectos .funnel-card { display: none; }
-    .mob-only { display: block !important; }
-    /* Ocultar nav-prospectos en móvil (integrado en Contactos) */
-    #nav-prospectos { display: none !important; }
-    /* Texto Clientes → Contactos en el nav sidebar */
-    #navCliLabel::after { content: 'Contactos'; }
-    #navCliLabel { font-size: 0; }
-    #navCliLabel::after { font-size: 13.5px; }
+    #page-prospectos .table-card { display: block !important; overflow-x: auto !important; }
+    #page-prospectos .funnel-card { display: block !important; overflow-x: auto !important; }
+    .mob-only { display: none !important; }
+    #nav-prospectos { display: flex !important; }
+}
+@media (max-width: 480px) {
+    #page-clientes .kpi-grid,
+    #page-prospectos .kpi-grid { grid-template-columns: 1fr !important; }
 }
 @media (min-width: 768px) {
     .mob-only { display: none !important; }
     .mob-seg, .mob-kpi-bar, .mob-list, .mob-funnel-toggle { display: none !important; }
     #nav-prospectos { display: flex !important; }
-    #navCliLabel { font-size: inherit; }
-    #navCliLabel::after { content: ''; font-size: 0; }
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -2876,12 +2873,28 @@ body.theme-dark #cropZoom { background: #3A3A3E; }
    Este bloque va al final del <head>: gana a todo lo anterior.
 ══════════════════════════════════════════════════════════════ */
 
-/* ── 1. Lienzo de escritorio ─────────────────────────────── */
-html { overflow-x: auto; }
+/* ── 1. Lienzo responsivo ─────────────────────────────── */
+html {
+    overflow-x: hidden;
+    max-width: 100vw;
+}
 body {
-    min-width: 1080px;
     padding-top: 0;
     font-size: 13.5px;
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+}
+@media (min-width: 992px) {
+    body {
+        min-width: 992px;
+    }
+}
+@media (max-width: 991px) {
+    body {
+        min-width: 0 !important;
+        width: 100% !important;
+    }
 }
 
 /* Scrollbars estilo escritorio */
@@ -2896,63 +2909,183 @@ body {
 *::-webkit-scrollbar-thumb:hover { background: rgba(60,60,67,.38); background-clip: content-box; }
 body.theme-dark *::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); background-clip: content-box; }
 
-/* ── 2. Sidebar siempre fija (nunca drawer) ──────────────── */
-.sidebar {
-    width: 232px !important;
-    padding: 26px 0 18px !important;
-    position: fixed; top: 0; left: 0; bottom: 0;
-    transform: none !important;
-    box-shadow: none !important;
-    z-index: 100;
+/* ── 2. Layout de Escritorio (>= 992px) ──────────────────── */
+@media (min-width: 992px) {
+    .sidebar {
+        width: 232px !important;
+        padding: 26px 0 18px !important;
+        position: fixed; top: 0; left: 0; bottom: 0;
+        transform: none !important;
+        box-shadow: none !important;
+        z-index: 100;
+        display: flex !important;
+    }
+    .sidebar-close-btn,
+    .hamburger-btn,
+    .sidebar-drawer-overlay,
+    .bottom-nav, .bn-more-sheet, .bn-more-overlay { display: none !important; }
+    .main { margin-left: 232px !important; width: calc(100% - 232px) !important; }
+    .topbar { height: 58px; padding: 0 28px; }
+    .content { padding: 24px 28px 40px !important; }
+    .kpi-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 14px; }
+    .two-col { grid-template-columns: 1fr 300px !important; }
+    .survey-grid { grid-template-columns: 1fr 1fr !important; }
+    .form-row { grid-template-columns: 1fr 1fr !important; gap: 14px; }
+    .cot-grid { grid-template-columns: repeat(3, 1fr) !important; }
+    .cot-grid-2 { grid-template-columns: repeat(2, 1fr) !important; }
+    .bank-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important; }
+    .table-card { overflow-x: visible !important; }
+    .table-card table { min-width: unset !important; display: table !important; }
 }
-.sidebar-close-btn,
-.hamburger-btn,
-.sidebar-drawer-overlay,
-.bottom-nav, .bn-more-sheet, .bn-more-overlay { display: none !important; }
 
-.main { margin-left: 232px !important; }
+/* ── 3. Layout de Móvil y Tablet (< 992px) ───────────────── */
+@media (max-width: 991px) {
+    .sidebar {
+        position: fixed !important;
+        top: 0 !important; left: 0 !important; bottom: 0 !important;
+        width: min(300px, 86vw) !important;
+        background: var(--sidebar) !important;
+        z-index: 99999 !important;
+        transform: translateX(-100%) !important;
+        transition: transform .28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        box-shadow: 16px 0 60px rgba(0,0,0,.5) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding-top: env(safe-area-inset-top, 16px) !important;
+    }
+    .sidebar.open {
+        transform: translateX(0) !important;
+    }
+    .sidebar-drawer-overlay {
+        display: block !important;
+        position: fixed !important;
+        inset: 0 !important;
+        background: rgba(0,0,0,.55) !important;
+        backdrop-filter: blur(4px) !important;
+        z-index: 99998 !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transition: opacity .25s ease !important;
+    }
+    .sidebar-drawer-overlay.open {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+    .sidebar-close-btn {
+        display: flex !important;
+        align-items: center; justify-content: center;
+        width: 34px; height: 34px;
+        border-radius: 9px;
+        background: rgba(255,255,255,0.12);
+        margin: 8px 16px 4px auto;
+        cursor: pointer;
+        color: #fff;
+    }
+    .hamburger-btn {
+        display: flex !important;
+        align-items: center; justify-content: center;
+        width: 38px; height: 38px;
+        border-radius: 10px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        cursor: pointer;
+        flex-shrink: 0;
+        box-shadow: var(--shadow-sm);
+        margin-right: 8px;
+    }
+    .hamburger-btn svg {
+        width: 20px; height: 20px;
+        stroke: var(--text-primary);
+        stroke-width: 2.2;
+    }
+    .main {
+        margin-left: 0 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+    .topbar {
+        height: auto !important;
+        min-height: 54px !important;
+        padding: 8px 14px !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+    .topbar-btn span {
+        display: inline !important;
+    }
+    .search-box {
+        order: 3;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 4px 0 0 !important;
+    }
+    .content {
+        padding: 14px 12px 36px !important;
+        width: 100% !important;
+        overflow-x: hidden !important;
+    }
+    .kpi-grid,
+    .kpi-row {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+    }
+    .two-col,
+    .form-row,
+    .survey-grid,
+    .cot-grid,
+    .cot-grid-2 {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+    .bank-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .table-card,
+    .table-wrap {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-radius: 12px !important;
+    }
+    .table-card table {
+        min-width: 580px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .kpi-grid,
+    .kpi-row {
+        grid-template-columns: 1fr !important;
+    }
+    .topbar {
+        padding: 6px 10px !important;
+    }
+    .page-title {
+        font-size: 16px !important;
+    }
+}
+
 .nav-item { padding: 9px 20px; font-size: 13px; }
-
-/* ── 3. Topbar de escritorio ─────────────────────────────── */
-.topbar { height: 58px; padding: 0 28px; }
 .topbar-logo { display: none !important; }
 .search-box { display: flex !important; }
 .page-title { font-size: 18px; }
 .topbar-btn { height: 34px; font-size: 13px; border-radius: 9px; }
-.topbar-btn span { display: inline !important; }
-.topbar-btn:hover { filter: brightness(1.08); }
 .icon-btn { width: 34px; height: 34px; }
 .icon-btn:hover { background: var(--bg); }
-
-/* ── 4. Contenido: ancho máximo cómodo y centrado ────────── */
-.content { padding: 24px 28px 40px !important; }
 .page.active {
     display: block;
     max-width: 1560px;
     margin: 0 auto;
     width: 100%;
 }
-
-/* Grids de escritorio en cualquier ancho */
-.kpi-grid    { grid-template-columns: repeat(4, 1fr) !important; gap: 14px; }
-.two-col     { grid-template-columns: 1fr 300px !important; }
-.survey-grid { grid-template-columns: 1fr 1fr !important; }
-.form-row    { grid-template-columns: 1fr 1fr !important; gap: 14px; }
-.cot-grid    { grid-template-columns: repeat(3, 1fr) !important; }
-.cot-grid-2  { grid-template-columns: repeat(2, 1fr) !important; }
-.bank-grid   { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important; }
-
-/* ── 5. Tablas: sin scroll horizontal forzado, hover real ── */
-.table-card { overflow-x: visible !important; }
-.table-card table { min-width: unset !important; display: table !important; }
-td { white-space: normal !important; }
+td { white-space: normal; }
 tbody tr { transition: background .12s; }
 tbody tr:hover { background: #FAFAFC; }
 body.theme-dark tbody tr:hover { background: rgba(255,255,255,.035); }
 thead th { position: sticky; top: 0; z-index: 2; background: var(--card); }
 body.theme-dark thead th { background: var(--card); }
 
-/* ── 6. Se ocultan TODAS las vistas móviles ──────────────── */
 .mob-only, .mob-seg, .mob-kpi-bar, .mob-list, .mob-funnel-toggle,
 #mobContactosWrap { display: none !important; }
 #nav-prospectos { display: flex !important; }
@@ -3042,27 +3175,31 @@ textarea.form-input { height: auto; min-height: 74px; padding: 9px 11px; line-he
 }
 .btn-save:hover:not(:disabled) { filter: brightness(1.08); box-shadow: 0 3px 12px rgba(10,132,255,.32); }
 
-/* ── 8. Constructor de cotizaciones: siempre diálogo centrado ── */
-.cot-builder {
-    top: 50%; left: 50%; right: auto; bottom: auto;
-    width: min(1100px, calc(100vw - 56px));
-    max-height: calc(100vh - 56px);
-    border-radius: 16px;
-    transform: translate(-50%, -48%) scale(.99);
-    box-shadow: 0 28px 80px rgba(0,0,0,.3);
+/* ── 8. Constructor de cotizaciones ── */
+@media (min-width: 768px) {
+    .cot-builder {
+        top: 50%; left: 50%; right: auto; bottom: auto;
+        width: min(1100px, calc(100vw - 56px));
+        max-height: calc(100vh - 56px);
+        border-radius: 16px;
+        transform: translate(-50%, -48%) scale(.99);
+        box-shadow: 0 28px 80px rgba(0,0,0,.3);
+    }
+    .cot-builder.open { transform: translate(-50%, -50%) scale(1); }
+    .cot-items-head { display: grid !important; }
+    .cot-item-row {
+        grid-template-columns: minmax(200px, 1fr) 82px 130px 82px 128px 34px !important;
+    }
+    .cot-item-row > *:nth-child(3),
+    .cot-item-row > *:nth-child(4) { display: block !important; }
+    .cot-tot-box { width: 340px; margin-left: auto; }
+    .bank-drawer { width: 480px !important; right: -520px; padding-top: 0 !important; }
 }
-.cot-builder.open { transform: translate(-50%, -50%) scale(1); }
-.cot-items-head { display: grid !important; }
-.cot-item-row {
-    grid-template-columns: minmax(200px, 1fr) 82px 130px 82px 128px 34px !important;
+@media (max-width: 767px) {
+    .cot-tot-box { width: 100% !important; margin-left: 0 !important; }
+    .bank-drawer { width: 100vw !important; max-width: 100vw !important; right: -100vw !important; }
 }
-.cot-item-row > *:nth-child(3),
-.cot-item-row > *:nth-child(4) { display: block !important; }
-.cot-tot-box { width: 340px; margin-left: auto; }
-
-/* ── 9. Panel lateral de cuentas bancarias ───────────────── */
-.bank-drawer { width: 480px !important; right: -520px; padding-top: 0 !important; }
-.bank-drawer.open { right: 0; box-shadow: -8px 0 40px rgba(0,0,0,.18); }
+.bank-drawer.open { right: 0 !important; box-shadow: -8px 0 40px rgba(0,0,0,.18); }
 
 /* ── 10. Toast arriba a la derecha (estilo escritorio) ───── */
 .toast {
