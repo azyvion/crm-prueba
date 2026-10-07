@@ -356,7 +356,7 @@
       </button>
 
       <p class="form-footer">¿No tienes cuenta? <a class="link-btn" href="register.html">Registrarse ahora</a></p>
-      <p class="form-footer" style="margin-top:6px;">Al ingresar aceptas los <a class="link-btn" href="#">Términos de uso</a>.</p>
+      <p class="form-footer" style="margin-top:6px;">Al ingresar aceptas los <a class="link-btn" href="index.html#terminos">Términos de uso</a>.</p>
     </div>
 
     <!-- VISUAL -->
@@ -430,6 +430,22 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- Modal recuperación BUG-01 -->
+  <div id="forgotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#1c1c1e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:32px 28px;width:100%;max-width:400px;margin:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <span style="font-size:17px;font-weight:700;color:#fff;">Recuperar contraseña</span>
+        <button onclick="closeForgot()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:22px;cursor:pointer;line-height:1;">×</button>
+      </div>
+      <p style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:18px;">Ingresa el correo asociado a tu cuenta y te enviaremos un enlace para restablecer tu contraseña.</p>
+      <input id="forgotEmail" type="email" placeholder="tu@correo.com" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;box-sizing:border-box;outline:none;margin-bottom:12px;" />
+      <div id="forgotMsg" style="font-size:13px;min-height:18px;margin-bottom:14px;"></div>
+      <button id="forgotBtn" onclick="sendForgot()" style="width:100%;padding:12px;background:#0A84FF;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Enviar enlace</button>
+      <p style="text-align:center;font-size:12px;color:rgba(255,255,255,0.3);margin-top:16px;">¿Problemas? Escríbenos a <a href="mailto:soporte@azyvion.com" style="color:#0A84FF;">soporte@azyvion.com</a></p>
+    </div>
+  </div>
+  <style>#forgotModal.visible{display:flex!important;}</style>
+
   <script>
   (function () {
     var SESSION_KEY  = 'azyvion_session';
@@ -491,7 +507,37 @@
       .catch(function(e){ btn.classList.remove('loading'); btn.disabled = false; err.textContent = 'Error de conexión. Intenta de nuevo.'; err.classList.add('visible'); });
     };
 
-    window.handleForgot = function () { showToast('Contacta al administrador para restablecer tu contraseña', '#0A84FF'); };
+    window.handleForgot = function () {
+      document.getElementById('forgotModal').classList.add('visible');
+      document.getElementById('forgotEmail').value = document.getElementById('email').value || '';
+      document.getElementById('forgotMsg').textContent = '';
+    };
+    window.closeForgot = function () {
+      document.getElementById('forgotModal').classList.remove('visible');
+    };
+    window.sendForgot = async function () {
+      var emailEl = document.getElementById('forgotEmail');
+      var msgEl   = document.getElementById('forgotMsg');
+      var btn     = document.getElementById('forgotBtn');
+      var email   = emailEl.value.trim();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        msgEl.style.color = '#ff453a'; msgEl.textContent = 'Ingresa un correo válido.'; return;
+      }
+      btn.disabled = true; btn.textContent = 'Enviando…';
+      try {
+        var { data, error } = await window._supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + '/login.html'
+        });
+        if (error) throw error;
+        msgEl.style.color = '#22c55e';
+        msgEl.textContent = 'Si ese correo está registrado recibirás un enlace en minutos. Revisa también tu carpeta de spam.';
+        btn.textContent = 'Enviado ✓';
+      } catch (e) {
+        msgEl.style.color = '#ff453a';
+        msgEl.textContent = 'No se pudo enviar el correo. Intenta de nuevo o escribe a soporte@azyvion.com';
+        btn.disabled = false; btn.textContent = 'Enviar enlace';
+      }
+    };
 
     function showToast(msg, color) {
       var t = document.getElementById('toast');
