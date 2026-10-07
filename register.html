@@ -933,13 +933,13 @@
     .then(function(res) {
       if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
       if (!res.ok) { e(errKey, res.error || 'Error al crear la cuenta. Intenta de nuevo.'); return; }
-      // Auto-login con el correo recién registrado
-      var correo   = g('f_correo');
-      var password = g('f_pwd');
+      // Auto-login con el usuario slug devuelto por register-crm
+      var password   = g('f_pwd');
+      var usuarioSlug = res.usuario || '';
       fetch(LOGIN_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ correo: correo, contrasena: password })
+        headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY },
+        body: JSON.stringify({ usuario: usuarioSlug, contrasena: password })
       })
       .then(function(lr){ return lr.json(); })
       .then(function(lres) {
