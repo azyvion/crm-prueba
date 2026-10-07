@@ -924,25 +924,50 @@
       }
     };
 
-    fetch(REGISTER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY },
-      body: JSON.stringify(payload)
-    })
-    .then(function(r){ return r.json(); })
-    .then(function(res) {
+    // ── REGISTRO ────────────────────────────────────────────────────────────
+    (async function() {
+      var httpRes, res;
+      try {
+        httpRes = await fetch(REGISTER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY },
+          body: JSON.stringify(payload)
+        });
+      } catch (netErr) {
+        // Error de red puro (sin conexión, DNS, CORS preflight bloqueado)
+        if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+        e(errKey, 'Sin conexión. Verifica tu internet e intenta de nuevo.');
+        return;
+      }
+
+      try {
+        res = await httpRes.json();
+      } catch (_) {
+        // El servidor respondió pero con body no-JSON (ej: 502 gateway HTML)
+        if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+        e(errKey, 'Error del servidor (' + httpRes.status + '). Intenta en unos segundos.');
+        return;
+      }
+
       if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
-      if (!res.ok) { e(errKey, res.error || 'Error al crear la cuenta. Intenta de nuevo.'); return; }
-      // Auto-login con el usuario slug devuelto por register-crm
-      var password   = g('f_pwd');
+
+      if (!res.ok) {
+        // Error controlado de la función (correo duplicado, validación, etc.)
+        e(errKey, res.error || 'Error al crear la cuenta. Intenta de nuevo.');
+        return;
+      }
+
+      // ── REGISTRO EXITOSO → auto-login aislado ──────────────────────────
+      var password    = g('f_pwd');
       var usuarioSlug = res.usuario || '';
-      fetch(LOGIN_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY },
-        body: JSON.stringify({ usuario: usuarioSlug, contrasena: password })
-      })
-      .then(function(lr){ return lr.json(); })
-      .then(function(lres) {
+
+      try {
+        var lr = await fetch(LOGIN_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY },
+          body: JSON.stringify({ usuario: usuarioSlug, contrasena: password })
+        });
+        var lres = await lr.json();
         if (lres.ok && lres.session) {
           var expira = new Date(lres.session.expires_at * 1000).toISOString();
           var sesion = {
@@ -950,22 +975,19 @@
             refresh_token: lres.session.refresh_token,
             nombre: lres.nombre, usuario: lres.usuario,
             rol: lres.rol, expira: expira,
+            organization_id: lres.organization_id || res.organization_id || '',
             fotoUrl: lres.fotoUrl || '',
             preferencias: lres.preferencias || {}
           };
-          try { localStorage.setItem(SESSION_KEY, JSON.stringify(sesion)); } catch(e2) {}
-          showSuccess(plan);
-        } else {
-          // El registro fue ok pero el auto-login falló; igual mostrar éxito
-          showSuccess(plan);
+          try { localStorage.setItem(SESSION_KEY, JSON.stringify(sesion)); } catch(_) {}
         }
-      })
-      .catch(function() { showSuccess(plan); });
-    })
-    .catch(function() {
-      if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
-      e(errKey, 'Error de conexión. Intenta de nuevo.');
-    });
+      } catch (_) {
+        // Auto-login falló — no importa, el registro fue exitoso.
+        // El usuario podrá iniciar sesión manualmente.
+      }
+
+      showSuccess(plan);
+    })();
   };
 
   function showSuccess(plan) {
@@ -978,7 +1000,14 @@
         setTimeout(function(){ window.location.href = 'dashboard.html'; }, 2500);
       }
     } catch(e) {}
-    var msgs = {free:'Tu cuenta gratuita está lista. Revisa tu correo para confirmar el acceso.',starter:'Tu prueba de 14 días ha comenzado. Revisa tu correo para activar tu cuenta.',pro:'Tu prueba de 14 días ha comenzado. Revisa tu correo para activar tu cuenta.',enterprise:'Recibimos tu solicitud. Un ejecutivo te contactará en menos de 24 horas.'};
+    var tieneSession = false;
+    try { tieneSession = !!localStorage.getItem(SESSION_KEY); } catch(_) {}
+    var msgs = {
+      free: tieneSession ? 'Tu cuenta gratuita está lista. Entrando al panel…' : 'Tu cuenta gratuita está lista. Ya puedes iniciar sesión.',
+      starter: tieneSession ? 'Tu prueba de 14 días ha comenzado. Entrando al panel…' : 'Tu prueba de 14 días ha comenzado. Inicia sesión para continuar.',
+      pro: tieneSession ? 'Tu prueba de 14 días ha comenzado. Entrando al panel…' : 'Tu prueba de 14 días ha comenzado. Inicia sesión para continuar.',
+      enterprise: 'Recibimos tu solicitud. Un ejecutivo te contactará en menos de 24 horas.'
+    };
     document.getElementById('successMsg').textContent = msgs[plan] || msgs.free;
     var names = {free:'Gratis',starter:'Starter ($29/mes)',pro:'Pro ($79/mes)',enterprise:'Enterprise'};
     var html = '<div class="success-row"><span class="success-key">Empresa</span><span class="success-val">'+g('f_empresa')+'</span></div>';
