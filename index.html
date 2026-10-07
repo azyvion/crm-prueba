@@ -1312,32 +1312,141 @@
 
     .footer-legal a:hover { color: rgba(255,255,255,0.7); }
 
+    /* ─── MOBILE NAV HAMBURGER ────────────────────── */
+    .nav-hamburger {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 40px; height: 40px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .nav-hamburger svg {
+      width: 22px; height: 22px;
+      stroke: var(--text);
+      stroke-width: 2;
+      stroke-linecap: round;
+      fill: none;
+    }
+    .nav-mobile-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(4px);
+      z-index: 199;
+    }
+    .nav-mobile-overlay.open { display: block; }
+    .nav-mobile-drawer {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: min(320px, 85vw);
+      background: #fff;
+      z-index: 201;
+      transform: translateX(100%);
+      transition: transform .28s cubic-bezier(.16,1,.3,1);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 20px;
+      gap: 8px;
+      box-shadow: -8px 0 40px rgba(0,0,0,.18);
+      overflow-y: auto;
+    }
+    .nav-mobile-drawer.open { transform: translateX(0); }
+    .nav-mobile-close {
+      align-self: flex-end;
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .nav-mobile-close svg {
+      width: 18px; height: 18px;
+      stroke: var(--text);
+      stroke-width: 2;
+      fill: none;
+    }
+    .nav-mobile-drawer a {
+      display: block;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-2);
+      text-decoration: none;
+      transition: background .12s, color .12s;
+    }
+    .nav-mobile-drawer a:hover { background: var(--bg-alt); color: var(--text); }
+    .nav-mobile-drawer .mobile-cta {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+    }
+    .nav-mobile-drawer .mobile-cta a {
+      text-align: center;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
     /* ─── RESPONSIVE ──────────────────────────────── */
     @media (max-width: 900px) {
-      nav { padding: 0 20px; }
+      nav { padding: 0 16px; }
       .nav-links { display: none; }
-      .hero { grid-template-columns: 1fr; padding: 100px 24px 60px; gap: 40px; }
-      .hero h1 { font-size: 36px; }
+      .nav-cta { display: none; }
+      .nav-hamburger { display: flex; }
+      .hero { grid-template-columns: 1fr; padding: 100px 20px 60px; gap: 40px; }
+      .hero h1 { font-size: 32px; }
       .hero-visual { display: none; }
-      .stats-inner { grid-template-columns: repeat(2, 1fr); gap: 32px; }
-      .stat-item { border-right: none; }
-      .section { padding: 64px 24px; }
+      .hero-desc { font-size: 15px; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+      .stat-item { border-right: none; padding: 0; }
+      .section { padding: 56px 20px; }
+      .section h2 { font-size: 28px; }
       .features-grid { grid-template-columns: 1fr; }
-      .pipeline-section { padding: 64px 24px; }
-      .pipeline-inner { grid-template-columns: 1fr; gap: 40px; }
+      .pipeline-section { padding: 56px 20px; }
+      .pipeline-inner { grid-template-columns: 1fr; gap: 32px; }
       .ai-cards { grid-template-columns: 1fr; }
-      .testimonials { padding: 64px 24px; }
+      .testimonials { padding: 56px 20px; }
       .testi-grid { grid-template-columns: 1fr; }
-      .cta-band { padding: 64px 24px; }
-      footer { padding: 48px 24px 28px; }
-      .footer-top { grid-template-columns: 1fr 1fr; gap: 32px; }
+      .cta-band { padding: 56px 20px; }
+      .cta-band h2 { font-size: 28px; }
+      footer { padding: 40px 20px 24px; }
+      .footer-top { grid-template-columns: 1fr 1fr; gap: 28px; }
+      .product-preview-section { padding: 56px 20px; }
+      .pricing-section { padding: 56px 20px; }
     }
 
     @media (max-width: 600px) {
-      .stats-inner { grid-template-columns: 1fr; }
+      .hero { padding: 90px 16px 48px; }
+      .hero h1 { font-size: 26px; }
+      .hero-desc { font-size: 14px; }
+      .stats-inner { grid-template-columns: 1fr; gap: 16px; }
       .footer-top { grid-template-columns: 1fr; }
-      .hero-actions { flex-direction: column; align-items: flex-start; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
       .btn-hero { width: 100%; justify-content: center; }
+      .section h2 { font-size: 24px; }
+      .cta-band h2 { font-size: 24px; }
+      .pricing-grid { grid-template-columns: 1fr !important; }
+      .testi-card { padding: 22px 16px; }
+      .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
+    }
+
+    @media (max-width: 380px) {
+      .hero h1 { font-size: 22px; }
+      nav { padding: 0 12px; height: 56px; }
+      .nav-name { font-size: 15px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1367,7 +1476,26 @@
       <a href="login.html" class="btn-ghost">Iniciar sesión</a>
       <a href="register.html" class="btn-primary-sm">Crear cuenta gratis</a>
     </div>
+    <button class="nav-hamburger" onclick="document.getElementById('navMobileDrawer').classList.add('open');document.getElementById('navMobileOverlay').classList.add('open');document.body.style.overflow='hidden';" aria-label="Abrir menú">
+      <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
   </nav>
+
+  <div class="nav-mobile-overlay" id="navMobileOverlay" onclick="document.getElementById('navMobileDrawer').classList.remove('open');this.classList.remove('open');document.body.style.overflow='';"></div>
+  <div class="nav-mobile-drawer" id="navMobileDrawer">
+    <button class="nav-mobile-close" onclick="this.parentElement.classList.remove('open');document.getElementById('navMobileOverlay').classList.remove('open');document.body.style.overflow='';">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <a href="#features" onclick="this.parentElement.classList.remove('open');document.getElementById('navMobileOverlay').classList.remove('open');document.body.style.overflow='';">Funciones</a>
+    <a href="#pipeline" onclick="this.parentElement.classList.remove('open');document.getElementById('navMobileOverlay').classList.remove('open');document.body.style.overflow='';">Pipeline</a>
+    <a href="#ia" onclick="this.parentElement.classList.remove('open');document.getElementById('navMobileOverlay').classList.remove('open');document.body.style.overflow='';">IA</a>
+    <a href="#precios" onclick="this.parentElement.classList.remove('open');document.getElementById('navMobileOverlay').classList.remove('open');document.body.style.overflow='';">Precios</a>
+    <a href="#clientes" onclick="this.parentElement.classList.remove('open');document.getElementById('navMobileOverlay').classList.remove('open');document.body.style.overflow='';">Clientes</a>
+    <div class="mobile-cta">
+      <a href="login.html" class="btn-ghost">Iniciar sesión</a>
+      <a href="register.html" class="btn-primary-sm" style="color:#fff;">Crear cuenta gratis</a>
+    </div>
+  </div>
 
   <!-- ══════════════════════ HERO ══════════════════════ -->
   <section>

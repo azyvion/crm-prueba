@@ -4245,4 +4245,336 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
     }
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   6. RESPONSIVIDAD ADICIONAL — COBERTURA COMPLETA DE SECCIONES
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── 6a. Overview cards — min-width puede causar overflow ── */
+@media (max-width: 600px) {
+    .ov-card,
+    .ov-chart-card {
+        min-width: 0 !important;
+        flex-basis: 100% !important;
+    }
+    .ov-charts-row {
+        flex-direction: column !important;
+    }
+    .ov-bottom-row {
+        flex-direction: column !important;
+    }
+    .ov-quick-btn {
+        font-size: 11.5px;
+        padding: 8px 10px;
+    }
+}
+
+/* ── 6b. Cotización total box — fixed width overflow ── */
+@media (max-width: 767px) {
+    .cot-tot-box {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+    }
+    .cot-add-bar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    .cot-add-bar > * {
+        width: 100% !important;
+    }
+}
+
+/* ── 6c. Ficha shell en pantallas muy pequeñas ── */
+@media (max-width: 480px) {
+    .ficha-shell {
+        height: auto !important;
+        min-height: 300px !important;
+        max-height: none !important;
+    }
+    .ficha-head {
+        padding: 12px 14px 10px !important;
+        gap: 10px !important;
+        flex-wrap: wrap !important;
+    }
+    .ficha-head .avatar {
+        width: 36px !important;
+        height: 36px !important;
+    }
+    .ficha-tabs {
+        padding: 0 10px !important;
+    }
+    .ficha-tab {
+        padding: 10px 10px !important;
+        font-size: 12px !important;
+        white-space: nowrap !important;
+    }
+    body.ficha-max .content {
+        padding: 4px !important;
+    }
+}
+
+/* ── 6d. Organigrama — padding y overflow en móvil ── */
+@media (max-width: 767px) {
+    #page-organigrama > div {
+        padding: 16px 12px 28px !important;
+        max-width: 100% !important;
+    }
+    #page-organigrama .card {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+}
+@media (max-width: 480px) {
+    #page-organigrama > div {
+        padding: 12px 8px 24px !important;
+    }
+}
+
+/* ── 6e. Empleados/Usuarios — filter buttons wrap + table scroll ── */
+@media (max-width: 767px) {
+    #page-empleados .table-toolbar,
+    #page-usuarios .table-toolbar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+    }
+    #page-empleados .table-toolbar > div,
+    #page-usuarios .table-toolbar > div {
+        flex-wrap: wrap !important;
+    }
+    .filter-btn {
+        font-size: 11px !important;
+        padding: 5px 8px !important;
+        min-height: 30px !important;
+    }
+    #page-empleados .table-wrap,
+    #page-usuarios .table-scroll {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    #page-empleados .table-wrap table,
+    #page-usuarios .table-scroll table {
+        min-width: 600px !important;
+    }
+    #page-empleados .kpi-mini,
+    #page-usuarios .kpi-mini {
+        min-width: 80px !important;
+    }
+}
+@media (max-width: 380px) {
+    #page-empleados .card > .table-toolbar,
+    #page-empleados .card > div:first-child > div {
+        gap: 6px !important;
+    }
+    .filter-btn {
+        font-size: 10px !important;
+        padding: 4px 6px !important;
+    }
+}
+
+/* ── 6f. Perfil body rendering ── */
+@media (max-width: 767px) {
+    #perfilBody {
+        padding: 0 !important;
+    }
+    #perfilBody .card,
+    #perfilBody > div {
+        border-radius: 12px !important;
+    }
+    #perfilBody .form-row {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ── 6g. Catálogos inventario — filter select y tabla ── */
+@media (max-width: 600px) {
+    .cat-filtro-sel {
+        min-width: 120px !important;
+        width: 100% !important;
+    }
+    .cat-empty {
+        padding: 24px 12px !important;
+    }
+    .cat-empty-s {
+        max-width: 100% !important;
+    }
+}
+
+/* ── 6h. Contabilidad tabs y contenido ── */
+@media (max-width: 600px) {
+    .cont-tabs {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        flex-wrap: nowrap !important;
+    }
+    .cont-tab {
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
+        padding: 8px 10px !important;
+        font-size: 11.5px !important;
+    }
+    .cont-tab svg {
+        width: 13px !important;
+        height: 13px !important;
+    }
+    .bank-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .bank-drawer {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        border-radius: 0 !important;
+    }
+}
+
+/* ── 6i. Ajustes — nano phones ── */
+@media (max-width: 380px) {
+    .ajustes-layout {
+        border-radius: 10px !important;
+    }
+    .ajustes-nav-item {
+        padding: 6px 8px !important;
+        font-size: 11px !important;
+    }
+    .ajustes-row {
+        padding: 10px 12px !important;
+    }
+    .ajustes-header {
+        padding: 12px 12px 10px !important;
+    }
+    .ajustes-footer {
+        padding: 10px 12px !important;
+    }
+    .ajustes-footer button {
+        font-size: 12px !important;
+        padding: 8px 12px !important;
+    }
+}
+
+/* ── 6j. Suscripciones en móvil ── */
+@media (max-width: 600px) {
+    .sub-setup-banner {
+        padding: 16px 14px !important;
+    }
+    .sub-setup-banner h3 {
+        font-size: 14px !important;
+    }
+    .sub-setup-banner p {
+        max-width: 100% !important;
+        font-size: 12px !important;
+    }
+    .sub-sql-block {
+        font-size: 10px !important;
+        padding: 10px 12px !important;
+    }
+    .sub-action-btn {
+        padding: 8px 10px !important;
+        font-size: 11px !important;
+    }
+}
+
+/* ── 6k. Paginación en pantallas muy pequeñas ── */
+@media (max-width: 380px) {
+    .pagination-wrap {
+        gap: 4px !important;
+        padding: 8px 6px !important;
+    }
+    .pagination-wrap button {
+        min-width: 28px !important;
+        min-height: 28px !important;
+        font-size: 11px !important;
+    }
+}
+
+/* ── 6l. Drawer actions grid en nano phones ── */
+@media (max-width: 380px) {
+    .drawer-actions {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 6px !important;
+    }
+}
+
+/* ── 6m. Switch fields en móvil ── */
+@media (max-width: 480px) {
+    .switch-field {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+    }
+    .switch-field .switch {
+        align-self: flex-end;
+    }
+}
+
+/* ── 6n. Protección global de overflow ── */
+.page {
+    overflow-x: hidden;
+    max-width: 100%;
+}
+.content {
+    max-width: 100vw;
+}
+
+/* ── 6o. Tables in very small screens ── */
+@media (max-width: 380px) {
+    .table-card table,
+    .table-wrap table,
+    .table-scroll table {
+        min-width: 480px !important;
+        font-size: 11.5px !important;
+    }
+    td, th {
+        padding: 7px 10px !important;
+    }
+}
+
+/* ── 6p. Card padding en pantallas pequeñas ── */
+@media (max-width: 480px) {
+    .card {
+        border-radius: 12px !important;
+    }
+    .section-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+    }
+    .table-toolbar {
+        padding: 8px 12px !important;
+    }
+}
+
+/* ── 6q. Toolbar buttons responsive ── */
+@media (max-width: 480px) {
+    .topbar-btn {
+        height: 32px !important;
+        padding: 0 10px !important;
+        font-size: 12px !important;
+        border-radius: 8px !important;
+    }
+    .icon-btn {
+        width: 32px !important;
+        height: 32px !important;
+    }
+}
+
+/* ── 6r. Encuestas grid en móvil ── */
+@media (max-width: 600px) {
+    .survey-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+}
+
+/* ── 6s. Print bar responsive ── */
+@media (max-width: 480px) {
+    .print-bar {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        padding: 10px !important;
+    }
+    .print-bar-btn {
+        font-size: 11px !important;
+        padding: 6px 10px !important;
+    }
+}
 
