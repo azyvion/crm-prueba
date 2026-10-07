@@ -220,6 +220,20 @@
             </svg>
             Suscripciones
         </div>
+        <div class="nav-item" id="nav-organigrama" onclick="showPage('organigrama',this)">
+            <svg viewBox="0 0 24 24">
+                <rect x="9" y="2" width="6" height="4" rx="1"/>
+                <rect x="2" y="18" width="6" height="4" rx="1"/>
+                <rect x="9" y="18" width="6" height="4" rx="1"/>
+                <rect x="16" y="18" width="6" height="4" rx="1"/>
+                <line x1="12" y1="6" x2="12" y2="11"/>
+                <line x1="5" y1="11" x2="19" y2="11"/>
+                <line x1="5" y1="11" x2="5" y2="18"/>
+                <line x1="12" y1="11" x2="12" y2="18"/>
+                <line x1="19" y1="11" x2="19" y2="18"/>
+            </svg>
+            Organigrama
+        </div>
         <div class="nav-item" id="nav-perfil" onclick="showPage('perfil',this)">
             <svg viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="3" />
@@ -301,6 +315,10 @@
         <div class="bn-more-item" id="bnm-usuarios" style="display:none" onclick="showPage('usuarios', document.getElementById('nav-usuarios')); _setBnActive(''); _closeBnMore()">
             <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             Usuarios
+        </div>
+        <div class="bn-more-item" id="bnm-organigrama" onclick="showPage('organigrama', document.getElementById('nav-organigrama')); _setBnActive(''); _closeBnMore()">
+            <svg viewBox="0 0 24 24"><rect x='9' y='2' width='6' height='4' rx='1'/><rect x='2' y='18' width='6' height='4' rx='1'/><rect x='9' y='18' width='6' height='4' rx='1'/><rect x='16' y='18' width='6' height='4' rx='1'/><line x1='12' y1='6' x2='12' y2='11'/><line x1='5' y1='11' x2='19' y2='11'/><line x1='5' y1='11' x2='5' y2='18'/><line x1='12' y1='11' x2='12' y2='18'/><line x1='19' y1='11' x2='19' y2='18'/></svg>
+            Organigrama
         </div>
         <div class="bn-more-item" id="bnm-perfil" onclick="showPage('perfil', document.getElementById('nav-perfil')); _setBnActive(''); _closeBnMore()">
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
@@ -1916,6 +1934,139 @@
             </div>
 
 
+
+        <!-- ══ ORGANIGRAMA ════════════════════════════════════════ -->
+        <div class="page" id="page-organigrama">
+            <div style="padding:24px 20px 32px;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;">
+                    <div style="width:40px;height:40px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                        <svg viewBox='0 0 24 24' style='width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;'>
+                            <rect x='9' y='2' width='6' height='4' rx='1'/>
+                            <rect x='2' y='18' width='6' height='4' rx='1'/>
+                            <rect x='9' y='18' width='6' height='4' rx='1'/>
+                            <rect x='16' y='18' width='6' height='4' rx='1'/>
+                            <line x1='12' y1='6' x2='12' y2='11'/>
+                            <line x1='5' y1='11' x2='19' y2='11'/>
+                            <line x1='5' y1='11' x2='5' y2='18'/>
+                            <line x1='12' y1='11' x2='12' y2='18'/>
+                            <line x1='19' y1='11' x2='19' y2='18'/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 style="margin:0;font-size:20px;font-weight:700;color:var(--text-primary);">Organigrama Corporativo</h2>
+                        <p style="margin:2px 0 0;font-size:13px;color:var(--text-secondary);">Estructura jerárquica de Azyvion</p>
+                    </div>
+                </div>
+
+                <!-- Árbol jerárquico -->
+                <div style="overflow-x:auto;padding-bottom:16px;">
+                    <div style="min-width:600px;display:flex;flex-direction:column;align-items:center;gap:0;">
+
+                        <!-- Nivel 1: CEO -->
+                        <div style="display:flex;justify-content:center;">
+                            <div class="org-card org-ceo">
+                                <div class="org-avatar" style="background:linear-gradient(135deg,#3B6EF5,#6C47FF);">HR</div>
+                                <div class="org-info">
+                                    <span class="org-name">Héctor Reyes</span>
+                                    <span class="org-role">CEO &amp; Fundador</span>
+                                    <span class="org-country">
+                                        <svg viewBox='0 0 24 24' style='width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0'><path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/><circle cx='12' cy='10' r='3'/></svg>
+                                        Guatemala
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Conector raíz -->
+                        <div style="display:flex;justify-content:center;">
+                            <div style="width:2px;height:28px;background:var(--border);"></div>
+                        </div>
+                        <div style="display:flex;justify-content:center;">
+                            <div style="height:2px;width:340px;background:var(--border);"></div>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;width:340px;">
+                            <div style="width:2px;height:24px;background:var(--border);margin-left:84px;"></div>
+                            <div style="width:2px;height:24px;background:var(--border);"></div>
+                            <div style="width:2px;height:24px;background:var(--border);margin-right:84px;"></div>
+                        </div>
+
+                        <!-- Nivel 2: Gerentes + Karla -->
+                        <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;">
+                            <!-- Pablo García -->
+                            <div class="org-card org-gerente">
+                                <div class="org-avatar" style="background:linear-gradient(135deg,#22C55E,#16A34A);">PG</div>
+                                <div class="org-info">
+                                    <span class="org-name">Pablo García</span>
+                                    <span class="org-role">Gerente de Inversiones</span>
+                                    <span class="org-country">
+                                        <svg viewBox='0 0 24 24' style='width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0'><path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/><circle cx='12' cy='10' r='3'/></svg>
+                                        Guatemala
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Luis Maza -->
+                            <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+                                <div class="org-card org-gerente">
+                                    <div class="org-avatar" style="background:linear-gradient(135deg,#F59E0B,#D97706);">LM</div>
+                                    <div class="org-info">
+                                        <span class="org-name">Luis Maza</span>
+                                        <span class="org-role">Gerente de IT</span>
+                                        <span class="org-country">
+                                            <svg viewBox='0 0 24 24' style='width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0'><path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/><circle cx='12' cy='10' r='3'/></svg>
+                                            Colombia
+                                        </span>
+                                    </div>
+                                </div>
+                                <!-- Conector Luis -> Cielo -->
+                                <div style="width:2px;height:24px;background:var(--border);"></div>
+                                <!-- Nivel 3: Cielo -->
+                                <div class="org-card org-staff">
+                                    <div class="org-avatar" style="background:linear-gradient(135deg,#EC4899,#BE185D);">CM</div>
+                                    <div class="org-info">
+                                        <span class="org-name">Cielo Molleda</span>
+                                        <span class="org-role">Desarrolladora de Software Jr.</span>
+                                        <span class="org-country">
+                                            <svg viewBox='0 0 24 24' style='width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0'><path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/><circle cx='12' cy='10' r='3'/></svg>
+                                            Perú
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Karla Pacheco (reporta a Héctor, mismo nivel que Cielo) -->
+                            <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+                                <!-- Espacio para alinear con Cielo verticalmente -->
+                                <div style="height:82px;"></div>
+                                <div style="width:2px;height:24px;background:var(--border);"></div>
+                                <div class="org-card org-staff">
+                                    <div class="org-avatar" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);">KP</div>
+                                    <div class="org-info">
+                                        <span class="org-name">Karla Pacheco</span>
+                                        <span class="org-role">Ejecutiva de Ventas</span>
+                                        <span class="org-country">
+                                            <svg viewBox='0 0 24 24' style='width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0'><path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/><circle cx='12' cy='10' r='3'/></svg>
+                                            Guatemala
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Leyenda -->
+                <div style="margin-top:32px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:12px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;">
+                    <span style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;">Leyenda</span>
+                    <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:3px;background:linear-gradient(135deg,#3B6EF5,#6C47FF);"></div><span style="font-size:12px;color:var(--text-secondary);">CEO / Fundador</span></div>
+                    <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:3px;background:var(--success);"></div><span style="font-size:12px;color:var(--text-secondary);">Gerente</span></div>
+                    <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:3px;background:var(--accent-2);"></div><span style="font-size:12px;color:var(--text-secondary);">Staff</span></div>
+                </div>
+            </div>
+        </div>
+        <!-- /ORGANIGRAMA -->
+
         <!-- ══ SUSCRIPCIONES ════════════════════════════════════════ -->
         <div class="page" id="page-suscripciones">
             <!-- Sub-tabs -->
@@ -2527,7 +2678,7 @@
         let _currentOrgId = null;    // organization_id del usuario autenticado
         let _usuario = '';
 
-        const PAGE_TITLES = {overview: 'Inicio', empleados: 'Empleados', pos: 'Punto de Venta (POS)', clientes: 'Clientes', prospectos: 'Prospectos', ficha: 'Ficha', cotizaciones: 'Cotizaciones', inventario: 'Inventario', 'crear-producto': 'Crear producto', categorias: 'Categorías', 'catalogo-marcas': 'Marcas', 'catalogo-lineas': 'Líneas', 'catalogo-familias': 'Familias', 'catalogo-unidades': 'Unidades de negocio', 'catalogo-tipos': 'Tipos de producto', encuestas: 'Encuestas', usuarios: 'Usuarios', contabilidad: 'Contabilidad', perfil: 'Ajustes', suscripciones: 'Suscripciones', 'sub-empresas': 'Empresas', 'sub-planes': 'Planes', 'sub-pagos': 'Pagos'};
+        const PAGE_TITLES = {overview: 'Inicio', empleados: 'Empleados', pos: 'Punto de Venta (POS)', clientes: 'Clientes', prospectos: 'Prospectos', ficha: 'Ficha', cotizaciones: 'Cotizaciones', inventario: 'Inventario', 'crear-producto': 'Crear producto', categorias: 'Categorías', 'catalogo-marcas': 'Marcas', 'catalogo-lineas': 'Líneas', 'catalogo-familias': 'Familias', 'catalogo-unidades': 'Unidades de negocio', 'catalogo-tipos': 'Tipos de producto', encuestas: 'Encuestas', usuarios: 'Usuarios', contabilidad: 'Contabilidad', perfil: 'Ajustes', suscripciones: 'Suscripciones', organigrama: 'Organigrama', 'sub-empresas': 'Empresas', 'sub-planes': 'Planes', 'sub-pagos': 'Pagos'};
         const CTA_LABELS = {overview: '', empleados: 'Nuevo empleado', pos: 'Guardar venta', clientes: 'Nuevo cliente', prospectos: 'Nuevo prospecto', cotizaciones: 'Nueva cotización', inventario: 'Nuevo ítem', 'crear-producto': 'Nuevo producto', categorias: 'Nueva categoría', 'catalogo-marcas': '', 'catalogo-lineas': '', 'catalogo-familias': '', 'catalogo-unidades': '', 'catalogo-tipos': '', encuestas: 'Nueva encuesta', usuarios: 'Nuevo usuario', contabilidad: 'Nueva cuenta bancaria', perfil: '', suscripciones: '', 'sub-empresas': 'Nueva empresa', 'sub-planes': 'Nuevo plan', 'sub-pagos': ''};
 
         const ETAPAS = ['Nuevo', 'Contactado', 'Calificado', 'Propuesta', 'Negociación', 'Perdido'];
