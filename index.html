@@ -62,7 +62,7 @@
     .nav-logo {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 0;
       text-decoration: none;
       flex-shrink: 0;
     }
@@ -72,11 +72,26 @@
       border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
       overflow: hidden;
+      flex-shrink: 0;
     }
 
     .nav-logo-icon img { width: 100%; height: 100%; object-fit: contain; }
-
     .nav-logo-icon svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    .nav-logo-divider {
+      width: 1px;
+      height: 22px;
+      background: var(--border);
+      margin: 0 12px;
+      flex-shrink: 0;
+    }
+
+    .nav-logo-wordmark {
+      height: 18px;
+      width: auto;
+      display: block;
+      /* oscuro sobre fondo claro en nav */
+    }
 
     .nav-name { font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
 
@@ -1574,8 +1589,12 @@
 
   <!-- ══════════════════════ NAV ══════════════════════ -->
   <nav>
-    <a class="nav-logo" href="https://azyvion.com" target="_blank" rel="noopener noreferrer">
-      <img src="azyvion-wordmark.png" alt="Azyvion" style="height:22px;width:auto;display:block;">
+    <a class="nav-logo" href="#home" data-page="home">
+      <div class="nav-logo-icon">
+        <img src="logo-crm.png" alt="Azyvion">
+      </div>
+      <span class="nav-logo-divider"></span>
+      <img class="nav-logo-wordmark" src="azyvion-wordmark.png" alt="Azyvion">
     </a>
     <ul class="nav-links">
       <li><a href="#home" data-page="home">Inicio</a></li>
@@ -2256,8 +2275,10 @@
     <div class="footer-inner">
       <div class="footer-top">
         <div>
-          <a href="https://azyvion.com" target="_blank" rel="noopener noreferrer">
-            <img src="azyvion-wordmark.png" alt="Azyvion" style="height:22px;width:auto;display:block;filter:brightness(0) invert(1);opacity:0.9;">
+          <a class="nav-logo" href="https://azyvion.com" target="_blank" rel="noopener noreferrer">
+            <div class="nav-logo-icon"><img src="logo-crm.png" alt="Azyvion"></div>
+            <span class="nav-logo-divider" style="background:rgba(255,255,255,0.2);"></span>
+            <img class="nav-logo-wordmark" src="azyvion-wordmark.png" alt="Azyvion" style="filter:brightness(0) invert(1);opacity:0.9;">
           </a>
           <p class="footer-brand-desc">La plataforma CRM con IA diseñada para equipos de ventas en Latinoamérica. Technology Beyond Limits.</p>
         </div>
@@ -2287,7 +2308,14 @@
         </div>
       </div>
       <div class="footer-bottom">
-        <div class="footer-copy" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">© 2026 <a href="https://azyvion.com" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;"><img src="azyvion-wordmark.png" alt="Azyvion" style="height:13px;width:auto;filter:brightness(0) invert(1);opacity:0.5;"></a>. Todos los derechos reservados.</div>
+        <div class="footer-copy" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span>© 2026</span>
+          <a href="https://azyvion.com" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;">
+            <img src="logo-crm.png" alt="" style="width:16px;height:16px;border-radius:4px;opacity:0.5;">
+            <img src="azyvion-wordmark.png" alt="Azyvion" style="height:11px;width:auto;filter:brightness(0) invert(1);opacity:0.4;">
+          </a>
+          <span>Todos los derechos reservados.</span>
+        </div>
         <div class="footer-legal">
           <a href="#" data-legal="privacidad">Privacidad</a>
           <a href="#" data-legal="terminos">Términos de uso</a>
