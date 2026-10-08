@@ -280,27 +280,61 @@ body.theme-dark {
 }
 .bn-more-sheet.open { display: block !important; }
 .bn-more-section-label {
-    font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
-    color: rgba(255,255,255,.42); padding: 12px 20px 6px;
+    font-size: 10.5px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase;
+    color: rgba(255,255,255,.38); padding: 14px 20px 4px;
 }
-.bn-more-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 14px 4px; }
+
+/* ── MODO LISTA ─────────────────────────────────────────────────── */
+.bn-more-grid {
+    display: flex;
+    flex-direction: column;
+    padding: 0 12px 4px;
+    gap: 2px;
+}
 .bn-more-tile {
-    display: flex; flex-direction: column; align-items: center; gap: 6px;
-    padding: 11px 2px 9px; border-radius: 16px;
-    background: rgba(255,255,255,.06);
-    border: 1px solid rgba(255,255,255,.07);
-    cursor: pointer; min-width: 0;
-    transition: background .15s, transform .15s, border-color .15s;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: background .15s;
     -webkit-tap-highlight-color: transparent;
 }
-.bn-more-tile:active { background: rgba(255,255,255,.14); transform: scale(.95); }
-.bn-more-tile.current { background: rgba(92,134,255,.20); border-color: rgba(141,171,255,.45); }
-.bn-more-tile-icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
-.bn-more-tile-icon svg { width: 22px; height: 22px; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.bn-more-tile:active { background: rgba(255,255,255,.10); }
+.bn-more-tile.current { background: rgba(92,134,255,.18); }
+
+.bn-more-tile-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.bn-more-tile-icon svg { width: 20px; height: 20px; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+
 .bn-more-tile span {
-    font-size: 11px; font-weight: 500; color: rgba(255,255,255,.86);
-    text-align: center; line-height: 1.25; max-width: 100%;
-    overflow-wrap: anywhere; padding: 0 2px;
+    font-size: 15px; font-weight: 500;
+    color: rgba(255,255,255,.92);
+    text-align: left;
+    line-height: 1.2;
+    flex: 1;
+}
+
+/* Flecha derecha en cada fila */
+.bn-more-tile::after {
+    content: '';
+    display: block;
+    width: 7px; height: 7px;
+    border-right: 1.5px solid rgba(255,255,255,.30);
+    border-top: 1.5px solid rgba(255,255,255,.30);
+    transform: rotate(45deg);
+    flex-shrink: 0;
+    margin-right: 4px;
 }
 .bn-more-logout {
     display: flex; align-items: center; gap: 14px; padding: 16px 20px 10px; margin-top: 8px;
