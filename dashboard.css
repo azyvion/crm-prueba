@@ -2376,6 +2376,84 @@ body.densidad-compacta .cell-sub { margin-top: 1px; }
     #nav-prospectos { display: flex !important; }
 }
 
+/* ── MÓVIL ≤600px: Clientes usa la vista compacta mob-only ──
+   Se ocultan los 8 KPIs apilados y la tabla de escritorio;
+   se activa el bloque #mobContactosWrap con KPI bar + lista. */
+@media (max-width: 600px) {
+    /* Ocultar vista de escritorio en clientes */
+    #page-clientes .kpi-grid  { display: none !important; }
+    #page-clientes .table-card { display: none !important; }
+
+    /* Mostrar la vista compacta móvil */
+    #mobContactosWrap { display: block !important; }
+    .mob-seg          { display: flex !important; }
+    .mob-kpi-bar      { display: flex !important; }
+    .mob-list         { display: block !important; }
+
+    /* La lista ocupa el espacio disponible sin desbordar */
+    #mobContactosWrap {
+        display: flex !important;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+    }
+    /* La lista de items hace scroll interno, no la página entera */
+    #mobListCli,
+    #mobListPro {
+        display: flex !important;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        margin-bottom: 0;
+    }
+    #mobCliListBody,
+    #mobProListBody {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        flex: 1;
+        min-height: 0;
+    }
+
+    /* KPI bar compacta: 3 celdas en la misma fila */
+    .mob-kpi-bar {
+        margin-bottom: 10px;
+        flex-shrink: 0;
+    }
+    .mob-kpi-cell-val { font-size: 15px; }
+    .mob-kpi-cell { padding: 8px 6px; }
+
+    /* Segmento selector compacto */
+    .mob-seg { margin-bottom: 10px; flex-shrink: 0; }
+
+    /* Toolbar de filtros sin wrap */
+    .mob-list-toolbar { flex-shrink: 0; }
+
+    /* Pie de lista fijo */
+    .mob-list-foot { flex-shrink: 0; }
+
+    /* Paginación compacta */
+    #mobCliPagination,
+    #mobProPagination { flex-shrink: 0; }
+
+    /* page-clientes ocupa todo el alto disponible en móvil */
+    #page-clientes {
+        display: flex !important;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+        padding-bottom: 0;
+    }
+
+    /* Cuando clientes está activo, el .content no scrollea —
+       el scroll lo hace la lista interna #mobCliListBody */
+    #page-clientes.active ~ * { /* placeholder */ }
+    .content:has(#page-clientes.active) {
+        overflow: hidden;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+}
+
 /* ══════════════════════════════════════════════════════════
    AJUSTES / PERFIL DE USUARIO
 ══════════════════════════════════════════════════════════ */
@@ -2789,43 +2867,25 @@ body.theme-dark #cropZoom { background: #3A3A3E; }
     .ov-bottom-row { flex-direction: column; }
 }
 @media (max-width: 600px) {
-    /* ── Inicio en celular: saludo + "Ventas de hoy" + "Acciones rápidas" ──
+    /* ── Inicio en celular: solo "Ventas de hoy" + "Acciones rápidas" ──
        Se quitan los 6 KPIs, las gráficas, "Top clientes por valor",
        "Actividad reciente" y "Alertas y acciones". En PC (≥992px) no
        cambia nada, todo sigue viéndose igual que antes. */
     #page-overview > * { display: none !important; }
 
-    /* Mostrar saludo en móvil */
-    #page-overview > .ov-greeting-bar { display: flex !important; margin-bottom: 14px; }
-
-    /* Mostrar la fila inferior (Ventas de hoy + Acciones rápidas) */
+    /* Se vuelve a mostrar solo la fila inferior, pero recortada.
+       (selector con el mismo "peso" que la regla de arriba, para
+       poder ganarle: #id > * vs #id > .clase tienen especificidad
+       distinta y .ov-bottom-row sola perdía y quedaba oculta). */
     #page-overview > .ov-bottom-row { display: flex !important; flex-direction: column; gap: 10px; margin-top: 0; }
-
-    /* Dentro de .ov-bottom-row: ocultar top clientes y actividad,
-       mostrar explícitamente ventas hoy y acciones rápidas */
-    #ovCardTopClientes { display: none !important; }
-    #ovCardActividad   { display: none !important; }
-
-    /* Ocultar solo el bloque de alertas DENTRO del card de acciones,
-       pero dejar visible el card y las acciones rápidas */
-    #ovAlertasHeader { display: none !important; }
-    #ovAlertas       { display: none !important; }
-
-    /* Mostrar el card de acciones rápidas y el de ventas de hoy */
-    #ovCardAccionesRapidas { display: block !important; }
-    #ovCardVentasHoy       { display: block !important; }
-
     .ov-card { padding: 14px 16px; }
+    #ovCardTopClientes,
+    #ovCardActividad,
+    #ovAlertasHeader,
+    #ovAlertas { display: none !important; }
+
     .ov-mobile-card { display: block; }
     #ovVentasHoy { padding: 4px 0 2px; }
-
-    /* Acciones rápidas: quitar margin-top porque las alertas están ocultas */
-    #ovQuickActionsWrap { margin-top: 0 !important; }
-
-    /* Grid de 2 columnas bien ajustado */
-    #ovQuickActions { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .ov-quick-btn { font-size: 12px; padding: 10px 8px; justify-content: center; text-align: center; flex-direction: column; gap: 5px; }
-    .ov-quick-btn svg { width: 18px; height: 18px; }
 }
 
 /* ─── Asistente IA ─────────────────────────────────────── */
@@ -4349,12 +4409,10 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
     .ov-bottom-row {
         flex-direction: column !important;
     }
-    /* Refuerzo: asegurar que saludo, ventas hoy y acciones rápidas
-       siempre sean visibles en móvil (overrides el bloque anterior) */
-    #page-overview > .ov-greeting-bar  { display: flex !important; }
-    #page-overview > .ov-bottom-row    { display: flex !important; flex-direction: column; gap: 10px; margin-top: 0; }
-    #ovCardAccionesRapidas             { display: block !important; }
-    #ovCardVentasHoy                   { display: block !important; }
+    .ov-quick-btn {
+        font-size: 11.5px;
+        padding: 8px 10px;
+    }
 }
 
 /* ── 6b. Cotización total box — fixed width overflow ── */
