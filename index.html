@@ -1066,18 +1066,144 @@
     .kcol-4 .kc-bar { background: linear-gradient(90deg, #e11d48, #ffeef2); }
     .kcol-5 .kc-bar { background: linear-gradient(90deg, var(--green), #edfff5); }
 
-    /* Scroll wrapper */
-    .kanban-scroll-wrap {
-      position: relative;
+    /* ── Trading charts dashboard ── */
+    .pv-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
-    .kanban-scroll-wrap::-webkit-scrollbar { height: 4px; }
-    .kanban-scroll-wrap::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-    .kanban-scroll-wrap::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 4px; opacity: 0.5; }
+    .pv-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-3);
+      margin-bottom: 4px;
+    }
 
-    /* Fade derecho para indicar scroll */
-    .pipeline-visual {
-      position: relative;
+    .pv-big-num {
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .pv-delta {
+      font-size: 13px;
+      font-weight: 700;
+      color: #22c55e;
+      letter-spacing: 0;
+    }
+
+    .pv-tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+    }
+
+    .pv-tab {
+      padding: 5px 13px;
+      border-radius: 7px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      background: transparent;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .pv-tab.active {
+      background: #fff;
+      color: var(--blue);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+    }
+
+    .pv-chart-wrap {
+      display: none;
+    }
+
+    .pv-chart-wrap.active {
+      display: block;
+    }
+
+    .pv-svg {
+      width: 100%;
+      height: 160px;
+      display: block;
+      overflow: visible;
+    }
+
+    .pv-xaxis {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 2px 0;
+      font-size: 10px;
+      color: var(--text-3);
+      font-weight: 500;
+    }
+
+    .pv-legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 10px;
+      font-size: 11px;
+      font-weight: 500;
+      flex-wrap: wrap;
+    }
+
+    .pv-leg-item { display: flex; align-items: center; gap: 4px; }
+    .pv-leg-item.blue  { color: var(--blue); }
+    .pv-leg-item.gray  { color: #94a3b8; }
+    .pv-leg-item.green { color: #22c55e; }
+    .pv-leg-item.red   { color: #e11d48; }
+    .pv-leg-item.orange{ color: #f97316; }
+
+    .pv-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .pv-kpi {
+      text-align: center;
+      padding: 10px 4px;
+      background: var(--bg-alt);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .pv-kpi-val {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--blue);
+      line-height: 1;
+      letter-spacing: -0.5px;
+    }
+
+    .pv-kpi-lbl {
+      font-size: 10px;
+      color: var(--text-3);
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    @media (max-width: 480px) {
+      .pv-big-num { font-size: 20px; }
+      .pv-tabs { flex-wrap: wrap; }
+      .pv-kpis { grid-template-columns: repeat(2, 1fr); }
+      .pv-kpi-val { font-size: 16px; }
     }
 
     .check-list {
@@ -2202,34 +2328,174 @@
         <div class="pipeline-section">
           <div class="pipeline-inner">
             <div class="pipeline-visual">
-              <div class="pv-title">Pipeline de ventas <span>En tiempo real</span></div>
-              <div class="kanban-scroll-wrap">
-              <div class="kanban-cols">
-                <div class="kcol-1">
-                  <div class="kanban-col-head">Prospecto <span>3</span></div>
-                  <div class="kanban-card"><div class="kc-company">Agrícola Vásquez</div><div class="kc-value">$5,600</div><div class="kc-bar" style="width:20%"></div></div>
-                  <div class="kanban-card"><div class="kc-company">Logística Norte</div><div class="kc-value">$3,200</div><div class="kc-bar" style="width:30%"></div></div>
-                  <div class="kanban-card"><div class="kc-company">Ferretería López</div><div class="kc-value">$1,800</div><div class="kc-bar" style="width:20%"></div></div>
+              <!-- Header -->
+              <div class="pv-header">
+                <div class="pv-header-left">
+                  <div class="pv-label">Ingresos · Q4 2026</div>
+                  <div class="pv-big-num">$84,200 <span class="pv-delta">↑ 18.4%</span></div>
                 </div>
-                <div class="kcol-2">
-                  <div class="kanban-col-head">Calificado <span>3</span></div>
-                  <div class="kanban-card"><div class="kc-company">Grupo Construye</div><div class="kc-value">$14,000</div><div class="kc-bar" style="width:60%"></div></div>
-                  <div class="kanban-card"><div class="kc-company">Industrias Beta</div><div class="kc-value">$7,500</div><div class="kc-bar" style="width:45%"></div></div>
-                </div>
-                <div class="kcol-3">
-                  <div class="kanban-col-head">Propuesta <span>2</span></div>
-                  <div class="kanban-card"><div class="kc-company">TechParts S.A.</div><div class="kc-value">$8,200</div><div class="kc-bar" style="width:75%"></div></div>
-                </div>
-                <div class="kcol-4">
-                  <div class="kanban-col-head">Negociación <span>1</span></div>
-                  <div class="kanban-card"><div class="kc-company">Distribuidora RC</div><div class="kc-value">$4,100</div><div class="kc-bar" style="width:85%;background:linear-gradient(90deg,#e11d48,transparent)"></div></div>
-                </div>
-                <div class="kcol-5">
-                  <div class="kanban-col-head">Cerrado <span>4</span></div>
-                  <div class="kanban-card"><div class="kc-company">Constructora Mérida</div><div class="kc-value">$12,400</div><div class="kc-bar" style="width:100%"></div></div>
+                <div class="pv-tabs">
+                  <button class="pv-tab active" onclick="pvTab(this,'revenue')">Ingresos</button>
+                  <button class="pv-tab" onclick="pvTab(this,'pipeline')">Pipeline</button>
+                  <button class="pv-tab" onclick="pvTab(this,'cierre')">Cierre</button>
                 </div>
               </div>
-              </div><!-- /kanban-scroll-wrap -->
+
+              <!-- CHART: Ingresos (área + línea estilo trading) -->
+              <div class="pv-chart-wrap active" id="pvc-revenue">
+                <svg viewBox="0 0 480 160" preserveAspectRatio="none" class="pv-svg">
+                  <defs>
+                    <linearGradient id="gradRev" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#0A84FF" stop-opacity="0.28"/>
+                      <stop offset="100%" stop-color="#0A84FF" stop-opacity="0"/>
+                    </linearGradient>
+                    <linearGradient id="gradPrev" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#94a3b8" stop-opacity="0.15"/>
+                      <stop offset="100%" stop-color="#94a3b8" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <!-- Grid lines -->
+                  <line x1="0" y1="32" x2="480" y2="32" stroke="#e4e7ed" stroke-width="0.5"/>
+                  <line x1="0" y1="64" x2="480" y2="64" stroke="#e4e7ed" stroke-width="0.5"/>
+                  <line x1="0" y1="96" x2="480" y2="96" stroke="#e4e7ed" stroke-width="0.5"/>
+                  <line x1="0" y1="128" x2="480" y2="128" stroke="#e4e7ed" stroke-width="0.5"/>
+                  <!-- Año anterior (gris, punteado) -->
+                  <polyline fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3"
+                    points="0,118 60,108 120,112 180,100 240,95 300,90 360,85 420,80 480,78"/>
+                  <!-- Área actual -->
+                  <path fill="url(#gradRev)"
+                    d="M0,105 C30,100 50,90 80,85 C110,80 130,88 160,78 C190,68 210,60 240,55 C270,50 290,58 320,48 C350,38 380,30 420,25 C450,22 465,20 480,18 L480,160 L0,160 Z"/>
+                  <!-- Línea actual -->
+                  <path fill="none" stroke="#0A84FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+                    d="M0,105 C30,100 50,90 80,85 C110,80 130,88 160,78 C190,68 210,60 240,55 C270,50 290,58 320,48 C350,38 380,30 420,25 C450,22 465,20 480,18"/>
+                  <!-- Punto destacado actual -->
+                  <circle cx="480" cy="18" r="4" fill="#0A84FF"/>
+                  <circle cx="480" cy="18" r="7" fill="#0A84FF" fill-opacity="0.2"/>
+                </svg>
+                <!-- Eje X -->
+                <div class="pv-xaxis">
+                  <span>Jul</span><span>Ago</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dic</span>
+                </div>
+                <!-- Leyenda -->
+                <div class="pv-legend">
+                  <span class="pv-leg-item blue">● Este año</span>
+                  <span class="pv-leg-item gray">- - Año anterior</span>
+                </div>
+              </div>
+
+              <!-- CHART: Pipeline (velas estilo trading) -->
+              <div class="pv-chart-wrap" id="pvc-pipeline">
+                <svg viewBox="0 0 480 160" preserveAspectRatio="none" class="pv-svg">
+                  <defs>
+                    <linearGradient id="gradPipe" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.22"/>
+                      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <line x1="0" y1="32" x2="480" y2="32" stroke="#e4e7ed" stroke-width="0.5"/>
+                  <line x1="0" y1="64" x2="480" y2="64" stroke="#e4e7ed" stroke-width="0.5"/>
+                  <line x1="0" y1="96" x2="480" y2="96" stroke="#e4e7ed" stroke-width="0.5"/>
+                  <line x1="0" y1="128" x2="480" y2="128" stroke="#e4e7ed" stroke-width="0.5"/>
+                  <!-- Barras de pipeline por etapa -->
+                  <!-- Prospectos -->
+                  <rect x="20" y="60" width="28" height="90" rx="4" fill="#0A84FF" fill-opacity="0.85"/>
+                  <text x="34" y="56" text-anchor="middle" font-size="8" fill="#6b7280">Prospecto</text>
+                  <text x="34" y="168" text-anchor="middle" font-size="8" fill="#0A84FF" font-weight="700">$34K</text>
+                  <!-- Calificado -->
+                  <rect x="108" y="40" width="28" height="110" rx="4" fill="#f97316" fill-opacity="0.85"/>
+                  <text x="122" y="36" text-anchor="middle" font-size="8" fill="#6b7280">Calificado</text>
+                  <text x="122" y="168" text-anchor="middle" font-size="8" fill="#f97316" font-weight="700">$51K</text>
+                  <!-- Propuesta -->
+                  <rect x="196" y="70" width="28" height="80" rx="4" fill="#7c3aed" fill-opacity="0.85"/>
+                  <text x="210" y="66" text-anchor="middle" font-size="8" fill="#6b7280">Propuesta</text>
+                  <text x="210" y="168" text-anchor="middle" font-size="8" fill="#7c3aed" font-weight="700">$28K</text>
+                  <!-- Negociación -->
+                  <rect x="284" y="85" width="28" height="65" rx="4" fill="#e11d48" fill-opacity="0.85"/>
+                  <text x="298" y="81" text-anchor="middle" font-size="8" fill="#6b7280">Negociación</text>
+                  <text x="298" y="168" text-anchor="middle" font-size="8" fill="#e11d48" font-weight="700">$19K</text>
+                  <!-- Cerrado -->
+                  <rect x="372" y="30" width="28" height="120" rx="4" fill="#22c55e" fill-opacity="0.85"/>
+                  <text x="386" y="26" text-anchor="middle" font-size="8" fill="#6b7280">Cerrado</text>
+                  <text x="386" y="168" text-anchor="middle" font-size="8" fill="#22c55e" font-weight="700">$84K</text>
+                  <!-- Línea de tendencia -->
+                  <polyline fill="none" stroke="#0A84FF" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.4"
+                    points="34,60 122,40 210,70 298,85 386,30"/>
+                </svg>
+                <div class="pv-legend">
+                  <span class="pv-leg-item blue">● Prospecto</span>
+                  <span class="pv-leg-item orange">● Calificado</span>
+                  <span class="pv-leg-item green">● Cerrado</span>
+                </div>
+              </div>
+
+              <!-- CHART: Tasa de cierre (línea + puntos) -->
+              <div class="pv-chart-wrap" id="pvc-cierre">
+                <svg viewBox="0 0 480 160" preserveAspectRatio="none" class="pv-svg">
+                  <defs>
+                    <linearGradient id="gradCierre" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#22c55e" stop-opacity="0.25"/>
+                      <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <line x1="0" y1="32" x2="480" y2="32" stroke="#e4e7ed" stroke-width="0.5"/>
+                  <line x1="0" y1="64" x2="480" y2="64" stroke="#e4e7ed" stroke-width="0.5"/>
+                  <line x1="0" y1="96" x2="480" y2="96" stroke="#e4e7ed" stroke-width="0.5"/>
+                  <line x1="0" y1="128" x2="480" y2="128" stroke="#e4e7ed" stroke-width="0.5"/>
+                  <!-- Meta (línea roja) -->
+                  <line x1="0" y1="58" x2="480" y2="58" stroke="#e11d48" stroke-width="1" stroke-dasharray="6 3" opacity="0.5"/>
+                  <text x="474" y="55" text-anchor="end" font-size="8" fill="#e11d48">Meta 65%</text>
+                  <!-- Área -->
+                  <path fill="url(#gradCierre)"
+                    d="M0,120 C40,115 80,110 120,100 C160,90 200,85 240,75 C280,65 320,60 360,52 C400,44 440,40 480,35 L480,160 L0,160 Z"/>
+                  <!-- Línea -->
+                  <path fill="none" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round"
+                    d="M0,120 C40,115 80,110 120,100 C160,90 200,85 240,75 C280,65 320,60 360,52 C400,44 440,40 480,35"/>
+                  <!-- Puntos mensuales -->
+                  <circle cx="0"   cy="120" r="3.5" fill="#22c55e"/>
+                  <circle cx="80"  cy="110" r="3.5" fill="#22c55e"/>
+                  <circle cx="160" cy="90"  r="3.5" fill="#22c55e"/>
+                  <circle cx="240" cy="75"  r="3.5" fill="#22c55e"/>
+                  <circle cx="320" cy="60"  r="3.5" fill="#22c55e"/>
+                  <circle cx="400" cy="44"  r="3.5" fill="#22c55e"/>
+                  <circle cx="480" cy="35"  r="5"   fill="#22c55e"/>
+                  <circle cx="480" cy="35"  r="8"   fill="#22c55e" fill-opacity="0.2"/>
+                  <!-- Labels porcentaje -->
+                  <text x="4"   y="116" font-size="7.5" fill="#94a3b8">48%</text>
+                  <text x="84"  y="106" font-size="7.5" fill="#94a3b8">52%</text>
+                  <text x="164" y="86"  font-size="7.5" fill="#94a3b8">57%</text>
+                  <text x="244" y="71"  font-size="7.5" fill="#94a3b8">60%</text>
+                  <text x="324" y="56"  font-size="7.5" fill="#94a3b8">63%</text>
+                  <text x="404" y="40"  font-size="7.5" fill="#94a3b8">66%</text>
+                  <text x="460" y="31"  font-size="7.5" fill="#22c55e" font-weight="700">68%</text>
+                </svg>
+                <div class="pv-xaxis">
+                  <span>Jul</span><span>Ago</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dic</span>
+                </div>
+                <div class="pv-legend">
+                  <span class="pv-leg-item green">● Tasa de cierre</span>
+                  <span class="pv-leg-item red">- - Meta 65%</span>
+                </div>
+              </div>
+
+              <!-- Mini KPIs -->
+              <div class="pv-kpis">
+                <div class="pv-kpi">
+                  <div class="pv-kpi-val">247</div>
+                  <div class="pv-kpi-lbl">Leads activos</div>
+                </div>
+                <div class="pv-kpi">
+                  <div class="pv-kpi-val" style="color:#22c55e;">68%</div>
+                  <div class="pv-kpi-lbl">Tasa cierre</div>
+                </div>
+                <div class="pv-kpi">
+                  <div class="pv-kpi-val" style="color:#f97316;">$340</div>
+                  <div class="pv-kpi-lbl">Ticket prom.</div>
+                </div>
+                <div class="pv-kpi">
+                  <div class="pv-kpi-val" style="color:#7c3aed;">12d</div>
+                  <div class="pv-kpi-lbl">Ciclo venta</div>
+                </div>
+              </div>
             </div>
             <div class="pipeline-text">
               <div class="section-tag">Pipeline</div>
@@ -2585,6 +2851,22 @@
     init();
     draw();
   })();
+
+  // ─── PIPELINE CHART TABS ──────────────────────────────────
+  window.pvTab = function(btn, id) {
+    document.querySelectorAll('.pv-tab').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelectorAll('.pv-chart-wrap').forEach(function(c){ c.classList.remove('active'); });
+    btn.classList.add('active');
+    var el = document.getElementById('pvc-' + id);
+    if (el) el.classList.add('active');
+    // Actualizar número grande
+    var nums = { revenue: ['$84,200', '↑ 18.4%', 'Ingresos · Q4 2026'], pipeline: ['$216K', '↑ 9.1%', 'Pipeline total · Q4 2026'], cierre: ['68%', '↑ 5 pts', 'Tasa de cierre · Q4 2026'] };
+    var d = nums[id];
+    if (d) {
+      document.querySelector('.pv-big-num').innerHTML = d[0] + ' <span class="pv-delta">' + d[1] + '</span>';
+      document.querySelector('.pv-label').textContent = d[2];
+    }
+  };
 
   // ─── PREVIEW TABS ─────────────────────────────────────────
   window.showPreview = function(name, btn) {
