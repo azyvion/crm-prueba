@@ -2720,6 +2720,9 @@ body.theme-dark #cropZoom { background: #3A3A3E; }
     min-width: 260px;
     flex-basis: 260px;
 }
+/* Tarjetas que solo existen para la vista de celular (ver @media
+   max-width:600px más abajo) — en PC quedan ocultas. */
+.ov-mobile-card { display: none; }
 
 /* Top clientes */
 .ov-top-client {
@@ -2786,14 +2789,25 @@ body.theme-dark #cropZoom { background: #3A3A3E; }
     .ov-bottom-row { flex-direction: column; }
 }
 @media (max-width: 600px) {
-    /* ── Inicio en celular: módulo vacío a propósito ──
-       A pedido: se quitan los 6 KPIs (Clientes activos, Prospectos
-       activos, Cotizaciones aprobadas, Valor ponderado pipeline, Stock
-       crítico, Tasa de respuesta), las gráficas, "Top clientes por
-       valor", "Actividad reciente" y "Alertas y acciones" — queda en
-       blanco mientras se decide qué poner. En PC (≥992px) no cambia
-       nada, todo sigue viéndose igual que antes. */
+    /* ── Inicio en celular: solo "Ventas de hoy" + "Acciones rápidas" ──
+       Se quitan los 6 KPIs, las gráficas, "Top clientes por valor",
+       "Actividad reciente" y "Alertas y acciones". En PC (≥992px) no
+       cambia nada, todo sigue viéndose igual que antes. */
     #page-overview > * { display: none !important; }
+
+    /* Se vuelve a mostrar solo la fila inferior, pero recortada.
+       (selector con el mismo "peso" que la regla de arriba, para
+       poder ganarle: #id > * vs #id > .clase tienen especificidad
+       distinta y .ov-bottom-row sola perdía y quedaba oculta). */
+    #page-overview > .ov-bottom-row { display: flex !important; flex-direction: column; gap: 10px; margin-top: 0; }
+    .ov-card { padding: 14px 16px; }
+    #ovCardTopClientes,
+    #ovCardActividad,
+    #ovAlertasHeader,
+    #ovAlertas { display: none !important; }
+
+    .ov-mobile-card { display: block; }
+    #ovVentasHoy { padding: 4px 0 2px; }
 }
 
 /* ─── Asistente IA ─────────────────────────────────────── */
