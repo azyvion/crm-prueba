@@ -264,30 +264,34 @@
     <nav class="bottom-nav" id="bottomNav">
         <!-- Inicio -->
         <button class="bn-item active" id="bn-overview" onclick="showPage('overview',this); _setBnActive('bn-overview')">
+            <div class="bn-pill"></div>
             <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             <span class="bn-label">Inicio</span>
         </button>
         <!-- Clientes -->
         <button class="bn-item" id="bn-clientes" onclick="showPage('clientes',this); _setBnActive('bn-clientes')">
+            <div class="bn-pill"></div>
             <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span class="bn-label">Clientes</span>
             <span class="bn-badge" id="bn-badge-clientes" style="display:none"></span>
         </button>
-        <!-- POS — botón FAB central estilo banco -->
+        <!-- POS — botón FAB central estilo Material You -->
         <button class="bn-item" id="bn-pos-fab" onclick="showPage('pos',document.getElementById('nav-pos')); _setBnActive('bn-pos-fab')" style="flex:0 0 60px">
-            <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#C8102E,#A50D25);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(200,16,46,.45);margin-top:-16px;flex-shrink:0">
+            <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#3B6EF5,#6C47FF);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(59,110,245,.50);margin-top:-16px;flex-shrink:0">
                 <svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><rect x="6" y="12" width="12" height="3" rx="1"/></svg>
             </div>
             <span class="bn-label" style="margin-top:2px">POS</span>
         </button>
         <!-- Cotizaciones -->
         <button class="bn-item" id="bn-cotizaciones" onclick="showPage('cotizaciones',this); _setBnActive('bn-cotizaciones')">
+            <div class="bn-pill"></div>
             <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
             <span class="bn-label">Cotiz.</span>
             <span class="bn-badge" id="bn-badge-cotizaciones" style="display:none"></span>
         </button>
         <!-- Más -->
         <button class="bn-item" id="bn-more" onclick="_openBnMore()">
+            <div class="bn-pill"></div>
             <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
             <span class="bn-label">Más</span>
         </button>
@@ -340,6 +344,16 @@
                     <line x1="3" y1="6" x2="21" y2="6"/>
                     <line x1="3" y1="12" x2="21" y2="12"/>
                     <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </div>
+            <div class="topbar-logo">
+                <img src="logo-crm.png" alt="Azyvion"
+                     onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+                <svg style="display:none" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/>
                 </svg>
             </div>
             <div class="page-title" id="pageTitle">Inicio</div>
