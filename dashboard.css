@@ -2786,32 +2786,14 @@ body.theme-dark #cropZoom { background: #3A3A3E; }
     .ov-bottom-row { flex-direction: column; }
 }
 @media (max-width: 600px) {
-    /* ── Inicio en celular: tarjetas más compactas y sin elementos
-       secundarios que en pantallas chicas solo generan ruido ── */
-    .ov-kpi-grid { grid-template-columns: 1fr; gap: 8px; margin-bottom: 14px; }
-    .ov-greeting-bar { margin-bottom: 14px; }
-    .ov-greeting { font-size: 17px; }
-    .ov-greeting-sub { font-size: 12px; }
-
-    .ov-kpi-card { padding: 11px 13px; gap: 10px; }
-    .ov-kpi-icon { width: 34px; height: 34px; }
-    .ov-kpi-icon svg { width: 16px; height: 16px; }
-    .ov-kpi-value { font-size: 20px; }
-
-    /* El sparkline de tendencia es difícil de leer a este tamaño y
-       solo quita espacio al número principal: se oculta en celular. */
-    .ov-spark { display: none; }
-
-    /* A pedido: en celular, Inicio se queda solo con el saludo + KPIs +
-       Alertas y acciones + Accesos rápidos. Gráficas, "Top clientes por
-       valor" y "Actividad reciente" quedan ocultas (en PC no cambia nada,
-       siguen viéndose igual que antes). */
-    .ov-charts-row,
-    #ovCardTopClientes,
-    #ovCardActividad { display: none !important; }
-
-    .ov-bottom-row { gap: 10px; margin-top: 0; }
-    .ov-card { padding: 14px 16px; }
+    /* ── Inicio en celular: módulo vacío a propósito ──
+       A pedido: se quitan los 6 KPIs (Clientes activos, Prospectos
+       activos, Cotizaciones aprobadas, Valor ponderado pipeline, Stock
+       crítico, Tasa de respuesta), las gráficas, "Top clientes por
+       valor", "Actividad reciente" y "Alertas y acciones" — queda en
+       blanco mientras se decide qué poner. En PC (≥992px) no cambia
+       nada, todo sigue viéndose igual que antes. */
+    #page-overview > * { display: none !important; }
 }
 
 /* ─── Asistente IA ─────────────────────────────────────── */
