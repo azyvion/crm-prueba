@@ -247,78 +247,55 @@ body.theme-dark {
 }
 </style>
 <style id="bnmore-tiles-css">
-/* ── Bottom Sheet "Más" — diseño de tiles con grilla ── */
+/* ── Bottom Sheet "Más" — cristal oscuro con grilla de 4 columnas ── */
 .bn-more-sheet {
     padding: 8px 0 calc(env(safe-area-inset-bottom, 0px) + 16px) !important;
-    max-height: 88vh;
+    max-height: 86vh;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    background: linear-gradient(180deg, rgba(40,43,56,.80), rgba(22,24,32,.88)) !important;
+    -webkit-backdrop-filter: blur(26px) saturate(170%);
+    backdrop-filter: blur(26px) saturate(170%);
+    border-top: 1px solid rgba(255,255,255,.16);
+    box-shadow: 0 -12px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.12) !important;
 }
+.bn-more-overlay { background: rgba(8,10,20,.45) !important; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
 .bn-more-section-label {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .7px;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.35);
-    padding: 14px 20px 6px;
+    font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+    color: rgba(255,255,255,.42); padding: 12px 20px 6px;
 }
-.bn-more-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    padding: 0 16px 4px;
-}
+.bn-more-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 14px 4px; }
 .bn-more-tile {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 7px;
-    padding: 14px 6px 12px;
-    border-radius: 14px;
-    background: rgba(255,255,255,0.06);
-    cursor: pointer;
-    transition: background .15s;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 11px 2px 9px; border-radius: 16px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.07);
+    cursor: pointer; min-width: 0;
+    transition: background .15s, transform .15s, border-color .15s;
     -webkit-tap-highlight-color: transparent;
 }
-.bn-more-tile:active { background: rgba(255,255,255,0.12); }
-.bn-more-tile-icon {
-    width: 48px; height: 48px;
-    border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
-}
-.bn-more-tile-icon svg {
-    width: 22px; height: 22px;
-    stroke-width: 1.8;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    fill: none;
-}
+.bn-more-tile:active { background: rgba(255,255,255,.14); transform: scale(.95); }
+.bn-more-tile.current { background: rgba(92,134,255,.20); border-color: rgba(141,171,255,.45); }
+.bn-more-tile-icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+.bn-more-tile-icon svg { width: 22px; height: 22px; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; fill: none; }
 .bn-more-tile span {
-    font-size: 11.5px;
-    font-weight: 500;
-    color: rgba(255,255,255,0.82);
-    text-align: center;
-    line-height: 1.3;
+    font-size: 11px; font-weight: 500; color: rgba(255,255,255,.86);
+    text-align: center; line-height: 1.25; max-width: 100%;
+    overflow-wrap: anywhere; padding: 0 2px;
 }
 .bn-more-logout {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 16px 20px 10px;
-    margin-top: 8px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    font-size: 15px;
-    font-weight: 500;
-    color: #FF453A;
-    cursor: pointer;
-    transition: opacity .15s;
+    display: flex; align-items: center; gap: 14px; padding: 16px 20px 10px; margin-top: 8px;
+    border-top: 1px solid rgba(255,255,255,.08);
+    font-size: 15px; font-weight: 500; color: #FF453A; cursor: pointer; transition: opacity .15s;
 }
 .bn-more-logout:active { opacity: .7; }
-.bn-more-logout svg {
-    width: 20px; height: 20px;
-    stroke: #FF453A;
-    stroke-width: 1.8;
-    stroke-linecap: round; stroke-linejoin: round;
-    fill: none; flex-shrink: 0;
+.bn-more-logout svg { width: 20px; height: 20px; stroke: #FF453A; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; fill: none; flex-shrink: 0; }
+/* El botón del asistente IA no debe tapar el menú ni la barra flotante */
+body.bn-more-open .az-ai-fab { display: none !important; }
+@media (max-width: 600px) {
+    .az-ai-fab   { bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important; }
+    .az-ai-panel { bottom: calc(152px + env(safe-area-inset-bottom, 0px)) !important; }
 }
 </style>
 <style id="sub-fix-css">
@@ -657,82 +634,85 @@ body.theme-dark {
     <div class="bn-more-sheet" id="bnMoreSheet">
         <div class="bn-more-handle"></div>
 
-        <!-- ── Sección: CRM (todos los roles) ── -->
-        <div class="bn-more-section-label">CRM</div>
-        <div class="bn-more-grid">
-            <div class="bn-more-tile" id="bnm-pos" onclick="showPage('pos', document.getElementById('nav-pos')); _setBnActive(''); _closeBnMore()">
-                <div class="bn-more-tile-icon" style="background:rgba(59,110,245,.12)">
-                    <svg viewBox="0 0 24 24" style="stroke:#3B6EF5"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><rect x="6" y="12" width="12" height="3" rx="1"/></svg>
+        <div class="bnm-section" data-section="General">
+            <div class="bn-more-section-label">General</div>
+            <div class="bn-more-grid">
+                <div class="bn-more-tile" id="bnm-overview" data-page="overview" role="button" tabindex="0" onclick="_bnGo('overview')">
+                    <div class="bn-more-tile-icon" style="background:rgba(59,110,245,.16)"><svg style="stroke:#3B6EF5" viewBox="0 0 24 24"> <rect x="3" y="3" width="7" height="7" /> <rect x="14" y="3" width="7" height="7" /> <rect x="14" y="14" width="7" height="7" /> <rect x="3" y="14" width="7" height="7" /> </svg></div>
+                    <span>Inicio</span>
                 </div>
-                <span>Punto de Venta</span>
-            </div>
-            <div class="bn-more-tile" id="bnm-inventario" onclick="showPage('inventario', document.getElementById('nav-inventario')); _setBnActive(''); _closeBnMore()">
-                <div class="bn-more-tile-icon" style="background:rgba(255,159,10,.12)">
-                    <svg viewBox="0 0 24 24" style="stroke:#FF9F0A"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-                </div>
-                <span>Inventario</span>
-            </div>
-            <div class="bn-more-tile" id="bnm-encuestas" onclick="showPage('encuestas', document.getElementById('nav-encuestas')); _setBnActive(''); _closeBnMore()">
-                <div class="bn-more-tile-icon" style="background:rgba(48,209,88,.12)">
-                    <svg viewBox="0 0 24 24" style="stroke:#30D158"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                </div>
-                <span>Encuestas</span>
             </div>
         </div>
 
-        <!-- ── Sección: Finanzas (Admin / Gerente) ── -->
-        <div class="bn-more-section-label bnm-role-admin-gerente" style="display:none">Finanzas</div>
-        <div class="bn-more-grid bnm-role-admin-gerente" style="display:none">
-            <div class="bn-more-tile" id="bnm-contabilidad" onclick="showPage('contabilidad', document.getElementById('nav-contabilidad')); _setBnActive(''); _closeBnMore()">
-                <div class="bn-more-tile-icon" style="background:rgba(191,90,242,.12)">
-                    <svg viewBox="0 0 24 24" style="stroke:#BF5AF2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M6 8h.01M10 8h4M6 11h.01M10 11h8"/></svg>
+        <div class="bnm-section" data-section="CRM">
+            <div class="bn-more-section-label">CRM</div>
+            <div class="bn-more-grid">
+                <div class="bn-more-tile" id="bnm-clientes" data-page="clientes" role="button" tabindex="0" onclick="_bnGo('clientes')">
+                    <div class="bn-more-tile-icon" style="background:rgba(10,132,255,.16)"><svg style="stroke:#0A84FF" viewBox="0 0 24 24"> <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /> <circle cx="9" cy="7" r="4" /> <path d="M23 21v-2a4 4 0 0 0-3-3.87" /> <path d="M16 3.13a4 4 0 0 1 0 7.75" /> </svg></div>
+                    <span>Clientes</span>
                 </div>
-                <span>Contabilidad</span>
+                <div class="bn-more-tile" id="bnm-prospectos" data-page="prospectos" role="button" tabindex="0" onclick="_bnGo('prospectos')">
+                    <div class="bn-more-tile-icon" style="background:rgba(20,184,166,.16)"><svg style="stroke:#14B8A6" viewBox="0 0 24 24"> <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /> <circle cx="9" cy="7" r="4" /> <line x1="19" y1="8" x2="19" y2="14" /> <line x1="22" y1="11" x2="16" y2="11" /> </svg></div>
+                    <span>Prospectos</span>
+                </div>
+                <div class="bn-more-tile" id="bnm-cotizaciones" data-page="cotizaciones" role="button" tabindex="0" onclick="_bnGo('cotizaciones')">
+                    <div class="bn-more-tile-icon" style="background:rgba(255,122,89,.16)"><svg style="stroke:#FF7A59" viewBox="0 0 24 24"> <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /> <polyline points="14 2 14 8 20 8" /> <line x1="8" y1="13" x2="16" y2="13" /> <line x1="8" y1="17" x2="13" y2="17" /> </svg></div>
+                    <span>Cotizaciones</span>
+                </div>
+                <div class="bn-more-tile" id="bnm-pos" data-page="pos" role="button" tabindex="0" onclick="_bnGo('pos')">
+                    <div class="bn-more-tile-icon" style="background:rgba(139,92,246,.16)"><svg style="stroke:#8B5CF6" viewBox="0 0 24 24"> <rect x="2" y="4" width="20" height="16" rx="2"/> <line x1="6" y1="8" x2="6.01" y2="8"/> <line x1="10" y1="8" x2="10.01" y2="8"/> <line x1="14" y1="8" x2="14.01" y2="8"/> <line x1="18" y1="8" x2="18.01" y2="8"/> <line x1="6" y1="12" x2="6.01" y2="12"/> <line x1="10" y1="12" x2="10.01" y2="12"/> <line x1="14" y1="12" x2="14.01" y2="12"/> <line x1="18" y1="12" x2="18.01" y2="12"/> <rect x="6" y="15" width="12" height="2" rx="1"/> </svg></div>
+                    <span>Punto de Venta</span>
+                </div>
+                <div class="bn-more-tile" id="bnm-inventario" data-page="inventario" role="button" tabindex="0" onclick="_bnGo('inventario')">
+                    <div class="bn-more-tile-icon" style="background:rgba(255,159,10,.16)"><svg style="stroke:#FF9F0A" viewBox="0 0 24 24"> <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /> <polyline points="3.27 6.96 12 12.01 20.73 6.96" /> <line x1="12" y1="22.08" x2="12" y2="12" /> </svg></div>
+                    <span>Inventario</span>
+                </div>
+                <div class="bn-more-tile" id="bnm-encuestas" data-page="encuestas" role="button" tabindex="0" onclick="_bnGo('encuestas')">
+                    <div class="bn-more-tile-icon" style="background:rgba(48,209,88,.16)"><svg style="stroke:#30D158" viewBox="0 0 24 24"> <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /> <polyline points="14 2 14 8 20 8" /> <line x1="16" y1="13" x2="8" y2="13" /> <line x1="16" y1="17" x2="8" y2="17" /> <polyline points="10 9 9 9 8 9" /> </svg></div>
+                    <span>Encuestas</span>
+                </div>
             </div>
         </div>
 
-        <!-- ── Sección: Config. (Admin) ── -->
-        <div class="bn-more-section-label bnm-role-admin" style="display:none">Config.</div>
-        <div class="bn-more-grid bnm-role-admin" style="display:none">
-            <div class="bn-more-tile" id="bnm-empleados" onclick="showPage('empleados', document.getElementById('nav-empleados')); _setBnActive(''); _closeBnMore()">
-                <div class="bn-more-tile-icon" style="background:rgba(59,110,245,.12)">
-                    <svg viewBox="0 0 24 24" style="stroke:#3B6EF5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <div class="bnm-section" data-section="Finanzas">
+            <div class="bn-more-section-label">Finanzas</div>
+            <div class="bn-more-grid">
+                <div class="bn-more-tile" id="bnm-contabilidad" data-page="contabilidad" role="button" tabindex="0" onclick="_bnGo('contabilidad')">
+                    <div class="bn-more-tile-icon" style="background:rgba(191,90,242,.16)"><svg style="stroke:#BF5AF2" viewBox="0 0 24 24"> <rect x="2" y="3" width="20" height="14" rx="2"/> <path d="M8 21h8M12 17v4"/> <path d="M6 8h.01M10 8h4M6 11h.01M10 11h8"/> </svg></div>
+                    <span>Contabilidad</span>
                 </div>
-                <span>Empleados</span>
-            </div>
-            <div class="bn-more-tile" id="bnm-usuarios" onclick="showPage('usuarios', document.getElementById('nav-usuarios')); _setBnActive(''); _closeBnMore()">
-                <div class="bn-more-tile-icon" style="background:rgba(108,71,255,.12)">
-                    <svg viewBox="0 0 24 24" style="stroke:#6C47FF"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </div>
-                <span>Usuarios</span>
             </div>
         </div>
 
-        <!-- ── Sección: SaaS (solo Super Admin) ── -->
-        <div class="bn-more-section-label bnm-role-super" style="display:none">SaaS</div>
-        <div class="bn-more-grid bnm-role-super" style="display:none">
-            <div class="bn-more-tile" id="bnm-suscripciones" onclick="showPage('suscripciones', document.getElementById('nav-suscripciones')); _setBnActive(''); _closeBnMore()">
-                <div class="bn-more-tile-icon" style="background:rgba(255,69,58,.12)">
-                    <svg viewBox="0 0 24 24" style="stroke:#FF453A"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><circle cx="12" cy="12" r="3"/></svg>
+        <div class="bnm-section" data-section="Config.">
+            <div class="bn-more-section-label">Config.</div>
+            <div class="bn-more-grid">
+                <div class="bn-more-tile" id="bnm-empleados" data-page="empleados" role="button" tabindex="0" onclick="_bnGo('empleados')">
+                    <div class="bn-more-tile-icon" style="background:rgba(94,139,255,.16)"><svg style="stroke:#5E8BFF" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                    <span>Empleados</span>
                 </div>
-                <span>Suscripciones</span>
+                <div class="bn-more-tile" id="bnm-usuarios" data-page="usuarios" role="button" tabindex="0" onclick="_bnGo('usuarios')">
+                    <div class="bn-more-tile-icon" style="background:rgba(142,123,255,.16)"><svg style="stroke:#8E7BFF" viewBox="0 0 24 24"> <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/> <circle cx="9" cy="7" r="4"/> <path d="M23 21v-2a4 4 0 0 0-3-3.87"/> <path d="M16 3.13a4 4 0 0 1 0 7.75"/> </svg></div>
+                    <span>Usuarios</span>
+                </div>
+                <div class="bn-more-tile" id="bnm-organigrama" data-page="organigrama" role="button" tabindex="0" onclick="_bnGo('organigrama')">
+                    <div class="bn-more-tile-icon" style="background:rgba(100,210,255,.16)"><svg style="stroke:#64D2FF" viewBox="0 0 24 24"> <rect x="9" y="2" width="6" height="4" rx="1"/> <rect x="2" y="18" width="6" height="4" rx="1"/> <rect x="9" y="18" width="6" height="4" rx="1"/> <rect x="16" y="18" width="6" height="4" rx="1"/> <line x1="12" y1="6" x2="12" y2="11"/> <line x1="5" y1="11" x2="19" y2="11"/> <line x1="5" y1="11" x2="5" y2="18"/> <line x1="12" y1="11" x2="12" y2="18"/> <line x1="19" y1="11" x2="19" y2="18"/> </svg></div>
+                    <span>Organigrama</span>
+                </div>
+                <div class="bn-more-tile" id="bnm-perfil" data-page="perfil" role="button" tabindex="0" onclick="_bnGo('perfil')">
+                    <div class="bn-more-tile-icon" style="background:rgba(152,152,159,.16)"><svg style="stroke:#98989F" viewBox="0 0 24 24"> <circle cx="12" cy="12" r="3" /> <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" /> </svg></div>
+                    <span>Ajustes</span>
+                </div>
             </div>
         </div>
 
-        <!-- ── Sección: General (todos los roles) ── -->
-        <div class="bn-more-section-label">General</div>
-        <div class="bn-more-grid">
-            <div class="bn-more-tile" id="bnm-organigrama" onclick="showPage('organigrama', document.getElementById('nav-organigrama')); _setBnActive(''); _closeBnMore()">
-                <div class="bn-more-tile-icon" style="background:rgba(10,132,255,.12)">
-                    <svg viewBox="0 0 24 24" style="stroke:#0A84FF"><rect x='9' y='2' width='6' height='4' rx='1'/><rect x='2' y='18' width='6' height='4' rx='1'/><rect x='9' y='18' width='6' height='4' rx='1'/><rect x='16' y='18' width='6' height='4' rx='1'/><line x1='12' y1='6' x2='12' y2='11'/><line x1='5' y1='11' x2='19' y2='11'/><line x1='5' y1='11' x2='5' y2='18'/><line x1='12' y1='11' x2='12' y2='18'/><line x1='19' y1='11' x2='19' y2='18'/></svg>
+        <div class="bnm-section" data-section="SaaS">
+            <div class="bn-more-section-label">SaaS</div>
+            <div class="bn-more-grid">
+                <div class="bn-more-tile" id="bnm-suscripciones" data-page="suscripciones" role="button" tabindex="0" onclick="_bnGo('suscripciones')">
+                    <div class="bn-more-tile-icon" style="background:rgba(255,69,58,.16)"><svg style="stroke:#FF453A" viewBox="0 0 24 24"> <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/> <circle cx="12" cy="12" r="3"/> </svg></div>
+                    <span>Suscripciones</span>
                 </div>
-                <span>Organigrama</span>
-            </div>
-            <div class="bn-more-tile" id="bnm-perfil" onclick="showPage('perfil', document.getElementById('nav-perfil')); _setBnActive(''); _closeBnMore()">
-                <div class="bn-more-tile-icon" style="background:rgba(142,142,147,.12)">
-                    <svg viewBox="0 0 24 24" style="stroke:#8E8E93"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-                </div>
-                <span>Ajustes</span>
             </div>
         </div>
 
@@ -5093,13 +5073,17 @@ window._closeSidebarDrawer = _closeSidebarDrawer;
 var _BN_PAGE_MAP = {
     overview:      'bn-overview',
     clientes:      'bn-clientes',
-    prospectos:    'bn-prospectos',
     cotizaciones:  'bn-cotizaciones',
-    inventario:    '',
-    encuestas:     '',
-    contabilidad:  '',
-    usuarios:      '',
-    perfil:        ''
+    pos:           'bn-pos-fab',
+    prospectos:    'bn-more',
+    inventario:    'bn-more',
+    encuestas:     'bn-more',
+    contabilidad:  'bn-more',
+    empleados:     'bn-more',
+    usuarios:      'bn-more',
+    suscripciones: 'bn-more',
+    organigrama:   'bn-more',
+    perfil:        'bn-more'
 };
 
 function _setBnActive(bnId) {
@@ -5109,14 +5093,35 @@ function _setBnActive(bnId) {
 }
 
 function _openBnMore() {
+    try { _applyBnMoreRoles(); } catch (e) { console.warn('[Más] roles:', e); }
     document.getElementById('bnMoreSheet').classList.add('open');
     document.getElementById('bnMoreOverlay').classList.add('open');
+    document.body.classList.add('bn-more-open');
 }
 
 function _closeBnMore() {
     document.getElementById('bnMoreSheet').classList.remove('open');
     document.getElementById('bnMoreOverlay').classList.remove('open');
+    document.body.classList.remove('bn-more-open');
 }
+
+/* Ir a un módulo desde el menú "Más" */
+function _bnGo(page) {
+    _closeBnMore();
+    showPage(page, document.getElementById('nav-' + page));
+}
+
+/* Deslizar hacia abajo para cerrar */
+(function () {
+    var sheet = document.getElementById('bnMoreSheet');
+    if (!sheet) return;
+    var y0 = null;
+    sheet.addEventListener('touchstart', function (e) { y0 = sheet.scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true });
+    sheet.addEventListener('touchend', function (e) {
+        if (y0 !== null && e.changedTouches[0].clientY - y0 > 80) _closeBnMore();
+        y0 = null;
+    }, { passive: true });
+})();
 
 /* Sincronizar bottom nav cuando showPage es llamado desde cualquier parte */
 var _origShowPage = typeof showPage === 'function' ? showPage : null;
@@ -5162,26 +5167,37 @@ function _syncBnBadges() {
         if (!el) return;
         new MutationObserver(_syncBnBadges).observe(el, { childList: true, characterData: true, subtree: true });
     });
-    /* Aplicar visibilidad del menú "Más" según rol */
+    /* Aplicar visibilidad del menú "Más" según rol.
+       Fuente de verdad = el menú lateral (mismas reglas que escritorio):
+       un módulo aparece si su ítem del sidebar está visible y el usuario
+       tiene permiso. SaaS (Suscripciones) solo para el Super Admin. */
     function _applyBnMoreRoles() {
-        var rol = typeof _rol !== 'undefined' ? _rol : '';
-        var esSuper = typeof _esSuper !== 'undefined' ? _esSuper : false;
+        var sess = {};
+        try { sess = JSON.parse(localStorage.getItem('azyvion_session') || '{}') || {}; } catch (e) {}
+        var esSuperAdmin = window._esSuperAdmin === true;           /* verificado por RPC sub_es_admin */
+        var esAdm = sess.rol === 'Admin' || sess.rol === 'ADMIN' || esSuperAdmin || sess.rol === 'SUPER_ADMIN';
+        var permitidos = (!esAdm && sess.permisos && Array.isArray(sess.permisos.submenus) && sess.permisos.submenus.length)
+            ? new Set(sess.permisos.submenus) : null;
 
-        /* Admin o Gerente → Finanzas (Contabilidad) */
-        var showAdminGerente = (rol === 'Admin' || rol === 'Gerente');
-        document.querySelectorAll('.bnm-role-admin-gerente').forEach(function(el) {
-            el.style.display = showAdminGerente ? '' : 'none';
+        document.querySelectorAll('#bnMoreSheet .bn-more-tile').forEach(function (tile) {
+            var page = tile.getAttribute('data-page');
+            var navEl = document.getElementById('nav-' + page);
+            var show = !!navEl && getComputedStyle(navEl).display !== 'none';
+
+            if (page === 'suscripciones') show = esSuperAdmin;       /* SaaS: solo superadmin */
+            if (page === 'overview' && typeof puedeVerDashboard === 'function') {
+                try { show = show && puedeVerDashboard(); } catch (e) {}
+            }
+            if (show && permitidos && page !== 'perfil' && !permitidos.has(page)) show = false;
+
+            tile.style.display = show ? '' : 'none';
+            tile.classList.toggle('current', typeof _currentPage !== 'undefined' && _currentPage === page);
         });
 
-        /* Solo Admin → Config. (Empleados + Usuarios) */
-        var showAdmin = (rol === 'Admin');
-        document.querySelectorAll('.bnm-role-admin').forEach(function(el) {
-            el.style.display = showAdmin ? '' : 'none';
-        });
-
-        /* Solo Super Admin → SaaS (Suscripciones) */
-        document.querySelectorAll('.bnm-role-super').forEach(function(el) {
-            el.style.display = esSuper ? '' : 'none';
+        /* Ocultar secciones sin módulos visibles */
+        document.querySelectorAll('#bnMoreSheet .bnm-section').forEach(function (sec) {
+            var vis = Array.prototype.some.call(sec.querySelectorAll('.bn-more-tile'), function (t) { return t.style.display !== 'none'; });
+            sec.style.display = vis ? '' : 'none';
         });
     }
 
