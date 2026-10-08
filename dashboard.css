@@ -4698,23 +4698,22 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
 }
 
 /* ════════════════════════════════════════════════════════════
-   TEMA BANCARIO — MÓVIL ≤600px
-   Inspirado en el diseño limpio de banca móvil:
-   topbar rojo sólido · logo centrado · bottom-nav blanco
-   cards tipo cuenta bancaria · saludo con campana
+   TEMA AZYVION — MÓVIL ≤600px
+   Topbar azul sólido · logo centrado · bottom-nav oscuro
+   cards limpias · saludo con campana · Android-native feel
 ════════════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
 
-    /* ── Variables de color del tema bancario ── */
+    /* ── Variables de color del tema Azyvion ── */
     :root {
-        --bank-red:     #C8102E;
-        --bank-red-dk:  #A50D25;
+        --bank-blue:    #3B6EF5;
+        --bank-blue-dk: #2A57D8;
         --bank-bg:      #F2F4F7;
         --bank-card:    #FFFFFF;
         --bank-border:  rgba(0,0,0,0.08);
         --bank-text:    #1A1A2E;
         --bank-sub:     #6B7280;
-        --bank-link:    #C8102E;
+        --bank-link:    #3B6EF5;
         --bank-nav-h:   60px;
     }
 
@@ -4722,38 +4721,41 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
     body { background: var(--bank-bg) !important; }
 
     /* ════════════════════════════════
-       TOPBAR — rojo sólido estilo banco
+       TOPBAR — azul sólido Azyvion
     ════════════════════════════════ */
     .topbar {
-        background: var(--bank-red) !important;
+        background: #3B6EF5 !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
         border-bottom: none !important;
-        box-shadow: 0 2px 8px rgba(200,16,46,.35) !important;
+        box-shadow: 0 2px 12px rgba(59,110,245,.40) !important;
         height: 56px !important;
         padding: 0 16px !important;
         position: relative !important;
         justify-content: space-between !important;
     }
 
-    /* Ocultar título de página — el logo lo reemplaza */
+    /* Ocultar título de página — el logo centrado lo reemplaza */
     .topbar .page-title { display: none !important; }
 
-    /* Hamburguesa → ícono blanco sin fondo */
+    /* Ocultar el logo-img del topbar en móvil (usamos ::after con texto) */
+    .topbar .topbar-logo { display: none !important; }
+
+    /* Hamburguesa → ícono blanco, sin fondo adicional */
     .hamburger-btn {
-        background: none !important;
+        background: rgba(255,255,255,0.12) !important;
         border: none !important;
         box-shadow: none !important;
         width: 40px !important; height: 40px !important;
-        border-radius: 8px !important;
+        border-radius: 10px !important;
     }
     .hamburger-btn svg {
         stroke: #fff !important;
         width: 22px !important; height: 22px !important;
     }
-    .hamburger-btn:active { background: rgba(255,255,255,.12) !important; transform: none !important; }
+    .hamburger-btn:active { background: rgba(255,255,255,.22) !important; transform: scale(.94) !important; }
 
-    /* Logo centrado en topbar */
+    /* "Azyvion CRM" centrado en topbar */
     .topbar::after {
         content: 'Azyvion CRM';
         position: absolute;
@@ -4766,7 +4768,7 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
         pointer-events: none;
     }
 
-    /* Botón "Nuevo" → botón Salir estilo banco */
+    /* Botón "Nuevo" → estilo outline blanco */
     .topbar-btn {
         background: transparent !important;
         border: 1.5px solid rgba(255,255,255,.7) !important;
@@ -4780,35 +4782,24 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
         gap: 5px !important;
     }
     .topbar-btn svg { stroke: #fff !important; width: 13px !important; height: 13px !important; }
-    .topbar-btn:hover, .topbar-btn:active { background: rgba(255,255,255,.15) !important; transform: none !important; }
+    .topbar-btn:hover, .topbar-btn:active { background: rgba(255,255,255,.18) !important; transform: none !important; }
 
     /* ════════════════════════════════
-       BOTTOM NAV — blanco con borde suave
+       BOTTOM NAV — oscuro nativo Android
     ════════════════════════════════ */
     .bottom-nav {
         display: flex !important;
-        background: #FFFFFF !important;
-        border-top: 1px solid rgba(0,0,0,.10) !important;
-        box-shadow: 0 -2px 16px rgba(0,0,0,.06) !important;
+        background: #1C1C1E !important;
+        border-top: 1px solid rgba(255,255,255,.07) !important;
+        box-shadow: 0 -2px 20px rgba(0,0,0,.28) !important;
         height: calc(var(--bank-nav-h) + env(safe-area-inset-bottom, 0px)) !important;
     }
-    .bn-item {
-        color: #9CA3AF !important;
-    }
-    .bn-item.active { color: var(--bank-red) !important; }
+    .bn-item { color: rgba(255,255,255,.40) !important; }
+    .bn-item.active { color: #3B6EF5 !important; }
+    .bn-item.active .bn-pill { transform: translateX(-50%) scaleX(1) !important; }
     .bn-item.active svg { stroke-width: 2.2 !important; }
     .bn-item svg { stroke: currentColor !important; }
     .bn-label { font-size: 9px !important; font-weight: 600 !important; }
-
-    /* Botón central de acción rápida (Transferir / POS) */
-    #bn-pos-fab {
-        background: var(--accent) !important;
-        width: 50px !important; height: 50px !important;
-        border-radius: 50% !important;
-        box-shadow: 0 4px 16px rgba(59,110,245,.45) !important;
-        margin-top: -14px !important;
-        flex-shrink: 0 !important;
-    }
 
     /* Ajustar padding del contenido para dar espacio al bottom-nav */
     .content {
@@ -4816,10 +4807,10 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
     }
 
     /* ════════════════════════════════
-       INICIO — saludo estilo banco
+       INICIO — saludo con gradiente azul
     ════════════════════════════════ */
     .ov-greeting-bar {
-        background: var(--bank-red) !important;
+        background: linear-gradient(135deg, #3B6EF5 0%, #6C47FF 100%) !important;
         margin: -18px -18px 16px !important;
         padding: 14px 18px 20px !important;
         border-radius: 0 0 22px 22px !important;
@@ -4848,7 +4839,7 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
     }
 
     /* ════════════════════════════════
-       CARDS — estilo cuenta bancaria
+       CARDS — limpias con sombra suave
     ════════════════════════════════ */
     .ov-card, .ov-chart-card, .table-card, .kpi-card,
     .mob-list, .mob-kpi-bar {
@@ -4858,24 +4849,22 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
         background: var(--bank-card) !important;
     }
 
-    /* Ventas de hoy — card destacado rojo suave */
+    /* Ventas de hoy — card destacado azul suave */
     #ovCardVentasHoy {
-        background: linear-gradient(135deg, #FFF5F7 0%, #FFF 100%) !important;
-        border-color: rgba(200,16,46,.15) !important;
+        background: linear-gradient(135deg, #EEF2FF 0%, #FFF 100%) !important;
+        border-color: rgba(59,110,245,.18) !important;
     }
-    #ovCardVentasHoy .section-title { color: var(--bank-red) !important; font-weight: 700 !important; }
-    #ovCardVentasHoy .ov-kpi-value { color: var(--bank-red) !important; }
+    #ovCardVentasHoy .section-title { color: #3B6EF5 !important; font-weight: 700 !important; }
+    #ovCardVentasHoy .ov-kpi-value { color: #3B6EF5 !important; }
 
     /* Card de acciones rápidas */
-    #ovCardAccionesRapidas {
-        border-radius: 16px !important;
-    }
+    #ovCardAccionesRapidas { border-radius: 16px !important; }
     #ovCardAccionesRapidas .section-title { font-size: 13px !important; font-weight: 700 !important; color: var(--bank-text) !important; }
 
-    /* Botones de acción rápida — estilo banco */
+    /* Botones de acción rápida — íconos azules */
     .ov-quick-btn {
-        background: #F8F9FC !important;
-        border: 1.5px solid var(--bank-border) !important;
+        background: #F4F6FE !important;
+        border: 1.5px solid rgba(59,110,245,.12) !important;
         border-radius: 14px !important;
         color: var(--bank-text) !important;
         font-weight: 600 !important;
@@ -4890,16 +4879,16 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
     }
     .ov-quick-btn svg {
         width: 22px !important; height: 22px !important;
-        stroke: var(--bank-red) !important;
+        stroke: #3B6EF5 !important;
     }
     .ov-quick-btn:hover, .ov-quick-btn:active {
-        background: #FFF5F7 !important;
-        border-color: rgba(200,16,46,.3) !important;
-        color: var(--bank-red) !important;
+        background: #EEF2FF !important;
+        border-color: rgba(59,110,245,.30) !important;
+        color: #3B6EF5 !important;
     }
 
     /* ════════════════════════════════
-       CLIENTES — lista estilo bancario
+       CLIENTES — lista estilo Azyvion
     ════════════════════════════════ */
     .mob-kpi-bar {
         border-radius: 14px !important;
@@ -4910,21 +4899,21 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
     .mob-kpi-cell { border-color: var(--bank-border) !important; }
 
     .mob-seg { border-color: var(--bank-border) !important; background: #F0F2F8 !important; }
-    .mob-seg-btn.active { background: var(--bank-card) !important; color: var(--bank-red) !important; }
-    .mob-seg-badge { background: var(--bank-red) !important; }
+    .mob-seg-btn.active { background: var(--bank-card) !important; color: #3B6EF5 !important; }
+    .mob-seg-badge { background: #3B6EF5 !important; }
 
     .mob-list { border-radius: 16px !important; }
     .mob-list-toolbar { background: #FAFAFA !important; border-color: var(--bank-border) !important; }
     .filter-tab.active {
-        background: var(--bank-red) !important;
+        background: #3B6EF5 !important;
         color: #fff !important;
-        border-color: var(--bank-red) !important;
+        border-color: #3B6EF5 !important;
     }
 
     .mob-list-item { padding: 14px 16px !important; }
     .mob-list-item-name { font-size: 15px !important; font-weight: 600 !important; color: var(--bank-text) !important; }
     .mob-list-item-sub { color: var(--bank-sub) !important; }
-    .mob-list-chevron svg { stroke: var(--bank-red) !important; }
+    .mob-list-chevron svg { stroke: #3B6EF5 !important; }
 
     /* ════════════════════════════════
        TAGS / BADGES
@@ -4932,7 +4921,7 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
     .tag.tag-success { background: #DCFCE7 !important; color: #15803D !important; }
     .tag.tag-danger  { background: #FEE2E2 !important; color: #B91C1C !important; }
     .tag.tag-warning { background: #FEF3C7 !important; color: #92400E !important; }
-    .tag.tag-accent  { background: #FFF1F3 !important; color: var(--bank-red) !important; }
+    .tag.tag-accent  { background: #EEF2FF !important; color: #3B6EF5 !important; }
 
     /* ════════════════════════════════
        TOAST arriba centrado en móvil
@@ -4946,7 +4935,7 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
     .toast.show { transform: translateY(0) !important; }
 
     /* ════════════════════════════════
-       MODAL bottom sheet estilo banco
+       MODAL bottom sheet
     ════════════════════════════════ */
     .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
     .modal-box {
@@ -4966,7 +4955,7 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
     .modal-header { padding-top: 10px !important; }
 
     /* ════════════════════════════════
-       AI FAB — reposicionar sobre bottom nav
+       AI FAB — sobre bottom nav
     ════════════════════════════════ */
     .az-ai-fab {
         bottom: calc(var(--bank-nav-h) + env(safe-area-inset-bottom, 0px) + 14px) !important;
@@ -4983,7 +4972,7 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
        SECCIÓN TÍTULOS
     ════════════════════════════════ */
     .section-title { color: var(--bank-text) !important; }
-    .section-action { color: var(--bank-red) !important; }
+    .section-action { color: #3B6EF5 !important; }
 }
 
 /* En tablet (601px–991px) ocultar bottom-nav (no aplica el tema bancario) */
