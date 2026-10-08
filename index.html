@@ -1449,16 +1449,48 @@
     }
     .nav-mobile-close svg { width: 18px; height: 18px; stroke: var(--text); stroke-width: 2; fill: none; }
     .nav-mobile-drawer a {
-      display: block;
-      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 12px;
       border-radius: 10px;
-      font-size: 15px;
+      font-size: 14.5px;
       font-weight: 500;
       color: var(--text-2);
       text-decoration: none;
       transition: background .12s, color .12s;
     }
     .nav-mobile-drawer a:hover, .nav-mobile-drawer a.nav-active { background: var(--blue-soft); color: var(--blue); font-weight: 600; }
+    .drawer-icon {
+      width: 16px; height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+      opacity: 0.6;
+    }
+    .drawer-section-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 14px 12px 4px;
+    }
+    .drawer-apps-link { position: relative; }
+    .drawer-badge {
+      margin-left: auto;
+      font-size: 9.5px;
+      font-weight: 700;
+      background: var(--blue-soft);
+      color: var(--blue);
+      padding: 2px 7px;
+      border-radius: 20px;
+      letter-spacing: 0.3px;
+      flex-shrink: 0;
+    }
     .nav-mobile-drawer .mobile-cta {
       display: flex;
       flex-direction: column;
@@ -1472,6 +1504,7 @@
       padding: 12px;
       border-radius: 10px;
       font-weight: 600;
+      justify-content: center;
     }
 
     /* ─── RESPONSIVE ──────────────────────────────── */
@@ -1548,11 +1581,13 @@
       <span class="nav-name">Azyvion CRM</span>
     </a>
     <ul class="nav-links">
+      <li><a href="#home" data-page="home">Inicio</a></li>
       <li><a href="#funciones" data-page="funciones">Funciones</a></li>
       <li><a href="#pipeline" data-page="pipeline">Pipeline</a></li>
       <li><a href="#ia" data-page="ia">IA</a></li>
       <li><a href="#precios" data-page="precios">Precios</a></li>
       <li><a href="#clientes" data-page="clientes">Clientes</a></li>
+      <li><a href="apps.html">Nuestras apps</a></li>
     </ul>
     <div class="nav-cta">
       <a href="login.html" class="btn-ghost">Iniciar sesión</a>
@@ -1568,15 +1603,45 @@
     <button class="nav-mobile-close" id="navMobileClose">
       <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
-    <a href="#home" data-page="home">Inicio</a>
-    <a href="#funciones" data-page="funciones">Funciones</a>
-    <a href="#pipeline" data-page="pipeline">Pipeline</a>
-    <a href="#ia" data-page="ia">IA</a>
-    <a href="#precios" data-page="precios">Precios</a>
-    <a href="#clientes" data-page="clientes">Clientes</a>
+
+    <div class="drawer-section-label">General</div>
+    <a href="#home" data-page="home">
+      <svg class="drawer-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Inicio
+    </a>
+
+    <div class="drawer-section-label">Producto</div>
+    <a href="#funciones" data-page="funciones">
+      <svg class="drawer-icon" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Funciones
+    </a>
+    <a href="#pipeline" data-page="pipeline">
+      <svg class="drawer-icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+      Pipeline
+    </a>
+    <a href="#ia" data-page="ia">
+      <svg class="drawer-icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      Inteligencia Artificial
+    </a>
+    <a href="#precios" data-page="precios">
+      <svg class="drawer-icon" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Precios
+    </a>
+    <a href="#clientes" data-page="clientes">
+      <svg class="drawer-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Clientes
+    </a>
+
+    <div class="drawer-section-label">Más</div>
+    <a href="apps.html" class="drawer-apps-link">
+      <svg class="drawer-icon" viewBox="0 0 24 24"><rect x="2" y="2" width="9" height="9" rx="2"/><rect x="13" y="2" width="9" height="9" rx="2"/><rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/></svg>
+      Nuestras apps
+      <span class="drawer-badge">Pronto</span>
+    </a>
+
     <div class="mobile-cta">
-      <a href="login.html" class="btn-ghost">Iniciar sesión</a>
-      <a href="register.html" class="btn-primary-sm" style="color:#fff;">Crear cuenta gratis</a>
+      <a href="login.html" class="btn-ghost" style="text-align:center;">Iniciar sesión</a>
+      <a href="register.html" class="btn-primary-sm" style="color:#fff;text-align:center;">Crear cuenta gratis</a>
     </div>
   </div>
 
