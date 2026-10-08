@@ -476,6 +476,16 @@
 
                 <!-- Fila inferior: top clientes + actividad + alertas -->
                 <div class="ov-bottom-row">
+                    <!-- Ventas de hoy (solo celular; en PC no se muestra) -->
+                    <div class="ov-card ov-mobile-card" id="ovCardVentasHoy">
+                        <div class="section-header">
+                            <div class="section-title">Ventas de hoy</div>
+                        </div>
+                        <div id="ovVentasHoy" style="display:flex;flex-direction:column;gap:2px;padding:4px 0 2px">
+                            <div class="ov-kpi-value" id="ov-ventas-hoy-total">—</div>
+                            <div class="ov-kpi-sub" id="ov-ventas-hoy-sub">Cargando…</div>
+                        </div>
+                    </div>
                     <!-- Top clientes por valor -->
                     <div class="ov-card" id="ovCardTopClientes" style="flex:1.2">
                         <div class="section-header">
@@ -496,8 +506,8 @@
                         </div>
                     </div>
                     <!-- Alertas y acciones rápidas -->
-                    <div class="ov-card" style="flex:0.9">
-                        <div class="section-header">
+                    <div class="ov-card" id="ovCardAccionesRapidas" style="flex:0.9">
+                        <div class="section-header" id="ovAlertasHeader">
                             <div class="section-title">Alertas y acciones</div>
                         </div>
                         <div id="ovAlertas" style="display:flex;flex-direction:column;gap:8px">
