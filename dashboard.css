@@ -506,11 +506,10 @@
             padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
         }
 
-        /* Bottom nav retirado: en móvil ahora se usa el menú
-           hamburguesa (drawer) para tener paridad total con
-           el menú de escritorio. Se mantiene el markup por
-           compatibilidad con el JS existente, pero oculto. */
-        .bottom-nav, .bn-more-sheet, .bn-more-overlay { display: none !important; }
+        /* Bottom nav: visible en móvil con el tema bancario.
+           Se oculta solo en ≥768px donde ya existe el sidebar. */
+        .bn-more-sheet, .bn-more-overlay { display: none; }
+        /* El display real del .bottom-nav lo maneja el tema bancario ≤600px */
 
         /* ═══════════════════════════════════════════════════
            BOTTOM NAVIGATION BAR
@@ -2374,84 +2373,6 @@ body.densidad-compacta .cell-sub { margin-top: 1px; }
     .mob-only { display: none !important; }
     .mob-seg, .mob-kpi-bar, .mob-list, .mob-funnel-toggle { display: none !important; }
     #nav-prospectos { display: flex !important; }
-}
-
-/* ── MÓVIL ≤600px: Clientes usa la vista compacta mob-only ──
-   Se ocultan los 8 KPIs apilados y la tabla de escritorio;
-   se activa el bloque #mobContactosWrap con KPI bar + lista. */
-@media (max-width: 600px) {
-    /* Ocultar vista de escritorio en clientes */
-    #page-clientes .kpi-grid  { display: none !important; }
-    #page-clientes .table-card { display: none !important; }
-
-    /* Mostrar la vista compacta móvil */
-    #mobContactosWrap { display: block !important; }
-    .mob-seg          { display: flex !important; }
-    .mob-kpi-bar      { display: flex !important; }
-    .mob-list         { display: block !important; }
-
-    /* La lista ocupa el espacio disponible sin desbordar */
-    #mobContactosWrap {
-        display: flex !important;
-        flex-direction: column;
-        height: 100%;
-        overflow: hidden;
-    }
-    /* La lista de items hace scroll interno, no la página entera */
-    #mobListCli,
-    #mobListPro {
-        display: flex !important;
-        flex-direction: column;
-        flex: 1;
-        min-height: 0;
-        overflow: hidden;
-        margin-bottom: 0;
-    }
-    #mobCliListBody,
-    #mobProListBody {
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        flex: 1;
-        min-height: 0;
-    }
-
-    /* KPI bar compacta: 3 celdas en la misma fila */
-    .mob-kpi-bar {
-        margin-bottom: 10px;
-        flex-shrink: 0;
-    }
-    .mob-kpi-cell-val { font-size: 15px; }
-    .mob-kpi-cell { padding: 8px 6px; }
-
-    /* Segmento selector compacto */
-    .mob-seg { margin-bottom: 10px; flex-shrink: 0; }
-
-    /* Toolbar de filtros sin wrap */
-    .mob-list-toolbar { flex-shrink: 0; }
-
-    /* Pie de lista fijo */
-    .mob-list-foot { flex-shrink: 0; }
-
-    /* Paginación compacta */
-    #mobCliPagination,
-    #mobProPagination { flex-shrink: 0; }
-
-    /* page-clientes ocupa todo el alto disponible en móvil */
-    #page-clientes {
-        display: flex !important;
-        flex-direction: column;
-        height: 100%;
-        overflow: hidden;
-        padding-bottom: 0;
-    }
-
-    /* Cuando clientes está activo, el .content no scrollea —
-       el scroll lo hace la lista interna #mobCliListBody */
-    #page-clientes.active ~ * { /* placeholder */ }
-    .content:has(#page-clientes.active) {
-        overflow: hidden;
-        padding-bottom: env(safe-area-inset-bottom, 0px);
-    }
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -4723,4 +4644,305 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
         font-size: 11px !important;
         padding: 6px 10px !important;
     }
+}
+
+/* ════════════════════════════════════════════════════════════
+   TEMA BANCARIO — MÓVIL ≤600px
+   Inspirado en el diseño limpio de banca móvil:
+   topbar rojo sólido · logo centrado · bottom-nav blanco
+   cards tipo cuenta bancaria · saludo con campana
+════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+
+    /* ── Variables de color del tema bancario ── */
+    :root {
+        --bank-red:     #C8102E;
+        --bank-red-dk:  #A50D25;
+        --bank-bg:      #F2F4F7;
+        --bank-card:    #FFFFFF;
+        --bank-border:  rgba(0,0,0,0.08);
+        --bank-text:    #1A1A2E;
+        --bank-sub:     #6B7280;
+        --bank-link:    #C8102E;
+        --bank-nav-h:   60px;
+    }
+
+    /* ── Fondo general más claro ── */
+    body { background: var(--bank-bg) !important; }
+
+    /* ════════════════════════════════
+       TOPBAR — rojo sólido estilo banco
+    ════════════════════════════════ */
+    .topbar {
+        background: var(--bank-red) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border-bottom: none !important;
+        box-shadow: 0 2px 8px rgba(200,16,46,.35) !important;
+        height: 56px !important;
+        padding: 0 16px !important;
+        position: relative !important;
+        justify-content: space-between !important;
+    }
+
+    /* Ocultar título de página — el logo lo reemplaza */
+    .topbar .page-title { display: none !important; }
+
+    /* Hamburguesa → ícono blanco sin fondo */
+    .hamburger-btn {
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        width: 40px !important; height: 40px !important;
+        border-radius: 8px !important;
+    }
+    .hamburger-btn svg {
+        stroke: #fff !important;
+        width: 22px !important; height: 22px !important;
+    }
+    .hamburger-btn:active { background: rgba(255,255,255,.12) !important; transform: none !important; }
+
+    /* Logo centrado en topbar */
+    .topbar::after {
+        content: 'Azyvion CRM';
+        position: absolute;
+        left: 50%; top: 50%;
+        transform: translate(-50%, -50%);
+        color: #fff;
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: -0.3px;
+        pointer-events: none;
+    }
+
+    /* Botón "Nuevo" → botón Salir estilo banco */
+    .topbar-btn {
+        background: transparent !important;
+        border: 1.5px solid rgba(255,255,255,.7) !important;
+        color: #fff !important;
+        box-shadow: none !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        height: 32px !important;
+        padding: 0 12px !important;
+        border-radius: 8px !important;
+        gap: 5px !important;
+    }
+    .topbar-btn svg { stroke: #fff !important; width: 13px !important; height: 13px !important; }
+    .topbar-btn:hover, .topbar-btn:active { background: rgba(255,255,255,.15) !important; transform: none !important; }
+
+    /* ════════════════════════════════
+       BOTTOM NAV — blanco con borde suave
+    ════════════════════════════════ */
+    .bottom-nav {
+        display: flex !important;
+        background: #FFFFFF !important;
+        border-top: 1px solid rgba(0,0,0,.10) !important;
+        box-shadow: 0 -2px 16px rgba(0,0,0,.06) !important;
+        height: calc(var(--bank-nav-h) + env(safe-area-inset-bottom, 0px)) !important;
+    }
+    .bn-item {
+        color: #9CA3AF !important;
+    }
+    .bn-item.active { color: var(--bank-red) !important; }
+    .bn-item.active svg { stroke-width: 2.2 !important; }
+    .bn-item svg { stroke: currentColor !important; }
+    .bn-label { font-size: 9px !important; font-weight: 600 !important; }
+
+    /* Botón central de acción rápida (Transferir / POS) */
+    #bn-pos-fab {
+        background: var(--accent) !important;
+        width: 50px !important; height: 50px !important;
+        border-radius: 50% !important;
+        box-shadow: 0 4px 16px rgba(59,110,245,.45) !important;
+        margin-top: -14px !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Ajustar padding del contenido para dar espacio al bottom-nav */
+    .content {
+        padding-bottom: calc(var(--bank-nav-h) + env(safe-area-inset-bottom, 0px) + 8px) !important;
+    }
+
+    /* ════════════════════════════════
+       INICIO — saludo estilo banco
+    ════════════════════════════════ */
+    .ov-greeting-bar {
+        background: var(--bank-red) !important;
+        margin: -18px -18px 16px !important;
+        padding: 14px 18px 20px !important;
+        border-radius: 0 0 22px 22px !important;
+        position: relative;
+    }
+    .ov-greeting {
+        font-size: 17px !important;
+        font-weight: 600 !important;
+        color: #fff !important;
+        letter-spacing: 0 !important;
+    }
+    .ov-greeting-sub {
+        font-size: 12px !important;
+        color: rgba(255,255,255,.75) !important;
+        margin-top: 2px !important;
+    }
+
+    /* Campana de notificación en el saludo */
+    .ov-greeting-bar::after {
+        content: '';
+        position: absolute;
+        right: 18px; top: 50%; transform: translateY(-50%);
+        width: 38px; height: 38px;
+        background: rgba(255,255,255,.18) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9'/><path d='M13.73 21a2 2 0 0 1-3.46 0'/></svg>") no-repeat center / 20px;
+        border-radius: 50%;
+    }
+
+    /* ════════════════════════════════
+       CARDS — estilo cuenta bancaria
+    ════════════════════════════════ */
+    .ov-card, .ov-chart-card, .table-card, .kpi-card,
+    .mob-list, .mob-kpi-bar {
+        border-radius: 16px !important;
+        border: 1px solid var(--bank-border) !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,.06) !important;
+        background: var(--bank-card) !important;
+    }
+
+    /* Ventas de hoy — card destacado rojo suave */
+    #ovCardVentasHoy {
+        background: linear-gradient(135deg, #FFF5F7 0%, #FFF 100%) !important;
+        border-color: rgba(200,16,46,.15) !important;
+    }
+    #ovCardVentasHoy .section-title { color: var(--bank-red) !important; font-weight: 700 !important; }
+    #ovCardVentasHoy .ov-kpi-value { color: var(--bank-red) !important; }
+
+    /* Card de acciones rápidas */
+    #ovCardAccionesRapidas {
+        border-radius: 16px !important;
+    }
+    #ovCardAccionesRapidas .section-title { font-size: 13px !important; font-weight: 700 !important; color: var(--bank-text) !important; }
+
+    /* Botones de acción rápida — estilo banco */
+    .ov-quick-btn {
+        background: #F8F9FC !important;
+        border: 1.5px solid var(--bank-border) !important;
+        border-radius: 14px !important;
+        color: var(--bank-text) !important;
+        font-weight: 600 !important;
+        font-size: 11.5px !important;
+        padding: 14px 8px !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 7px !important;
+        text-align: center !important;
+        min-height: 72px !important;
+    }
+    .ov-quick-btn svg {
+        width: 22px !important; height: 22px !important;
+        stroke: var(--bank-red) !important;
+    }
+    .ov-quick-btn:hover, .ov-quick-btn:active {
+        background: #FFF5F7 !important;
+        border-color: rgba(200,16,46,.3) !important;
+        color: var(--bank-red) !important;
+    }
+
+    /* ════════════════════════════════
+       CLIENTES — lista estilo bancario
+    ════════════════════════════════ */
+    .mob-kpi-bar {
+        border-radius: 14px !important;
+        overflow: hidden !important;
+    }
+    .mob-kpi-cell-val { color: var(--bank-text) !important; font-size: 18px !important; }
+    .mob-kpi-cell-lbl { color: var(--bank-sub) !important; }
+    .mob-kpi-cell { border-color: var(--bank-border) !important; }
+
+    .mob-seg { border-color: var(--bank-border) !important; background: #F0F2F8 !important; }
+    .mob-seg-btn.active { background: var(--bank-card) !important; color: var(--bank-red) !important; }
+    .mob-seg-badge { background: var(--bank-red) !important; }
+
+    .mob-list { border-radius: 16px !important; }
+    .mob-list-toolbar { background: #FAFAFA !important; border-color: var(--bank-border) !important; }
+    .filter-tab.active {
+        background: var(--bank-red) !important;
+        color: #fff !important;
+        border-color: var(--bank-red) !important;
+    }
+
+    .mob-list-item { padding: 14px 16px !important; }
+    .mob-list-item-name { font-size: 15px !important; font-weight: 600 !important; color: var(--bank-text) !important; }
+    .mob-list-item-sub { color: var(--bank-sub) !important; }
+    .mob-list-chevron svg { stroke: var(--bank-red) !important; }
+
+    /* ════════════════════════════════
+       TAGS / BADGES
+    ════════════════════════════════ */
+    .tag.tag-success { background: #DCFCE7 !important; color: #15803D !important; }
+    .tag.tag-danger  { background: #FEE2E2 !important; color: #B91C1C !important; }
+    .tag.tag-warning { background: #FEF3C7 !important; color: #92400E !important; }
+    .tag.tag-accent  { background: #FFF1F3 !important; color: var(--bank-red) !important; }
+
+    /* ════════════════════════════════
+       TOAST arriba centrado en móvil
+    ════════════════════════════════ */
+    .toast {
+        top: 68px !important; right: 16px !important; left: 16px !important;
+        max-width: none !important;
+        border-radius: 12px !important;
+        transform: translateY(-8px) !important;
+    }
+    .toast.show { transform: translateY(0) !important; }
+
+    /* ════════════════════════════════
+       MODAL bottom sheet estilo banco
+    ════════════════════════════════ */
+    .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+    .modal-box {
+        border-radius: 22px 22px 0 0 !important;
+        max-height: 90vh !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .modal-box::before {
+        display: block !important;
+        content: '';
+        width: 38px; height: 4px;
+        background: var(--bank-border);
+        border-radius: 2px;
+        margin: 10px auto 0;
+    }
+    .modal-header { padding-top: 10px !important; }
+
+    /* ════════════════════════════════
+       AI FAB — reposicionar sobre bottom nav
+    ════════════════════════════════ */
+    .az-ai-fab {
+        bottom: calc(var(--bank-nav-h) + env(safe-area-inset-bottom, 0px) + 14px) !important;
+        right: 16px !important;
+        width: 46px !important; height: 46px !important;
+    }
+    .az-ai-panel {
+        bottom: calc(var(--bank-nav-h) + env(safe-area-inset-bottom, 0px) + 70px) !important;
+        right: 12px !important;
+        width: calc(100vw - 24px) !important;
+    }
+
+    /* ════════════════════════════════
+       SECCIÓN TÍTULOS
+    ════════════════════════════════ */
+    .section-title { color: var(--bank-text) !important; }
+    .section-action { color: var(--bank-red) !important; }
+}
+
+/* En tablet (601px–991px) ocultar bottom-nav (no aplica el tema bancario) */
+@media (min-width: 601px) and (max-width: 991px) {
+    .bottom-nav, .bn-more-sheet, .bn-more-overlay { display: none !important; }
+}
+/* En móvil ≤600px ocultar el sidebar-drawer-overlay cuando no está abierto
+   (el hamburger sigue funcionando para abrir el sidebar completo) */
+@media (max-width: 600px) {
+    /* bottom-nav: siempre visible en móvil con tema bancario */
+    .bottom-nav { display: flex !important; }
+    .bn-more-sheet, .bn-more-overlay { /* mantener estilos de show/hide via JS */ }
 }
