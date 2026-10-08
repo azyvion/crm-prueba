@@ -4741,19 +4741,8 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
     /* Ocultar el logo-img del topbar en móvil (usamos ::after con texto) */
     .topbar .topbar-logo { display: none !important; }
 
-    /* Hamburguesa → ícono blanco, sin fondo adicional */
-    .hamburger-btn {
-        background: rgba(255,255,255,0.12) !important;
-        border: none !important;
-        box-shadow: none !important;
-        width: 40px !important; height: 40px !important;
-        border-radius: 10px !important;
-    }
-    .hamburger-btn svg {
-        stroke: #fff !important;
-        width: 22px !important; height: 22px !important;
-    }
-    .hamburger-btn:active { background: rgba(255,255,255,.22) !important; transform: scale(.94) !important; }
+    /* Ocultar hamburger — en móvil ya existe el botón Más en el bottom nav */
+    .hamburger-btn { display: none !important; }
 
     /* "Azyvion CRM" centrado en topbar */
     .topbar::after {
