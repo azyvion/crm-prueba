@@ -2802,12 +2802,15 @@ body.theme-dark #cropZoom { background: #3A3A3E; }
        solo quita espacio al número principal: se oculta en celular. */
     .ov-spark { display: none; }
 
-    .ov-charts-row { gap: 10px; margin-bottom: 14px; }
-    .ov-chart-card { padding: 14px 16px; }
-    .ov-chart-canvas-wrap { height: 160px; }
-    .ov-chart-canvas-round { max-height: 160px; max-width: 160px; }
+    /* A pedido: en celular, Inicio se queda solo con el saludo + KPIs +
+       Alertas y acciones + Accesos rápidos. Gráficas, "Top clientes por
+       valor" y "Actividad reciente" quedan ocultas (en PC no cambia nada,
+       siguen viéndose igual que antes). */
+    .ov-charts-row,
+    #ovCardTopClientes,
+    #ovCardActividad { display: none !important; }
 
-    .ov-bottom-row { gap: 10px; }
+    .ov-bottom-row { gap: 10px; margin-top: 0; }
     .ov-card { padding: 14px 16px; }
 }
 
