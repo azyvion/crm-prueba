@@ -820,6 +820,61 @@
       line-height: 1.65;
     }
 
+    /* ─── FEATURES MOBILE (grid compacto 2 cols) ─── */
+    .features-grid-mobile {
+      display: none;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .fm-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .fm-row:last-child { border-bottom: none; }
+
+    .fm-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 20px 16px;
+      position: relative;
+    }
+
+    .fm-cell:first-child {
+      border-right: 1px solid var(--border);
+    }
+
+    .fm-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .fm-icon svg { width: 20px; height: 20px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    .fm-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.25;
+      letter-spacing: -0.2px;
+    }
+
+    .fm-desc {
+      font-size: 11.5px;
+      color: var(--text-2);
+      line-height: 1.55;
+    }
+
+    @media (max-width: 900px) {
+      .features-grid { display: none; }
+      .features-grid-mobile { display: flex; }
+    }
+
     /* ─── PIPELINE SECTION ────────────────────────── */
     .pipeline-section {
       background: var(--bg-alt);
@@ -1433,7 +1488,6 @@
       .stat-item { border-right: none; padding: 0; }
       .section { padding: 56px 20px; }
       .section h2 { font-size: 28px; }
-      .features-grid { grid-template-columns: 1fr; }
       .pipeline-section { padding: 56px 20px; }
       .pipeline-inner { grid-template-columns: 1fr; gap: 32px; }
       .pipeline-visual { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 24px 20px; }
@@ -1450,7 +1504,6 @@
     }
 
     @media (min-width: 601px) and (max-width: 900px) {
-      .features-grid { grid-template-columns: repeat(2, 1fr); }
       .testi-grid { grid-template-columns: repeat(2, 1fr); }
       .ai-cards { grid-template-columns: repeat(2, 1fr); }
     }
@@ -1853,6 +1906,7 @@
           <div class="section-tag">Funciones clave</div>
           <h2 class="section-title">Todo lo que tu equipo de ventas necesita</h2>
           <p class="section-desc">Desde el primer contacto hasta el cierre y la retención. Azyvion CRM cubre cada etapa del proceso con herramientas pensadas para vendedores reales.</p>
+          <!-- DESKTOP: tarjetas grandes (3 cols) -->
           <div class="features-grid">
             <div class="feature-card">
               <div class="feature-icon" style="background:#e8f2ff;"><svg viewBox="0 0 24 24" style="stroke:#0A84FF"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
@@ -1884,6 +1938,62 @@
               <div class="feature-title">Reportes y dashboards</div>
               <div class="feature-desc">Métricas de ventas en tiempo real: proyección de ingresos, desempeño por agente, ciclo de venta promedio y tasa de conversión.</div>
             </div>
+          </div>
+
+          <!-- MOBILE: grid compacto 2 columnas tipo "tabla de features" -->
+          <div class="features-grid-mobile">
+
+            <div class="fm-row">
+              <div class="fm-cell">
+                <div class="fm-icon" style="background:#e8f2ff;">
+                  <svg viewBox="0 0 24 24" style="stroke:#0A84FF"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div class="fm-title">Gestión de contactos</div>
+                <div class="fm-desc">Historial completo, notas y documentos. Nada se pierde.</div>
+              </div>
+              <div class="fm-cell">
+                <div class="fm-icon" style="background:#fef3eb;">
+                  <svg viewBox="0 0 24 24" style="stroke:#f97316"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+                </div>
+                <div class="fm-title">Pipeline visual</div>
+                <div class="fm-desc">Kanban con drag & drop. Múltiples pipelines.</div>
+              </div>
+            </div>
+
+            <div class="fm-row">
+              <div class="fm-cell">
+                <div class="fm-icon" style="background:#f0ebff;">
+                  <svg viewBox="0 0 24 24" style="stroke:#7c3aed"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </div>
+                <div class="fm-title">Automatización</div>
+                <div class="fm-desc">Flujos que actúan solos: seguimientos, asignaciones y recordatorios.</div>
+              </div>
+              <div class="fm-cell">
+                <div class="fm-icon" style="background:#eafbf0;">
+                  <svg viewBox="0 0 24 24" style="stroke:#22c55e"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div class="fm-title">Email integrado</div>
+                <div class="fm-desc">Envía, recibe y rastrea aperturas desde el CRM.</div>
+              </div>
+            </div>
+
+            <div class="fm-row">
+              <div class="fm-cell">
+                <div class="fm-icon" style="background:#fff4e6;">
+                  <svg viewBox="0 0 24 24" style="stroke:#f59e0b"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div class="fm-title">Agenda y tareas</div>
+                <div class="fm-desc">Llamadas, reuniones y follow-ups en un solo lugar.</div>
+              </div>
+              <div class="fm-cell">
+                <div class="fm-icon" style="background:#fdeaea;">
+                  <svg viewBox="0 0 24 24" style="stroke:#ef4444"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </div>
+                <div class="fm-title">Reportes en vivo</div>
+                <div class="fm-desc">Proyección, tasa de cierre y desempeño por agente.</div>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
