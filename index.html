@@ -1137,7 +1137,7 @@
 
     .pv-svg {
       width: 100%;
-      height: 160px;
+      height: 165px;
       display: block;
       overflow: visible;
     }
@@ -2385,7 +2385,7 @@
 
               <!-- CHART: Pipeline (velas estilo trading) -->
               <div class="pv-chart-wrap" id="pvc-pipeline">
-                <svg viewBox="0 0 480 160" preserveAspectRatio="none" class="pv-svg">
+                <svg viewBox="0 0 480 165" preserveAspectRatio="none" class="pv-svg">
                   <defs>
                     <linearGradient id="gradPipe" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.22"/>
@@ -2398,32 +2398,40 @@
                   <line x1="0" y1="128" x2="480" y2="128" stroke="#e4e7ed" stroke-width="0.5"/>
                   <!-- Barras de pipeline por etapa -->
                   <!-- Prospectos -->
-                  <rect x="20" y="60" width="28" height="90" rx="4" fill="#0A84FF" fill-opacity="0.85"/>
+                  <rect x="20" y="60" width="28" height="82" rx="4" fill="#0A84FF" fill-opacity="0.85"/>
                   <text x="34" y="56" text-anchor="middle" font-size="8" fill="#6b7280">Prospecto</text>
-                  <text x="34" y="168" text-anchor="middle" font-size="8" fill="#0A84FF" font-weight="700">$34K</text>
+                  <text x="34" y="154" text-anchor="middle" font-size="8" fill="#0A84FF" font-weight="700">$34K</text>
                   <!-- Calificado -->
-                  <rect x="108" y="40" width="28" height="110" rx="4" fill="#f97316" fill-opacity="0.85"/>
+                  <rect x="108" y="40" width="28" height="102" rx="4" fill="#f97316" fill-opacity="0.85"/>
                   <text x="122" y="36" text-anchor="middle" font-size="8" fill="#6b7280">Calificado</text>
-                  <text x="122" y="168" text-anchor="middle" font-size="8" fill="#f97316" font-weight="700">$51K</text>
+                  <text x="122" y="154" text-anchor="middle" font-size="8" fill="#f97316" font-weight="700">$51K</text>
                   <!-- Propuesta -->
-                  <rect x="196" y="70" width="28" height="80" rx="4" fill="#7c3aed" fill-opacity="0.85"/>
+                  <rect x="196" y="70" width="28" height="72" rx="4" fill="#7c3aed" fill-opacity="0.85"/>
                   <text x="210" y="66" text-anchor="middle" font-size="8" fill="#6b7280">Propuesta</text>
-                  <text x="210" y="168" text-anchor="middle" font-size="8" fill="#7c3aed" font-weight="700">$28K</text>
+                  <text x="210" y="154" text-anchor="middle" font-size="8" fill="#7c3aed" font-weight="700">$28K</text>
                   <!-- Negociación -->
-                  <rect x="284" y="85" width="28" height="65" rx="4" fill="#e11d48" fill-opacity="0.85"/>
+                  <rect x="284" y="85" width="28" height="57" rx="4" fill="#e11d48" fill-opacity="0.85"/>
                   <text x="298" y="81" text-anchor="middle" font-size="8" fill="#6b7280">Negociación</text>
-                  <text x="298" y="168" text-anchor="middle" font-size="8" fill="#e11d48" font-weight="700">$19K</text>
+                  <text x="298" y="154" text-anchor="middle" font-size="8" fill="#e11d48" font-weight="700">$19K</text>
                   <!-- Cerrado -->
-                  <rect x="372" y="30" width="28" height="120" rx="4" fill="#22c55e" fill-opacity="0.85"/>
+                  <rect x="372" y="30" width="28" height="112" rx="4" fill="#22c55e" fill-opacity="0.85"/>
                   <text x="386" y="26" text-anchor="middle" font-size="8" fill="#6b7280">Cerrado</text>
-                  <text x="386" y="168" text-anchor="middle" font-size="8" fill="#22c55e" font-weight="700">$84K</text>
+                  <text x="386" y="154" text-anchor="middle" font-size="8" fill="#22c55e" font-weight="700">$84K</text>
                   <!-- Línea de tendencia -->
                   <polyline fill="none" stroke="#0A84FF" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.4"
                     points="34,60 122,40 210,70 298,85 386,30"/>
+                  <!-- Puntos en tope de barras -->
+                  <circle cx="34"  cy="60" r="3" fill="#0A84FF"/>
+                  <circle cx="122" cy="40" r="3" fill="#f97316"/>
+                  <circle cx="210" cy="70" r="3" fill="#7c3aed"/>
+                  <circle cx="298" cy="85" r="3" fill="#e11d48"/>
+                  <circle cx="386" cy="30" r="3" fill="#22c55e"/>
                 </svg>
                 <div class="pv-legend">
                   <span class="pv-leg-item blue">● Prospecto</span>
                   <span class="pv-leg-item orange">● Calificado</span>
+                  <span class="pv-leg-item" style="color:#7c3aed">● Propuesta</span>
+                  <span class="pv-leg-item red">● Negociación</span>
                   <span class="pv-leg-item green">● Cerrado</span>
                 </div>
               </div>
