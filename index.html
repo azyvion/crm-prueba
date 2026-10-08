@@ -662,11 +662,11 @@
 
     .pkboard-col { display: flex; flex-direction: column; gap: 6px; }
     .pkboard-head { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 6px; border-bottom: 2px solid; display: flex; align-items: center; justify-content: space-between; }
-    .pkboard-head span { background: rgba(255,255,255,0.15); border-radius: 10px; padding: 1px 6px; }
-    .pkboard-card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 7px; padding: 8px; }
-    .pkbc-co { font-size: 9.5px; font-weight: 700; color: rgba(255,255,255,0.85); }
-    .pkbc-val { font-size: 8.5px; color: rgba(255,255,255,0.45); margin-top: 2px; }
-    .pkbc-bar { height: 2px; border-radius: 2px; margin-top: 5px; }
+    .pkboard-head span { background: rgba(0,0,0,0.08); border-radius: 10px; padding: 1px 6px; color: inherit; }
+    .pkboard-card { background: #fff; border: 1px solid #e4e7ed; border-radius: 7px; padding: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .pkbc-co { font-size: 9.5px; font-weight: 700; color: #0f1117; }
+    .pkbc-val { font-size: 8.5px; color: #6b7280; margin-top: 2px; }
+    .pkbc-bar { height: 3px; border-radius: 2px; margin-top: 5px; }
 
     .pscreen-table-head { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1.2fr) minmax(0,0.8fr) minmax(0,0.7fr) minmax(0,0.7fr); gap: 8px; padding: 0 8px 8px; border-bottom: 1px solid var(--pborder); font-size: 9px; font-weight: 700; color: var(--ptext-m); text-transform: uppercase; letter-spacing: 0.5px; }
     .pscreen-table-row { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1.2fr) minmax(0,0.8fr) minmax(0,0.7fr) minmax(0,0.7fr); gap: 8px; padding: 8px; border-bottom: 1px solid var(--pborder); font-size: 10.5px; color: var(--ptext); align-items: center; }
@@ -768,16 +768,17 @@
     }
 
     .pipeline-visual {
-      background: var(--navy);
+      background: #fff;
       border-radius: 20px;
       padding: 28px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.22);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      border: 1.5px solid var(--border);
     }
 
     .pv-title {
       font-size: 13px;
       font-weight: 700;
-      color: rgba(255,255,255,0.6);
+      color: var(--text);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 20px;
@@ -787,7 +788,7 @@
     }
 
     .pv-title span {
-      background: rgba(10,132,255,0.2);
+      background: var(--blue-soft);
       color: var(--blue);
       font-size: 11px;
       padding: 3px 10px;
@@ -803,7 +804,7 @@
     .kanban-col-head {
       font-size: 10px;
       font-weight: 700;
-      color: rgba(255,255,255,0.4);
+      color: #6b7280;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 8px;
@@ -821,21 +822,21 @@
     .kcol-5 .kanban-col-head { border-color: var(--green); color: var(--green); }
 
     .kanban-card {
-      background: rgba(255,255,255,0.07);
+      background: #f7f8fa;
       border-radius: 8px;
       padding: 9px 10px;
       margin-bottom: 6px;
-      border: 1px solid rgba(255,255,255,0.07);
+      border: 1px solid #e4e7ed;
     }
 
-    .kc-company { font-size: 9.5px; font-weight: 700; color: rgba(255,255,255,0.85); margin-bottom: 3px; }
-    .kc-value { font-size: 8.5px; color: rgba(255,255,255,0.45); }
-    .kc-bar { height: 3px; border-radius: 2px; margin-top: 6px; background: linear-gradient(90deg, var(--blue), transparent); }
+    .kc-company { font-size: 9.5px; font-weight: 700; color: #0f1117; margin-bottom: 3px; }
+    .kc-value { font-size: 8.5px; color: #6b7280; }
+    .kc-bar { height: 3px; border-radius: 2px; margin-top: 6px; background: linear-gradient(90deg, var(--blue), #e8f2ff); }
 
-    .kcol-2 .kc-bar { background: linear-gradient(90deg, var(--orange), transparent); }
-    .kcol-3 .kc-bar { background: linear-gradient(90deg, var(--purple), transparent); }
-    .kcol-4 .kc-bar { background: linear-gradient(90deg, #e11d48, transparent); }
-    .kcol-5 .kc-bar { background: linear-gradient(90deg, var(--green), transparent); }
+    .kcol-2 .kc-bar { background: linear-gradient(90deg, var(--orange), #fff3ea); }
+    .kcol-3 .kc-bar { background: linear-gradient(90deg, var(--purple), #f0ebff); }
+    .kcol-4 .kc-bar { background: linear-gradient(90deg, #e11d48, #ffeef2); }
+    .kcol-5 .kc-bar { background: linear-gradient(90deg, var(--green), #edfff5); }
 
     .check-list {
       list-style: none;
@@ -1634,10 +1635,10 @@
             </div>
 
             <!-- VISTA: PIPELINE -->
-            <div class="preview-screen" id="preview-pipeline">
+            <div class="preview-screen" id="preview-pipeline" style="background:#f7f8fa;">
               <div class="pscreen-layout">
                 <div class="pscreen-sidebar">
-                  <div class="pscreen-logo"><div class="nav-logo-icon" style="width:28px;height:28px;border-radius:7px;"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><span style="font-size:11px;font-weight:700;color:#fff;">Azyvion</span></div>
+                  <div class="pscreen-logo"><div class="nav-logo-icon" style="width:28px;height:28px;border-radius:7px;background:#0A84FF;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><span style="font-size:11px;font-weight:700;color:#fff;">Azyvion</span></div>
                   <div class="pscreen-nav-section">General</div>
                   <div class="pscreen-nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Inicio</div>
                   <div class="pscreen-nav-section">CRM</div>
@@ -1645,8 +1646,8 @@
                   <div class="pscreen-nav-item active"><svg viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>Pipeline</div>
                   <div class="pscreen-nav-item"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Cotizaciones</div>
                 </div>
-                <div class="pscreen-main">
-                  <div class="pscreen-header"><div style="font-size:14px;font-weight:700;color:var(--ptext);">Pipeline de ventas</div><div style="display:flex;gap:6px;"><div style="background:var(--paccent);color:#fff;font-size:10px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;">+ Nuevo negocio</div></div></div>
+                <div class="pscreen-main" style="background:#f7f8fa;">
+                  <div class="pscreen-header"><div style="font-size:14px;font-weight:700;color:#0f1117;">Pipeline de ventas</div><div style="display:flex;gap:6px;"><div style="background:#0A84FF;color:#fff;font-size:10px;font-weight:600;padding:5px 12px;border-radius:6px;cursor:pointer;">+ Nuevo negocio</div></div></div>
                   <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;flex:1;overflow:hidden;">
                     <div class="pkboard-col"><div class="pkboard-head" style="border-color:#0A84FF;color:#0A84FF;">Prospecto <span>3</span></div><div class="pkboard-card"><div class="pkbc-co">Agrícola Vásquez</div><div class="pkbc-val">$5,600</div><div class="pkbc-bar" style="width:20%;background:#0A84FF"></div></div><div class="pkboard-card"><div class="pkbc-co">Logística Norte</div><div class="pkbc-val">$3,200</div><div class="pkbc-bar" style="width:30%;background:#0A84FF"></div></div></div>
                     <div class="pkboard-col"><div class="pkboard-head" style="border-color:#f97316;color:#f97316;">Calificado <span>3</span></div><div class="pkboard-card"><div class="pkbc-co">Grupo Construye</div><div class="pkbc-val">$14,000</div><div class="pkbc-bar" style="width:60%;background:#f97316"></div></div><div class="pkboard-card"><div class="pkbc-co">Industrias Beta</div><div class="pkbc-val">$7,500</div><div class="pkbc-bar" style="width:45%;background:#f97316"></div></div></div>
