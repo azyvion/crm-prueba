@@ -983,8 +983,9 @@
       background: #fff;
       border-radius: 20px;
       padding: 28px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.10);
       border: 1.5px solid var(--border);
+      overflow: hidden;
     }
 
     .pv-title {
@@ -1010,21 +1011,29 @@
     .kanban-cols {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 10px;
+      gap: 12px;
     }
 
     .kanban-col-head {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
       color: #6b7280;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      margin-bottom: 8px;
-      padding-bottom: 6px;
-      border-bottom: 2px solid;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 2.5px solid;
       display: flex;
       align-items: center;
       justify-content: space-between;
+    }
+
+    .kanban-col-head span {
+      font-size: 11px;
+      font-weight: 800;
+      background: rgba(0,0,0,0.06);
+      border-radius: 20px;
+      padding: 1px 7px;
     }
 
     .kcol-1 .kanban-col-head { border-color: var(--blue); color: var(--blue); }
@@ -1034,21 +1043,42 @@
     .kcol-5 .kanban-col-head { border-color: var(--green); color: var(--green); }
 
     .kanban-card {
-      background: #f7f8fa;
-      border-radius: 8px;
-      padding: 9px 10px;
-      margin-bottom: 6px;
+      background: #fff;
+      border-radius: 10px;
+      padding: 11px 12px;
+      margin-bottom: 8px;
       border: 1px solid #e4e7ed;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      transition: transform .15s, box-shadow .15s;
     }
 
-    .kc-company { font-size: 9.5px; font-weight: 700; color: #0f1117; margin-bottom: 3px; }
-    .kc-value { font-size: 8.5px; color: #6b7280; }
-    .kc-bar { height: 3px; border-radius: 2px; margin-top: 6px; background: linear-gradient(90deg, var(--blue), #e8f2ff); }
+    .kanban-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+    }
+
+    .kc-company { font-size: 11px; font-weight: 700; color: #0f1117; margin-bottom: 3px; }
+    .kc-value { font-size: 10px; color: #6b7280; font-weight: 500; }
+    .kc-bar { height: 3px; border-radius: 2px; margin-top: 8px; background: linear-gradient(90deg, var(--blue), #e8f2ff); }
 
     .kcol-2 .kc-bar { background: linear-gradient(90deg, var(--orange), #fff3ea); }
     .kcol-3 .kc-bar { background: linear-gradient(90deg, var(--purple), #f0ebff); }
     .kcol-4 .kc-bar { background: linear-gradient(90deg, #e11d48, #ffeef2); }
     .kcol-5 .kc-bar { background: linear-gradient(90deg, var(--green), #edfff5); }
+
+    /* Scroll wrapper */
+    .kanban-scroll-wrap {
+      position: relative;
+    }
+
+    .kanban-scroll-wrap::-webkit-scrollbar { height: 4px; }
+    .kanban-scroll-wrap::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+    .kanban-scroll-wrap::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 4px; opacity: 0.5; }
+
+    /* Fade derecho para indicar scroll */
+    .pipeline-visual {
+      position: relative;
+    }
 
     .check-list {
       list-style: none;
@@ -1612,8 +1642,13 @@
       .section h2 { font-size: 28px; }
       .pipeline-section { padding: 56px 20px; }
       .pipeline-inner { grid-template-columns: 1fr; gap: 32px; }
-      .pipeline-visual { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 24px 20px; }
-      .kanban-cols { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(150px, 1fr); padding-bottom: 4px; }
+      .pipeline-visual { padding: 20px 0 20px 20px; overflow: hidden; }
+      .kanban-scroll-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; padding-right: 20px; }
+      .kanban-cols { grid-template-columns: none; display: flex; flex-direction: row; gap: 10px; width: max-content; }
+      .kanban-cols > div { width: 160px; flex-shrink: 0; }
+      .kanban-card { padding: 10px 12px; }
+      .kc-company { font-size: 12px; }
+      .kc-value { font-size: 11px; }
       .ai-cards { grid-template-columns: 1fr; }
       .testimonials { padding: 56px 20px; }
       .testi-grid { grid-template-columns: 1fr; }
@@ -1643,7 +1678,8 @@
       .pricing-grid { grid-template-columns: 1fr !important; }
       .testi-card { padding: 22px 16px; }
       .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
-      .kanban-cols { grid-auto-columns: minmax(130px, 1fr); }
+      .kanban-cols > div { width: 145px; }
+      .pv-title { font-size: 12px; }
       .cta-actions { flex-direction: column; align-items: stretch; }
       .btn-cta-white, .btn-cta-outline { width: 100%; justify-content: center; }
     }
@@ -2167,6 +2203,7 @@
           <div class="pipeline-inner">
             <div class="pipeline-visual">
               <div class="pv-title">Pipeline de ventas <span>En tiempo real</span></div>
+              <div class="kanban-scroll-wrap">
               <div class="kanban-cols">
                 <div class="kcol-1">
                   <div class="kanban-col-head">Prospecto <span>3</span></div>
@@ -2192,6 +2229,7 @@
                   <div class="kanban-card"><div class="kc-company">Constructora Mérida</div><div class="kc-value">$12,400</div><div class="kc-bar" style="width:100%"></div></div>
                 </div>
               </div>
+              </div><!-- /kanban-scroll-wrap -->
             </div>
             <div class="pipeline-text">
               <div class="section-tag">Pipeline</div>
