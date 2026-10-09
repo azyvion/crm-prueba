@@ -561,12 +561,12 @@ body.bn-more-open .az-ai-fab { display: none !important; }
             rgba(255,255,255,.04) 18%,
             transparent           35%
         ),
-        /* Color sólido fijo: azul predominante con toque violeta al final */
+        /* Variantes del azul marino oscuro — sin morado */
         linear-gradient(175deg,
-            #0a0d2e  0%,
-            #0e1a4a  45%,
-            #141060  75%,
-            #1a0840  100%
+            #080d1e  0%,
+            #0a1228  45%,
+            #0c1632  80%,
+            #0e1a3a  100%
         ) !important;
 
     /* Sin backdrop-filter para que el color no varíe con el fondo */
@@ -666,39 +666,35 @@ body.bn-more-open .az-ai-fab { display: none !important; }
         inset 0 -1px 0 rgba(0,0,0,.10) !important;
 }
 
-/* ── Pill activo — vidrio índigo/violeta iOS 27 ─────────────── */
+/* ── Pill activo — azul marino más claro ─────────────────────── */
 .nav-item.active {
     color: #fff !important;
     border-radius: 13px !important;
 
     background:
-        /* Specular superior — la "carita" del cristal */
+        /* Specular superior */
         linear-gradient(180deg,
-            rgba(255,255,255,.30)  0%,
-            rgba(255,255,255,.06) 45%,
+            rgba(255,255,255,.25)  0%,
+            rgba(255,255,255,.05) 45%,
             transparent            70%
         ),
-        /* Surface del pill: índigo + violeta oscuro */
+        /* Surface del pill: azul marino más claro que el fondo */
         linear-gradient(135deg,
-            rgba(35, 20,130,.90)  0%,
-            rgba(75, 15,140,.85) 100%
+            #1a3a6e  0%,
+            #163060  100%
         ) !important;
 
-    border: 1px solid rgba(160,140,255,.42) !important;
+    border: 1px solid rgba(80,140,255,.35) !important;
 
     box-shadow:
-        /* Rim superior del pill */
-        inset 0  1.5px 0 rgba(255,255,255,.55),
-        /* Rim inferior oscuro */
-        inset 0 -1px   0 rgba(0,0,0,.25),
-        /* Rim lateral izquierdo */
-        inset 1px 0    0 rgba(255,255,255,.22),
-        /* Sombra exterior con color */
-        0 6px 24px rgba(50,15,130,.55),
-        0 2px  8px rgba(80,10,150,.40) !important;
+        inset 0  1.5px 0 rgba(255,255,255,.45),
+        inset 0 -1px   0 rgba(0,0,0,.20),
+        inset 1px 0    0 rgba(255,255,255,.18),
+        0 6px 24px rgba(10,30,100,.50),
+        0 2px  8px rgba(20,50,140,.35) !important;
 
-    -webkit-backdrop-filter: blur(16px) saturate(200%) !important;
-    backdrop-filter:          blur(16px) saturate(200%) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter:          none !important;
 }
 
 /* Specular en el borde superior del pill */
@@ -709,15 +705,15 @@ body.bn-more-open .az-ai-fab { display: none !important; }
     bottom: auto !important; width: auto !important; height: 1px !important;
     background: linear-gradient(90deg,
         transparent,
-        rgba(255,255,255,.75) 30%,
-        rgba(255,255,255,.75) 70%,
+        rgba(255,255,255,.70) 30%,
+        rgba(255,255,255,.70) 70%,
         transparent
     ) !important;
     border-radius: 0 !important;
 }
 
 .nav-item.active svg {
-    filter: drop-shadow(0 0 7px rgba(160,130,255,.65)) !important;
+    filter: drop-shadow(0 0 7px rgba(80,140,255,.55)) !important;
 }
 
 /* ── Sub-items ──────────────────────────────────────────────── */
@@ -728,7 +724,7 @@ body.bn-more-open .az-ai-fab { display: none !important; }
     transition: background .15s, color .15s !important;
 }
 .nav-subitem:hover  { background: rgba(255,255,255,.07) !important; color: rgba(230,225,255,.92) !important; }
-.nav-subitem.active { background: rgba(55,20,140,.32) !important; color: #fff !important; border-radius: 10px !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.18) !important; }
+.nav-subitem.active { background: rgba(20,50,140,.45) !important; color: #fff !important; border-radius: 10px !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.18) !important; }
 
 /* ── Logo ───────────────────────────────────────────────────── */
 .sidebar-logo {
