@@ -2675,29 +2675,25 @@ body.theme-dark #cropZoom { background: #3A3A3E; }
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     gap: 12px;
 }
 .ov-greeting {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
     letter-spacing: -0.4px;
     color: var(--text-primary);
     line-height: 1.2;
 }
 .ov-greeting-sub {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-secondary);
-    margin-top: 3px;
+    margin-top: 2px;
 }
 
-/* KPI Grid 6 tarjetas */
+/* KPI Grid — ahora es la barra compacta, solo necesita margin */
 .ov-kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 18px;
-    align-items: start;
+    margin-bottom: 12px;
 }
 .ov-kpi-card {
     background: var(--card);
@@ -2738,43 +2734,76 @@ body.theme-dark #cropZoom { background: #3A3A3E; }
 .ov-kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ov-spark { flex-shrink: 0; opacity: .7; }
 
-/* Fila de gráficas */
+/* ── Overview sin scroll: layout flex vertical que ocupa el alto disponible ── */
+#page-overview {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Fila de gráficas — flex:1 para llenar el espacio restante */
 .ov-charts-row {
     display: flex;
-    gap: 14px;
-    margin-bottom: 18px;
-    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex: 1;
+    min-height: 0;
 }
 .ov-chart-card {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 18px 20px;
+    padding: 14px 16px;
     box-shadow: var(--shadow-sm);
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
-.ov-chart-head { margin-bottom: 14px; }
-.ov-chart-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
-.ov-chart-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.ov-chart-head { margin-bottom: 8px; flex-shrink: 0; }
+.ov-chart-title { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.ov-chart-sub { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
 
-/* Fila inferior */
+/* Fila inferior — altura fija compacta */
 .ov-bottom-row {
     display: flex;
-    gap: 14px;
-    flex-wrap: wrap;
+    gap: 12px;
+    flex-shrink: 0;
+    min-height: 0;
 }
 .ov-card {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 18px 20px;
+    padding: 14px 16px;
     box-shadow: var(--shadow-sm);
-    min-width: 260px;
-    flex-basis: 260px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
 }
 /* Tarjetas que solo existen para la vista de celular (ver @media
    max-width:600px más abajo) — en PC quedan ocultas. */
 .ov-mobile-card { display: none; }
+
+/* Las cards de la fila inferior tienen scroll interno y altura acotada */
+.ov-bottom-row .ov-card {
+    display: flex;
+    flex-direction: column;
+    max-height: 220px;
+}
+.ov-bottom-row .ov-card .section-header {
+    flex-shrink: 0;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+}
+.ov-bottom-row .ov-card .section-title { font-size: 12px; font-weight: 700; }
+/* Contenido scrollable dentro de cada card inferior */
+.ov-bottom-row .ov-card > *:not(.section-header) { overflow-y: auto; flex: 1; min-height: 0; }
+/* Acciones rápidas: grid, no scrollable */
+#ovCardAccionesRapidas > *:not(.section-header) { overflow: visible; }
 
 /* Top clientes */
 .ov-top-client {
@@ -2826,19 +2855,33 @@ body.theme-dark #cropZoom { background: #3A3A3E; }
 .ov-quick-btn:hover { background: var(--card); border-color: var(--accent); color: var(--accent); }
 .ov-quick-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 
-/* Contenedor de canvas de las 3 gráficas (antes era un style="" inline
-   con height:200px fijo; ahora es una clase para poder achicarlo en
-   móvil sin tocar el HTML de nuevo). */
-.ov-chart-canvas-wrap { position: relative; height: 200px; }
-.ov-chart-canvas-wrap--round { display: flex; align-items: center; justify-content: center; }
-.ov-chart-canvas-round { max-height: 200px; max-width: 200px; }
+/* Canvas de gráficas — ocupa todo el alto disponible en su card */
+.ov-chart-canvas-wrap {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+}
+.ov-chart-canvas-wrap--round {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-height: 0;
+}
+.ov-chart-canvas-round {
+    max-height: 100%;
+    max-width: 100%;
+}
 
-/* Responsive overview */
+/* Responsive overview — en pantallas medianas el overview sí puede hacer scroll */
 @media (max-width: 900px) {
-    .ov-kpi-grid { grid-template-columns: repeat(2, 1fr); }
-    .ov-charts-row { flex-direction: column; }
+    #page-overview { overflow-y: auto; height: auto; }
+    .ov-charts-row { flex-direction: column; flex: none; }
     .ov-chart-card { flex: unset !important; }
-    .ov-bottom-row { flex-direction: column; }
+    .ov-chart-canvas-wrap { height: 180px; flex: none; }
+    .ov-bottom-row { flex-direction: column; max-height: none; }
+    .ov-bottom-row .ov-card { max-height: none; overflow: visible; }
+    .ov-bottom-row .ov-card > *:not(.section-header) { overflow: visible; }
 }
 @media (max-width: 600px) {
     /* ── Inicio en celular: solo "Ventas de hoy" + "Acciones rápidas" ──
