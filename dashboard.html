@@ -637,25 +637,20 @@ body.bn-more-open .az-ai-fab { display: none !important; }
     animation: lg-breathe 6s ease-in-out infinite;
 }
 
-/* ── Shimmer — rayo de luz que recorre el panel cada ~8s ────── */
+/* ── ::after — vignette perimetral sutil ───────────────────── */
 .sidebar::after {
     content: '';
     position: absolute;
-    top: -20%; left: -60%;
-    width: 40%; height: 140%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255,255,255,.07) 45%,
-        rgba(255,255,255,.13) 50%,
-        rgba(255,255,255,.07) 55%,
-        transparent
-    );
-    transform: rotate(20deg);
+    inset: 0;
+    background:
+        linear-gradient(90deg,
+            rgba(0,0,0,.14)  0%,
+            transparent       10%,
+            transparent       90%,
+            rgba(0,0,0,.20)  100%
+        );
     pointer-events: none;
     z-index: 1;
-    animation: lg-shimmer 8s ease-in-out infinite;
-    animation-delay: 2s;
 }
 
 .sidebar > * { position: relative; z-index: 2; }
