@@ -3710,6 +3710,9 @@ body.bn-more-open .az-ai-fab { display: none !important; }
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             const pageEl = document.getElementById('page-' + id);
             if (pageEl) pageEl.classList.add('active');
+            // Scroll al inicio al cambiar de página
+            const _contentEl = document.querySelector('.content');
+            if (_contentEl) _contentEl.scrollTop = 0;
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
             if (navEl) navEl.classList.add('active');
