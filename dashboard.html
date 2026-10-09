@@ -483,23 +483,57 @@ body.bn-more-open .az-ai-fab { display: none !important; }
 @media print{body *{visibility:hidden}#sub-view-reporte,#sub-view-reporte *{visibility:visible}#sub-view-reporte{position:absolute;left:0;top:0;width:100%}.sub-rep-bar{display:none}}
 </style>
 <style id="ov-fixed-scroll">
-/* Ocultar todas las páginas excepto la activa — forzado */
+/* Ocultar todas las páginas excepto la activa */
 .page { display: none !important; }
 .page.active { display: block !important; }
+
+/* KPI strip oculto */
 #ovKpiGrid { display: none !important; }
-/* Gráficas más pequeñas */
-.ov-charts-row { max-height: 200px !important; }
-.ov-chart-canvas-wrap { min-height: 0 !important; }
-.ov-chart-canvas-wrap--round { min-height: 0 !important; }
-.ov-chart-card { padding: 10px 12px !important; }
-.ov-chart-title { font-size: 12px !important; }
-.ov-chart-sub { font-size: 10px !important; }
-#page-overview .ov-greeting-bar { position: sticky; top: 0; z-index: 20; background: var(--bg, #F2F2F7); padding-top: 4px; padding-bottom: 12px; margin-bottom: 4px; }
-#page-overview .ov-bottom-row > .ov-card { display: flex; flex-direction: column; max-height: 360px; min-height: 0; overflow: hidden; }
-#ovTopClientes { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
-#page-overview #activityFeed { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
-#ovAlertas { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
-#ovCardAccionesRapidas > div:last-child { flex-shrink: 0; }
+
+/* Saludo fijo al hacer scroll */
+#page-overview .ov-greeting-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg, #F2F2F7);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+/* Gráficas: altura fija, no se estiran */
+.ov-charts-row {
+  flex: none !important;
+  height: 190px !important;
+  max-height: 190px !important;
+}
+.ov-chart-card {
+  height: 190px !important;
+  max-height: 190px !important;
+  overflow: hidden !important;
+}
+.ov-chart-canvas-wrap,
+.ov-chart-canvas-wrap--round {
+  flex: 1 !important;
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+/* Tarjetas inferiores: scroll interno */
+#page-overview .ov-bottom-row > .ov-card {
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: 280px !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+#ovTopClientes,
+#page-overview #activityFeed,
+#ovAlertas {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  padding-right: 4px;
+}
 </style>
 </head>
 
