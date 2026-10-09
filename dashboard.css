@@ -4672,8 +4672,12 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
 
 /* ── 6n. Protección global de overflow ── */
 .page {
+    display: none;
     overflow-x: hidden;
     max-width: 100%;
+}
+.page.active {
+    display: block;
 }
 .content {
     max-width: 100vw;
