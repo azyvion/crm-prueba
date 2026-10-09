@@ -538,230 +538,299 @@ body.bn-more-open .az-ai-fab { display: none !important; }
 </style>
 <style id="sidebar-liquid-glass-css">
 /* ══════════════════════════════════════════════════════════════
-   LIQUID GLASS SIDEBAR — iOS 27 material auténtico
-   Índigo oscuro + violeta oscuro · rim metálico · superficie
-   ahumada · backdrop blur real que capta colores del fondo.
+   LIQUID GLASS SIDEBAR — Azul marino puro · sin morado
+   Material vítreo con animaciones fluidas y destellos de luz
    ══════════════════════════════════════════════════════════════ */
 
-/* ── Variables de color ─────────────────────────────────────── */
-:root {
-    --lg-indigo:  #0d0a3a;   /* índigo muy oscuro  */
-    --lg-violet:  #1a0838;   /* violeta muy oscuro */
-    --lg-rim-hi:  rgba(255,255,255,.72);
-    --lg-rim-lo:  rgba(255,255,255,.10);
-    --lg-surface: rgba(18, 10, 60, .78);   /* tint para el blur */
+/* ── Keyframes de animación liquid glass ───────────────────── */
+@keyframes lg-shimmer {
+    0%   { transform: translateX(-100%) rotate(25deg); opacity: 0; }
+    18%  { opacity: 1; }
+    82%  { opacity: 1; }
+    100% { transform: translateX(300%) rotate(25deg); opacity: 0; }
+}
+@keyframes lg-breathe {
+    0%, 100% { opacity: .55; transform: scale(1);    }
+    50%       { opacity: .80; transform: scale(1.04); }
+}
+@keyframes lg-pill-in {
+    0%   { opacity: 0; transform: scaleX(.88) scaleY(.7); }
+    60%  { transform: scaleX(1.03) scaleY(1.02); }
+    100% { opacity: 1; transform: scaleX(1) scaleY(1); }
+}
+@keyframes lg-glow-pulse {
+    0%, 100% { box-shadow:
+        inset 0 1.5px 0 rgba(255,255,255,.50),
+        inset 0 -1px  0 rgba(0,0,0,.22),
+        inset 1px 0   0 rgba(255,255,255,.20),
+        0 4px 20px rgba(30,90,200,.40),
+        0 1px  6px rgba(40,100,220,.25); }
+    50% { box-shadow:
+        inset 0 1.5px 0 rgba(255,255,255,.65),
+        inset 0 -1px  0 rgba(0,0,0,.22),
+        inset 1px 0   0 rgba(255,255,255,.28),
+        0 6px 28px rgba(30,90,200,.60),
+        0 2px 10px rgba(40,100,220,.40); }
 }
 
-/* ── Sidebar — color fijo índigo/violeta (no cambia con el tema) */
+/* ── Variables — solo azul marino ──────────────────────────── */
+:root {
+    --sb-bg-top:    #070c1a;
+    --sb-bg-mid:    #091220;
+    --sb-bg-bot:    #0c1830;
+    --sb-text:      rgba(180,210,255,.72);
+    --sb-text-h:    rgba(220,235,255,.95);
+    --sb-section:   rgba(120,160,220,.35);
+    --sb-pill-top:  #1c3f74;
+    --sb-pill-bot:  #142f5e;
+    --sb-pill-bd:   rgba(80,150,255,.40);
+    --sb-rim:       rgba(255,255,255,.22);
+}
+
+/* ── Sidebar — azul marino sólido con capa de glass ────────── */
 .sidebar {
     background:
-        /* Reflejo en el canto superior-izquierdo (como en la foto) */
         linear-gradient(135deg,
-            rgba(255,255,255,.16)  0%,
-            rgba(255,255,255,.04) 18%,
-            transparent           35%
+            rgba(255,255,255,.13)  0%,
+            rgba(255,255,255,.03) 20%,
+            transparent           38%
         ),
-        /* Variantes del azul marino oscuro — sin morado */
         linear-gradient(175deg,
-            #080d1e  0%,
-            #0a1228  45%,
-            #0c1632  80%,
-            #0e1a3a  100%
+            var(--sb-bg-top)  0%,
+            var(--sb-bg-mid) 50%,
+            var(--sb-bg-bot) 100%
         ) !important;
 
-    /* Sin backdrop-filter para que el color no varíe con el fondo */
     -webkit-backdrop-filter: none !important;
     backdrop-filter:          none !important;
-
-    /* Sin border nativo — lo hacemos con box-shadow para tener
-       múltiples capas como el rim metálico de iOS 27            */
     border: none !important;
 
     box-shadow:
-        /* ① Rim externo derecho — canto luminoso del cristal  */
-        2px 0 0 rgba(255,255,255,.22),
-        /* ② Sombra de profundidad */
-        20px 0 60px rgba(0,0,0,.55),
-        8px  0 20px rgba(0,0,0,.35),
-        /* ③ Specular interno — borde superior del material     */
-        inset 0  1px 0 rgba(255,255,255,.55),
-        /* ④ Specular interno — borde izquierdo (canto trasero) */
-        inset 1px 0  0 rgba(255,255,255,.20),
-        /* ⑤ Rim interior inferior — cierra el bisel            */
-        inset 0 -1px 0 rgba(255,255,255,.08),
-        /* ⑥ Inner glow índigo — luz ambiente del material      */
-        inset 0 0 90px rgba(50,20,180,.22),
-        /* ⑦ Halo violeta en la base                            */
-        inset 0 -80px 100px rgba(90,10,160,.16) !important;
+        2px 0 0 var(--sb-rim),
+        18px 0 50px rgba(0,0,0,.60),
+        6px  0 16px rgba(0,0,0,.40),
+        inset 0  1px 0 rgba(255,255,255,.50),
+        inset 1px 0  0 rgba(255,255,255,.18),
+        inset 0 -1px 0 rgba(255,255,255,.06),
+        inset 0 0 80px rgba(20,60,160,.18) !important;
 
     isolation: isolate;
     overflow: hidden !important;
 }
 
-/* ── ::before — specular diagonal (como en la foto de iOS) ─── */
+/* ── Haz de luz diagonal que cruza el sidebar (liquid glass) ── */
 .sidebar::before {
     content: '';
     position: absolute;
-    /* franja diagonal de luz en la esquina sup-izq */
-    top: -40%; left: -30%;
-    width: 80%; height: 80%;
-    background: radial-gradient(ellipse at 40% 40%,
-        rgba(255,255,255,.11) 0%,
-        transparent            60%
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(
+        115deg,
+        transparent              0%,
+        transparent             38%,
+        rgba(255,255,255,.055)  42%,
+        rgba(255,255,255,.025)  46%,
+        transparent             50%,
+        transparent            100%
     );
-    transform: rotate(-25deg);
     pointer-events: none;
     z-index: 1;
+    animation: lg-breathe 6s ease-in-out infinite;
 }
 
-/* ── ::after — vignette perimetral (da grosor al vidrio) ────── */
+/* ── Shimmer — rayo de luz que recorre el panel cada ~8s ────── */
 .sidebar::after {
     content: '';
     position: absolute;
-    inset: 0;
-    background:
-        /* Oscurecer los bordes laterales como el rim de la foto */
-        linear-gradient(90deg,
-            rgba(0,0,0,.18)  0%,
-            transparent       12%,
-            transparent       88%,
-            rgba(0,0,0,.28)  100%
-        ),
-        /* Oscurecer bordes verticales */
-        linear-gradient(180deg,
-            rgba(0,0,0,.10)  0%,
-            transparent       8%,
-            transparent       90%,
-            rgba(0,0,0,.25)  100%
-        );
+    top: -20%; left: -60%;
+    width: 40%; height: 140%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,.07) 45%,
+        rgba(255,255,255,.13) 50%,
+        rgba(255,255,255,.07) 55%,
+        transparent
+    );
+    transform: rotate(20deg);
     pointer-events: none;
     z-index: 1;
+    animation: lg-shimmer 8s ease-in-out infinite;
+    animation-delay: 2s;
 }
 
 .sidebar > * { position: relative; z-index: 2; }
 
-/* ── Secciones ──────────────────────────────────────────────── */
+/* ── Etiquetas de sección ───────────────────────────────────── */
 .nav-section {
-    color: rgba(200,190,255,.30) !important;
-    letter-spacing: 1.3px;
+    color: var(--sb-section) !important;
+    letter-spacing: 1.4px;
     font-size: 10px !important;
+    font-weight: 600 !important;
 }
 
 /* ── Items normales ─────────────────────────────────────────── */
 .nav-item {
-    color: rgba(210,205,255,.68) !important;
+    color: var(--sb-text) !important;
     border-radius: 13px !important;
     margin: 2px 10px !important;
     padding: 10px 14px !important;
-    transition: background .18s, color .18s, box-shadow .18s !important;
+    transition:
+        background  .22s cubic-bezier(.4,0,.2,1),
+        color       .22s ease,
+        box-shadow  .22s ease,
+        transform   .18s cubic-bezier(.34,1.56,.64,1) !important;
     position: relative;
+    overflow: hidden;
 }
-.nav-item svg { stroke: currentColor !important; }
+.nav-item svg {
+    stroke: currentColor !important;
+    transition: transform .22s cubic-bezier(.34,1.56,.64,1), stroke .22s !important;
+}
+
+/* Micro-shimmer al hacer hover */
+.nav-item::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg,
+        rgba(255,255,255,.10) 0%,
+        transparent           50%
+    );
+    opacity: 0;
+    transition: opacity .22s ease;
+    pointer-events: none;
+}
 
 .nav-item:hover {
-    background: rgba(255,255,255,.09) !important;
-    color: rgba(235,230,255,.94) !important;
+    background: rgba(40,100,200,.18) !important;
+    color: var(--sb-text-h) !important;
+    transform: translateX(2px) !important;
     box-shadow:
-        inset 0  1px 0 rgba(255,255,255,.16),
-        inset 0 -1px 0 rgba(0,0,0,.10) !important;
+        inset 0  1px 0 rgba(255,255,255,.14),
+        inset 0 -1px 0 rgba(0,0,0,.08),
+        0 2px 8px rgba(20,60,180,.20) !important;
 }
+.nav-item:hover::after { opacity: 1; }
+.nav-item:hover svg { transform: scale(1.08) !important; }
 
-/* ── Pill activo — azul marino más claro ─────────────────────── */
+/* ── Pill activo — liquid glass azul marino ─────────────────── */
 .nav-item.active {
     color: #fff !important;
     border-radius: 13px !important;
+    transform: none !important;
+    animation: lg-pill-in .32s cubic-bezier(.34,1.56,.64,1) both,
+               lg-glow-pulse 3s ease-in-out 0.35s infinite !important;
 
     background:
-        /* Specular superior */
+        /* Highlight specular superior — "carita" del cristal */
         linear-gradient(180deg,
-            rgba(255,255,255,.25)  0%,
-            rgba(255,255,255,.05) 45%,
-            transparent            70%
+            rgba(255,255,255,.28)  0%,
+            rgba(255,255,255,.06) 40%,
+            transparent           65%
         ),
-        /* Surface del pill: azul marino más claro que el fondo */
-        linear-gradient(135deg,
-            #1a3a6e  0%,
-            #163060  100%
+        /* Cuerpo del pill: azul marino más claro que el fondo */
+        linear-gradient(145deg,
+            var(--sb-pill-top)  0%,
+            var(--sb-pill-bot) 100%
         ) !important;
 
-    border: 1px solid rgba(80,140,255,.35) !important;
-
-    box-shadow:
-        inset 0  1.5px 0 rgba(255,255,255,.45),
-        inset 0 -1px   0 rgba(0,0,0,.20),
-        inset 1px 0    0 rgba(255,255,255,.18),
-        0 6px 24px rgba(10,30,100,.50),
-        0 2px  8px rgba(20,50,140,.35) !important;
-
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter:          none !important;
+    border: 1px solid var(--sb-pill-bd) !important;
 }
 
-/* Specular en el borde superior del pill */
+/* Línea especular en el borde superior del pill */
 .nav-item.active::before {
     content: '' !important;
     position: absolute !important;
-    top: 0 !important; left: 16% !important; right: 16% !important;
-    bottom: auto !important; width: auto !important; height: 1px !important;
+    inset: auto !important;
+    top: 0 !important; left: 14% !important; right: 14% !important;
+    height: 1px !important; width: auto !important; bottom: auto !important;
     background: linear-gradient(90deg,
         transparent,
-        rgba(255,255,255,.70) 30%,
-        rgba(255,255,255,.70) 70%,
+        rgba(255,255,255,.80) 35%,
+        rgba(255,255,255,.80) 65%,
         transparent
     ) !important;
     border-radius: 0 !important;
+    animation: none !important;
+}
+
+/* Micro-shimmer interno del pill activo */
+.nav-item.active::after {
+    opacity: 1 !important;
+    background: linear-gradient(135deg,
+        rgba(255,255,255,.14) 0%,
+        transparent           55%
+    ) !important;
 }
 
 .nav-item.active svg {
-    filter: drop-shadow(0 0 7px rgba(80,140,255,.55)) !important;
+    stroke: #fff !important;
+    transform: scale(1.05) !important;
+    filter: drop-shadow(0 0 6px rgba(100,170,255,.60)) !important;
+    transition: none !important;
 }
 
 /* ── Sub-items ──────────────────────────────────────────────── */
 .nav-subitem {
-    color: rgba(200,195,255,.55) !important;
+    color: rgba(160,200,255,.55) !important;
     border-radius: 10px !important;
     margin: 1px 10px 1px 28px !important;
-    transition: background .15s, color .15s !important;
+    transition: background .18s, color .18s, transform .18s cubic-bezier(.34,1.56,.64,1) !important;
 }
-.nav-subitem:hover  { background: rgba(255,255,255,.07) !important; color: rgba(230,225,255,.92) !important; }
-.nav-subitem.active { background: rgba(20,50,140,.45) !important; color: #fff !important; border-radius: 10px !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.18) !important; }
+.nav-subitem:hover {
+    background: rgba(40,100,200,.15) !important;
+    color: rgba(210,230,255,.92) !important;
+    transform: translateX(2px) !important;
+}
+.nav-subitem.active {
+    background: rgba(25,65,150,.50) !important;
+    color: #fff !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 2px 8px rgba(20,60,180,.25) !important;
+}
 
 /* ── Logo ───────────────────────────────────────────────────── */
 .sidebar-logo {
-    border-bottom: 1px solid rgba(255,255,255,.08) !important;
+    border-bottom: 1px solid rgba(255,255,255,.07) !important;
     margin: 0 10px 4px !important;
     padding: 10px 10px 18px !important;
 }
 
 /* ── Footer ─────────────────────────────────────────────────── */
 .sidebar-footer {
-    border-top: 1px solid rgba(255,255,255,.08) !important;
+    border-top: 1px solid rgba(255,255,255,.07) !important;
     margin: 0 10px !important;
     padding: 10px 0 8px !important;
 }
 .user-pill {
     border-radius: 13px !important;
     padding: 8px 10px !important;
-    transition: background .18s, box-shadow .18s !important;
+    transition: background .20s, box-shadow .20s, transform .18s cubic-bezier(.34,1.56,.64,1) !important;
 }
 .user-pill:hover {
-    background: rgba(255,255,255,.08) !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.14) !important;
+    background: rgba(40,100,200,.18) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 2px 8px rgba(20,60,180,.20) !important;
+    transform: translateY(-1px) !important;
 }
 
 /* ── Botón cerrar ───────────────────────────────────────────── */
 .sidebar-close-btn {
-    background: rgba(255,255,255,.10) !important;
-    border: 1px solid rgba(255,255,255,.18) !important;
+    background: rgba(40,100,200,.15) !important;
+    border: 1px solid rgba(80,150,255,.22) !important;
     border-radius: 10px !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.22) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.20) !important;
+    transition: background .18s, box-shadow .18s !important;
+}
+.sidebar-close-btn:hover {
+    background: rgba(40,100,200,.28) !important;
 }
 
 /* ── Overlay ────────────────────────────────────────────────── */
 .sidebar-drawer-overlay {
-    -webkit-backdrop-filter: blur(8px) !important;
-    backdrop-filter: blur(8px) !important;
-    background: rgba(5,0,20,.50) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    backdrop-filter: blur(10px) !important;
+    background: rgba(3,8,20,.55) !important;
 }
 </style>
 </head>
