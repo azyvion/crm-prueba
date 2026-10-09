@@ -536,6 +536,193 @@ body.bn-more-open .az-ai-fab { display: none !important; }
   padding-right: 4px;
 }
 </style>
+<style id="sidebar-liquid-glass-css">
+/* ══ LIQUID GLASS SIDEBAR — iOS 26 style ══════════════════════════
+   Vidrio esmerilado con blur real, reflejos especulares,
+   borde luminoso y efecto de profundidad por capas.
+   ════════════════════════════════════════════════════════════════ */
+
+:root {
+    --slg-bg-top:      rgba(18, 22, 40, 0.52);
+    --slg-bg-bot:      rgba(10, 13, 28, 0.64);
+    --slg-border:      rgba(255, 255, 255, 0.13);
+    --slg-hi:          rgba(255, 255, 255, 0.90);
+    --slg-shadow:      0 24px 64px rgba(0,0,0,.55), 0 4px 16px rgba(0,0,0,.35);
+    --slg-pill-a:      rgba(59, 110, 245, 0.28);
+    --slg-pill-b:      rgba(108, 71, 255, 0.18);
+    --slg-pill-edge:   rgba(120, 160, 255, 0.38);
+    --slg-section:     rgba(255, 255, 255, 0.28);
+    --slg-text:        rgba(220, 228, 255, 0.60);
+    --slg-text-hover:  rgba(230, 235, 255, 0.92);
+    --slg-text-active: #ffffff;
+}
+
+/* ── Contenedor principal ────────────────────────────────────── */
+.sidebar {
+    background:
+        linear-gradient(160deg, var(--slg-bg-top), var(--slg-bg-bot)) !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(1.08) !important;
+    backdrop-filter: blur(32px) saturate(200%) brightness(1.08) !important;
+    border-right: 1px solid var(--slg-border) !important;
+    box-shadow: var(--slg-shadow) !important;
+    isolation: isolate;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .sidebar { background: rgba(14, 17, 32, 0.96) !important; }
+}
+
+/* Reflejo especular superior (borde luminoso horizontal) */
+.sidebar::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--slg-hi) 30%,
+        var(--slg-hi) 70%,
+        transparent 100%
+    );
+    opacity: 0.55;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Brillo superior en el cristal (degradado suave de arriba hacia abajo) */
+.sidebar::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 220px;
+    background: linear-gradient(180deg,
+        rgba(255,255,255,.07) 0%,
+        rgba(255,255,255,0) 100%
+    );
+    z-index: 0;
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+/* Asegurar que el contenido quede sobre los pseudo-elementos */
+.sidebar > * { position: relative; z-index: 2; }
+
+/* ── Secciones de nav ────────────────────────────────────────── */
+.nav-section {
+    color: var(--slg-section) !important;
+    letter-spacing: 1.2px;
+    font-size: 10px !important;
+}
+
+/* ── Items normales ──────────────────────────────────────────── */
+.nav-item {
+    color: var(--slg-text) !important;
+    border-radius: 14px !important;
+    margin: 1px 10px !important;
+    padding: 10px 14px !important;
+    transition: background .18s ease, color .18s ease, box-shadow .18s ease !important;
+}
+.nav-item svg { stroke: currentColor !important; }
+
+.nav-item:hover {
+    background: rgba(255,255,255,0.08) !important;
+    color: var(--slg-text-hover) !important;
+    border-radius: 14px !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.10) !important;
+}
+
+/* ── Ítem activo: píldora de vidrio azul ─────────────────────── */
+.nav-item.active {
+    background:
+        linear-gradient(135deg, var(--slg-pill-a) 0%, var(--slg-pill-b) 100%) !important;
+    color: var(--slg-text-active) !important;
+    border-radius: 14px !important;
+    border: 1px solid var(--slg-pill-edge) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.28),
+        inset 0 -1px 0 rgba(255,255,255,.06),
+        0 4px 20px rgba(59,110,245,.28),
+        0 1px 4px rgba(59,110,245,.20) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    backdrop-filter: blur(12px) !important;
+}
+
+/* Quitar el marcador de barra izquierda y reemplazar
+   con un destello especular en el borde superior del pill */
+.nav-item.active::before {
+    content: '' !important;
+    position: absolute !important;
+    left: 10% !important; right: 10% !important;
+    top: 0 !important; bottom: auto !important;
+    width: auto !important;
+    height: 1px !important;
+    background: linear-gradient(90deg,
+        transparent, rgba(255,255,255,.60), transparent
+    ) !important;
+    border-radius: 0 !important;
+}
+
+.nav-item.active svg {
+    filter: drop-shadow(0 0 6px rgba(120,160,255,.55));
+}
+
+/* ── Subitems (grupo inventario) ─────────────────────────────── */
+.nav-subitem {
+    color: var(--slg-text) !important;
+    border-radius: 10px !important;
+    margin: 1px 10px 1px 28px !important;
+    transition: background .15s, color .15s !important;
+}
+.nav-subitem:hover {
+    background: rgba(255,255,255,.07) !important;
+    color: var(--slg-text-hover) !important;
+}
+.nav-subitem.active {
+    background: rgba(59,110,245,.18) !important;
+    color: #fff !important;
+    border-radius: 10px !important;
+}
+
+/* ── Logo area ───────────────────────────────────────────────── */
+.sidebar-logo {
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    margin: 0 10px 4px;
+    padding: 10px 10px 18px !important;
+}
+
+/* ── Footer/user pill ────────────────────────────────────────── */
+.sidebar-footer {
+    border-top: 1px solid rgba(255,255,255,.07) !important;
+    margin: 0 10px !important;
+    padding: 10px 0 8px !important;
+}
+.user-pill {
+    border-radius: 14px !important;
+    padding: 9px 10px !important;
+    transition: background .18s, box-shadow .18s !important;
+}
+.user-pill:hover {
+    background: rgba(255,255,255,.08) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12) !important;
+}
+
+/* ── Botón cerrar (móvil) ────────────────────────────────────── */
+.sidebar-close-btn {
+    background: rgba(255,255,255,.09) !important;
+    border: 1px solid rgba(255,255,255,.14) !important;
+    border-radius: 10px !important;
+}
+.sidebar-close-btn:hover {
+    background: rgba(255,255,255,.15) !important;
+}
+
+/* ── Overlay de fondo con blur ───────────────────────────────── */
+.sidebar-drawer-overlay {
+    -webkit-backdrop-filter: blur(4px) !important;
+    backdrop-filter: blur(4px) !important;
+    background: rgba(0, 0, 0, 0.38) !important;
+}
+</style>
 </head>
 
 <body>
