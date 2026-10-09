@@ -5355,3 +5355,210 @@ td { line-height: 1.3; }
 
 /* ── 14. BOTTOM NAV (móvil) — leve afinado, sin tocar estructura ───── */
 .bottom-nav .bn-item .bn-pill { box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 8px 20px rgba(59,110,245,.26) !important; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   15. REDISEÑO RADICAL — PANEL "INICIO"
+   ───────────────────────────────────────────────────────────────────
+   Esta sección SÍ cambia la composición visual de forma notoria:
+   fondo con degradado suave, saludo convertido en banner de marca,
+   barra de KPIs compacta (hoy sin estilo propio → ahora visible),
+   tarjetas de gráficas con acento de color por tipo, acciones
+   rápidas como tiles con ícono en insignia degradada, y una entrada
+   animada sutil. Nada de esto toca IDs ni lógica: solo clases ya
+   existentes en el HTML.
+═══════════════════════════════════════════════════════════════════ */
+
+/* Fondo del área de contenido: deja de ser gris plano */
+.content {
+    background:
+        radial-gradient(1000px 560px at 12% -12%, rgba(59,110,245,.09), transparent 60%),
+        radial-gradient(760px 540px at 102% 0%, rgba(108,71,255,.08), transparent 55%),
+        var(--bg);
+}
+body.theme-dark .content {
+    background:
+        radial-gradient(1000px 560px at 12% -12%, rgba(59,110,245,.14), transparent 60%),
+        radial-gradient(760px 540px at 102% 0%, rgba(108,71,255,.12), transparent 55%),
+        var(--bg);
+}
+
+/* ── Saludo → banner de marca ── */
+.ov-greeting-bar {
+    background: linear-gradient(135deg, #3B6EF5 0%, #6C47FF 100%);
+    border-radius: 24px;
+    padding: 26px 30px;
+    box-shadow: 0 20px 48px rgba(59,110,245,.32), inset 0 1px 0 rgba(255,255,255,.22);
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+.ov-greeting-bar::before {
+    content: '';
+    position: absolute;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.16) 0%, transparent 70%);
+    top: -170px; right: -70px;
+    z-index: 0;
+}
+.ov-greeting-bar::after {
+    content: '';
+    position: absolute;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.10) 0%, transparent 70%);
+    bottom: -120px; right: 160px;
+    z-index: 0;
+}
+.ov-greeting-bar > div { position: relative; z-index: 1; }
+.ov-greeting {
+    color: #fff;
+    font-size: 27px;
+    letter-spacing: -0.6px;
+}
+.ov-greeting-sub {
+    color: rgba(255,255,255,.82);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* ── Barra de KPIs compacta: antes sin estilo propio, ahora visible ── */
+.ov-stat-strip {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    background: var(--card);
+    border: 1px solid var(--pm-border-strong);
+    border-radius: 20px;
+    padding: 6px 10px;
+    box-shadow: var(--shadow-md);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.ov-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 13px;
+    cursor: pointer;
+    flex: 1 1 0;
+    min-width: 168px;
+    transition: background .18s ease, transform .18s ease;
+}
+.ov-stat-item:hover { background: var(--bg); transform: translateY(-1px); }
+.ov-stat-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 4px rgba(0,0,0,.05);
+}
+#ovCard-clientes     .ov-stat-dot { box-shadow: 0 0 0 4px rgba(59,110,245,.16); }
+#ovCard-prospectos   .ov-stat-dot { box-shadow: 0 0 0 4px rgba(139,92,246,.16); }
+#ovCard-cotizaciones .ov-stat-dot { box-shadow: 0 0 0 4px rgba(34,197,94,.16); }
+#ovCard-pipeline     .ov-stat-dot { box-shadow: 0 0 0 4px rgba(245,158,11,.16); }
+#ovCard-inventario   .ov-stat-dot { box-shadow: 0 0 0 4px rgba(239,68,68,.16); }
+#ovCard-encuestas    .ov-stat-dot { box-shadow: 0 0 0 4px rgba(20,184,166,.16); }
+.ov-stat-body { display: flex; flex-direction: column; min-width: 0; }
+.ov-stat-val {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text-primary);
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.ov-stat-lbl { font-size: 10.5px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.ov-stat-sub { display: none; }
+.ov-stat-div { width: 1px; align-self: stretch; background: var(--border); margin: 6px 2px; flex-shrink: 0; }
+
+/* ── Tarjetas de gráficas: acento de color por tipo + elevación ── */
+.ov-charts-row .ov-chart-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 22px;
+    padding-top: 18px;
+    transition: transform .22s ease, box-shadow .22s ease;
+}
+.ov-charts-row .ov-chart-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+}
+.ov-charts-row .ov-chart-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.ov-charts-row .ov-chart-card:nth-child(1)::before { background: linear-gradient(90deg, #3B6EF5, #6C47FF); }
+.ov-charts-row .ov-chart-card:nth-child(2)::before { background: linear-gradient(90deg, #8B5CF6, #C084FC); }
+.ov-charts-row .ov-chart-card:nth-child(3)::before { background: linear-gradient(90deg, #14B8A6, #22C55E); }
+
+/* ── Tarjetas inferiores (top clientes / actividad / alertas) ── */
+.ov-bottom-row .ov-card { border-radius: 22px; }
+
+.ov-top-client { border-radius: 13px; }
+.ov-top-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(59,110,245,.16), rgba(108,71,255,.10));
+    color: #3B6EF5;
+    font-weight: 800;
+}
+
+.ov-alert {
+    border-radius: 14px;
+    box-shadow: 0 1px 3px rgba(16,24,40,.05);
+}
+.ov-alert-dot { width: 9px; height: 9px; margin-top: 5px; }
+.ov-alert-btn {
+    padding: 4px 11px;
+    border-radius: 999px;
+    background: rgba(59,110,245,.12);
+    transition: background .15s;
+}
+.ov-alert-btn:hover { background: rgba(59,110,245,.2); }
+
+/* ── Acciones rápidas: de botones planos a tiles con insignia ── */
+.ov-quick-btn {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    font-weight: 700;
+    line-height: 1.3;
+    transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s ease, border-color .2s ease;
+}
+.ov-quick-btn:hover {
+    background: var(--card) !important;
+    color: var(--text-primary) !important;
+    border-color: rgba(59,110,245,.30) !important;
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+.ov-quick-btn svg {
+    width: 34px; height: 34px;
+    padding: 8px;
+    box-sizing: border-box;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #3B6EF5, #6C47FF);
+    stroke: #fff !important;
+    box-shadow: 0 4px 10px rgba(59,110,245,.35);
+}
+
+/* ── Entrada animada sutil (se respeta "reduce motion") ── */
+@media (prefers-reduced-motion: no-preference) {
+    @keyframes pmFadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ov-greeting-bar  { animation: pmFadeUp .45s ease both; }
+    .ov-stat-strip    { animation: pmFadeUp .45s .05s ease both; }
+    .ov-charts-row .ov-chart-card:nth-child(1) { animation: pmFadeUp .45s .10s ease both; }
+    .ov-charts-row .ov-chart-card:nth-child(2) { animation: pmFadeUp .45s .15s ease both; }
+    .ov-charts-row .ov-chart-card:nth-child(3) { animation: pmFadeUp .45s .20s ease both; }
+    .ov-bottom-row .ov-card:nth-child(1) { animation: pmFadeUp .45s .25s ease both; }
+    .ov-bottom-row .ov-card:nth-child(2) { animation: pmFadeUp .45s .30s ease both; }
+    .ov-bottom-row .ov-card:nth-child(3) { animation: pmFadeUp .45s .35s ease both; }
+    .ov-bottom-row .ov-card:nth-child(4) { animation: pmFadeUp .45s .40s ease both; }
+}
