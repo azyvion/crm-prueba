@@ -482,6 +482,15 @@ body.bn-more-open .az-ai-fab { display: none !important; }
 .sub-sec-title{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px}
 @media print{body *{visibility:hidden}#sub-view-reporte,#sub-view-reporte *{visibility:visible}#sub-view-reporte{position:absolute;left:0;top:0;width:100%}.sub-rep-bar{display:none}}
 </style>
+<style id="ov-fixed-scroll">
+#ovKpiGrid { display: none !important; }
+#page-overview .ov-greeting-bar { position: sticky; top: 0; z-index: 20; background: var(--bg, #F2F2F7); padding-top: 4px; padding-bottom: 12px; margin-bottom: 4px; }
+#page-overview .ov-bottom-row > .ov-card { display: flex; flex-direction: column; max-height: 360px; min-height: 0; overflow: hidden; }
+#ovTopClientes { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
+#page-overview #activityFeed { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
+#ovAlertas { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
+#ovCardAccionesRapidas > div:last-child { flex-shrink: 0; }
+</style>
 </head>
 
 <body>
