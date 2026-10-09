@@ -5024,3 +5024,334 @@ body.theme-dark .cat-badge { color: #8fb0ff; }
     .bottom-nav { display: flex !important; }
     .bn-more-sheet, .bn-more-overlay { /* mantener estilos de show/hide via JS */ }
 }
+/* ═══════════════════════════════════════════════════════════════════
+   AZYVION CRM — CAPA PREMIUM
+   ───────────────────────────────────────────────────────────────────
+   Hoja de estilos ADITIVA: se carga DESPUÉS de dashboard.css y no
+   modifica ni un solo selector usado por el JavaScript (IDs, clases
+   y estructura intactos). Solo refina elevación, tipografía, radios,
+   micro-interacciones y densidad visual para un acabado premium.
+
+   El azul de marca (#3B6EF5 → #6C47FF) se mantiene EXACTO en todo el
+   sidebar y los acentos: no se toca ningún matiz de color, solo cómo
+   se usa (sombras, brillos, anillos de foco, degradados sutiles).
+
+   Cobertura: 100% escritorio/tablet. En celulares (≤600px) el CRM ya
+   usa un tema "app bancaria" muy cuidado con !important; esta capa
+   no pelea con esas reglas de layout, solo aporta pulido cosmético
+   donde no choca con ellas (modales, formularios, botones, sidebar).
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. TOKENS: elevación, radios y anillos más ricos ─────────────── */
+:root {
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-lg: 20px;
+    --radius-xl: 26px;
+
+    --shadow-sm: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.08);
+    --shadow-md: 0 2px 4px rgba(16,24,40,.04), 0 10px 28px rgba(16,24,40,.10);
+    --shadow-lg: 0 8px 10px rgba(16,24,40,.05), 0 24px 56px rgba(16,24,40,.16);
+    --shadow-xl: 0 14px 24px rgba(16,24,40,.08), 0 36px 72px rgba(16,24,40,.22);
+
+    --pm-ring: 0 0 0 4px rgba(59,110,245,.14);
+    --pm-border-strong: rgba(40,45,70,.14);
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --shadow-sm: 0 1px 2px rgba(0,0,0,.35);
+        --shadow-md: 0 4px 10px rgba(0,0,0,.35), 0 12px 32px rgba(0,0,0,.40);
+        --shadow-lg: 0 10px 20px rgba(0,0,0,.40), 0 28px 60px rgba(0,0,0,.55);
+        --shadow-xl: 0 18px 30px rgba(0,0,0,.45), 0 40px 80px rgba(0,0,0,.60);
+        --pm-ring: 0 0 0 4px rgba(141,171,255,.18);
+        --pm-border-strong: rgba(255,255,255,.14);
+    }
+}
+:root[data-theme="dark"] {
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.35);
+    --shadow-md: 0 4px 10px rgba(0,0,0,.35), 0 12px 32px rgba(0,0,0,.40);
+    --shadow-lg: 0 10px 20px rgba(0,0,0,.40), 0 28px 60px rgba(0,0,0,.55);
+    --shadow-xl: 0 18px 30px rgba(0,0,0,.45), 0 40px 80px rgba(0,0,0,.60);
+    --pm-ring: 0 0 0 4px rgba(141,171,255,.18);
+    --pm-border-strong: rgba(255,255,255,.14);
+}
+
+/* ── 2. BASE: tipografía, selección, foco, scrollbar fina ─────────── */
+body {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01", "tnum" 1;
+}
+::selection { background: rgba(59,110,245,.22); color: inherit; }
+
+:where(button, a, .nav-item, .topbar-btn, .btn-save, .btn-cancel, .btn-ghost,
+.form-input, .form-select, .filter-tab, [tabindex]):focus-visible {
+    outline: 2px solid #3B6EF5;
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .content::-webkit-scrollbar,
+    .table-scroll-wrap::-webkit-scrollbar,
+    .modal-body::-webkit-scrollbar,
+    .sidebar::-webkit-scrollbar { width: 9px; height: 9px; }
+    .content::-webkit-scrollbar-thumb,
+    .table-scroll-wrap::-webkit-scrollbar-thumb,
+    .modal-body::-webkit-scrollbar-thumb {
+        background: rgba(59,110,245,.18);
+        border: 2px solid transparent;
+        background-clip: content-box;
+        border-radius: 8px;
+    }
+    .content::-webkit-scrollbar-thumb:hover,
+    .table-scroll-wrap::-webkit-scrollbar-thumb:hover,
+    .modal-body::-webkit-scrollbar-thumb:hover { background: rgba(59,110,245,.32); background-clip: content-box; }
+    .sidebar::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,.14);
+        border: 2px solid transparent;
+        background-clip: content-box;
+        border-radius: 8px;
+    }
+}
+
+/* ── 3. SIDEBAR — mismo azul, acabado más rico y "flotante" ───────── */
+.sidebar {
+    background:
+        radial-gradient(130% 70% at 8% -10%, rgba(59,110,245,.24) 0%, transparent 55%),
+        radial-gradient(120% 60% at 100% 112%, rgba(108,71,255,.18) 0%, transparent 55%),
+        linear-gradient(180deg, #0B0D13 0%, #0F1117 100%) !important;
+    box-shadow: inset -1px 0 0 rgba(255,255,255,.05), 16px 0 60px rgba(0,0,0,.45) !important;
+}
+
+.sidebar-logo {
+    padding: 10px 16px 20px !important;
+    margin: 0 4px 6px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.logo-icon {
+    border-radius: 13px;
+    box-shadow: 0 4px 14px rgba(59,110,245,.45), inset 0 1px 0 rgba(255,255,255,.35), inset 0 -8px 14px rgba(0,0,0,.18);
+}
+.logo-name { letter-spacing: -0.3px; }
+
+.nav-section {
+    padding: 18px 16px 7px !important;
+    letter-spacing: 1.2px;
+    color: rgba(255,255,255,.26);
+}
+
+.nav-item {
+    margin: 2px 8px !important;
+    padding: 10px 14px !important;
+    border-radius: 12px;
+    transition: background .18s ease, color .18s ease, transform .18s ease;
+}
+.nav-item:hover {
+    background: rgba(255,255,255,.055) !important;
+    color: rgba(255,255,255,.92) !important;
+    border-radius: 12px !important;
+}
+.nav-item:hover svg { transform: translateX(1px); }
+.nav-item svg { transition: transform .22s cubic-bezier(.34,1.56,.64,1), stroke-width .2s; }
+
+.nav-item.active {
+    background: linear-gradient(90deg, rgba(59,110,245,.30) 0%, rgba(108,71,255,.10) 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 4px 16px rgba(59,110,245,.18);
+    border-radius: 12px;
+}
+.nav-item.active::before {
+    left: 2px;
+    border-radius: 3px;
+    box-shadow: 0 0 10px rgba(59,110,245,.65);
+}
+.nav-item.active svg { filter: drop-shadow(0 0 6px rgba(108,140,255,.45)); }
+
+.sidebar-footer { padding: 10px 12px 12px !important; }
+.user-pill {
+    border: 1px solid rgba(255,255,255,.07);
+    background: rgba(255,255,255,.03);
+    border-radius: 13px;
+    transition: background .18s, border-color .18s, transform .18s;
+}
+.user-pill:hover {
+    background: rgba(255,255,255,.07) !important;
+    border-color: rgba(255,255,255,.12);
+    transform: translateY(-1px);
+}
+.avatar {
+    box-shadow: 0 0 0 2px rgba(15,17,23,1), 0 0 0 4px rgba(59,110,245,.35), 0 2px 8px rgba(0,0,0,.3);
+}
+
+/* ── 4. TOPBAR — cristal más nítido, acciones con más cuerpo ──────── */
+.topbar {
+    backdrop-filter: blur(28px) saturate(220%);
+    -webkit-backdrop-filter: blur(28px) saturate(220%);
+    border-bottom: 1px solid var(--pm-border-strong);
+}
+.topbar.scrolled { box-shadow: 0 4px 20px rgba(15,17,30,.08); }
+body.theme-dark .topbar.scrolled { box-shadow: 0 4px 24px rgba(0,0,0,.5); }
+
+.page-title { font-weight: 700; letter-spacing: -0.4px; }
+
+.search-box {
+    border-radius: 999px;
+    transition: border-color .18s, box-shadow .18s, background .18s;
+}
+.search-box:focus-within {
+    border-color: #3B6EF5;
+    box-shadow: var(--pm-ring);
+    background: var(--card);
+}
+
+.topbar-logo { box-shadow: 0 2px 10px rgba(59,110,245,.22), inset 0 1px 0 rgba(255,255,255,.5); }
+
+.hamburger-btn { transition: box-shadow .18s, transform .18s cubic-bezier(.34,1.56,.64,1); }
+.hamburger-btn:hover { box-shadow: 0 5px 16px rgba(59,110,245,.42); transform: translateY(-1px); }
+
+/* ── 5. BOTONES — brillo interior, elevación al pasar el cursor ───── */
+.topbar-btn,
+.btn-save {
+    box-shadow: 0 3px 10px rgba(59,110,245,.35), inset 0 1px 0 rgba(255,255,255,.22);
+    transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s ease, filter .18s ease;
+}
+.topbar-btn:hover {
+    box-shadow: 0 10px 24px rgba(59,110,245,.42), inset 0 1px 0 rgba(255,255,255,.28);
+    transform: translateY(-2px);
+}
+.topbar-btn:active { transform: translateY(0) scale(.97); }
+
+.btn-save { background: linear-gradient(135deg, #3B6EF5 0%, #6C47FF 100%); }
+.btn-save:hover:not(:disabled) {
+    filter: none;
+    box-shadow: 0 10px 24px rgba(92,70,255,.38), inset 0 1px 0 rgba(255,255,255,.28);
+    transform: translateY(-1px);
+}
+.btn-save:active:not(:disabled) { transform: translateY(0) scale(.98); }
+
+.btn-cancel { transition: background .18s, border-color .18s, transform .18s; }
+.btn-cancel:hover { background: var(--border); }
+.btn-cancel:active { transform: scale(.98); }
+
+.btn-ghost { transition: background .18s, border-color .18s, box-shadow .18s, transform .18s; }
+.btn-ghost:hover { box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+
+.btn-danger-sm, .btn-success-sm {
+    border-radius: 9px;
+    transition: opacity .18s, box-shadow .18s, transform .18s;
+}
+.btn-danger-sm:hover { box-shadow: 0 4px 12px rgba(239,68,68,.22); transform: translateY(-1px); }
+.btn-success-sm:hover { box-shadow: 0 4px 12px rgba(34,197,94,.22); transform: translateY(-1px); }
+
+/* ── 6. TARJETAS KPI — más densidad visual, números más firmes ────── */
+.kpi-card, .ov-kpi-card {
+    border-color: var(--pm-border-strong);
+    transition: box-shadow .22s ease, transform .22s ease, border-color .22s ease;
+}
+.kpi-card:hover, .ov-kpi-card:hover { transform: translateY(-2px); }
+
+.kpi-value, .ov-kpi-value {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -1.1px;
+}
+
+.kpi-delta {
+    border: 1px solid transparent;
+}
+.kpi-delta.up { border-color: rgba(34,197,94,.22); }
+.kpi-delta.down { border-color: rgba(239,68,68,.22); }
+
+.ov-kpi-icon { box-shadow: inset 0 1px 0 rgba(255,255,255,.4); transition: transform .22s cubic-bezier(.34,1.56,.64,1); }
+.ov-kpi-card:hover .ov-kpi-icon { transform: scale(1.06) rotate(-3deg); }
+
+/* ── 7. ENCABEZADOS DE SECCIÓN — acento de marca sutil ─────────────── */
+.section-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.section-title::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 13px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #3B6EF5, #6C47FF);
+    flex-shrink: 0;
+}
+
+/* ── 8. TARJETAS DE CONTENIDO (gráficas, listas, tablas) ───────────── */
+.ov-chart-card, .ov-card, .table-card {
+    border-color: var(--pm-border-strong);
+}
+.ov-chart-title { letter-spacing: -0.1px; }
+
+/* ── 9. TABLAS — cabecera más firme, hover tintado de marca ────────── */
+thead th {
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    font-weight: 700;
+    font-size: 10.5px;
+    color: var(--text-muted);
+}
+tbody tr { transition: background .16s ease; }
+tbody tr:hover {
+    background: color-mix(in srgb, #3B6EF5 5%, var(--card)) !important;
+}
+body.theme-dark tbody tr:hover {
+    background: color-mix(in srgb, #3B6EF5 10%, var(--card)) !important;
+}
+td { line-height: 1.3; }
+
+.filter-tab { border-radius: 999px; transition: background .18s, color .18s, box-shadow .18s; }
+.filter-tab.active { box-shadow: 0 2px 8px rgba(59,110,245,.18); }
+
+/* ── 10. ETIQUETAS — chips con borde fino a juego ──────────────────── */
+.tag {
+    padding: 3.5px 10px;
+    font-weight: 700;
+    letter-spacing: .15px;
+    border: 1px solid transparent;
+}
+.tag-success  { border-color: rgba(34,197,94,.22); }
+.tag-warning  { border-color: rgba(245,158,11,.22); }
+.tag-danger   { border-color: rgba(239,68,68,.22); }
+.tag-accent   { border-color: rgba(59,110,245,.22); }
+.tag-purple   { border-color: rgba(139,92,246,.22); }
+
+/* ── 11. MODALES Y FORMULARIOS — diálogo con más presencia ─────────── */
+.modal-overlay {
+    backdrop-filter: blur(6px) saturate(140%);
+    -webkit-backdrop-filter: blur(6px) saturate(140%);
+}
+.modal-box {
+    border-radius: 20px;
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--pm-border-strong);
+}
+.modal-header { border-bottom-color: var(--pm-border-strong); }
+.modal-title { letter-spacing: -0.2px; }
+.modal-footer { border-top-color: var(--pm-border-strong); }
+
+.form-input, .form-select {
+    border-radius: 11px;
+    transition: border-color .18s ease, box-shadow .18s ease;
+}
+.form-input:hover:not(:focus), .form-select:hover:not(:focus) { border-color: var(--pm-border-strong); }
+.form-input:focus, .form-select:focus {
+    border-color: #3B6EF5;
+    box-shadow: var(--pm-ring);
+}
+.form-label { letter-spacing: .5px; }
+
+/* ── 12. TOAST — más flotante ───────────────────────────────────────── */
+.toast { box-shadow: var(--shadow-lg); border-radius: 13px; }
+
+/* ── 13. ASISTENTE IA — halo de marca más premium ──────────────────── */
+.az-ai-fab { box-shadow: 0 8px 28px rgba(59,110,245,.40), inset 0 1px 0 rgba(255,255,255,.3); }
+.az-ai-fab:hover { box-shadow: 0 12px 36px rgba(92,70,255,.5), inset 0 1px 0 rgba(255,255,255,.35); }
+.az-ai-panel { border-color: var(--pm-border-strong); box-shadow: var(--shadow-xl); }
+.az-ai-panel-icon { box-shadow: inset 0 1px 0 rgba(255,255,255,.35); }
+
+/* ── 14. BOTTOM NAV (móvil) — leve afinado, sin tocar estructura ───── */
+.bottom-nav .bn-item .bn-pill { box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 8px 20px rgba(59,110,245,.26) !important; }
