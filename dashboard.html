@@ -538,98 +538,116 @@ body.bn-more-open .az-ai-fab { display: none !important; }
 </style>
 <style id="sidebar-liquid-glass-css">
 /* ══════════════════════════════════════════════════════════════
-   LIQUID GLASS SIDEBAR — iOS 27 limpio y auténtico
-   Sin animaciones, sin caustics falsos. Solo blur real,
-   especulares de borde, inner glow y pill de cristal.
+   LIQUID GLASS SIDEBAR — iOS 27 material auténtico
+   Índigo oscuro + violeta oscuro · rim metálico · superficie
+   ahumada · backdrop blur real que capta colores del fondo.
    ══════════════════════════════════════════════════════════════ */
 
-/* ── Sidebar ────────────────────────────────────────────────── */
+/* ── Variables de color ─────────────────────────────────────── */
+:root {
+    --lg-indigo:  #0d0a3a;   /* índigo muy oscuro  */
+    --lg-violet:  #1a0838;   /* violeta muy oscuro */
+    --lg-rim-hi:  rgba(255,255,255,.72);
+    --lg-rim-lo:  rgba(255,255,255,.10);
+    --lg-surface: rgba(18, 10, 60, .78);   /* tint para el blur */
+}
+
+/* ── Sidebar — material de vidrio ahumado ───────────────────── */
 .sidebar {
     background:
-        /* Brillo especular en el borde superior */
-        linear-gradient(180deg,
-            rgba(255,255,255,.13) 0%,
-            rgba(255,255,255,.03) 12%,
-            transparent            22%
+        /* Reflejo en el canto superior-izquierdo (como en la foto) */
+        linear-gradient(135deg,
+            rgba(255,255,255,.16)  0%,
+            rgba(255,255,255,.04) 18%,
+            transparent           35%
         ),
-        /* Acento azul profundo en la parte alta */
-        radial-gradient(ellipse 100% 30% at 50% 0%,
-            rgba(40,70,200,.40) 0%,
-            transparent          100%
-        ),
-        /* Acento violeta en la parte baja */
-        radial-gradient(ellipse 80% 30% at 60% 110%,
-            rgba(70,30,160,.30) 0%,
-            transparent          100%
-        ),
-        /* Base oscura navy */
+        /* Tint índigo-violeta sobre el blur — mantiene los colores oscuros */
         linear-gradient(175deg,
-            #0e1235 0%,
-            #080a1e 100%
+            rgba(13, 10, 58, .82)  0%,
+            rgba(26, 8, 56, .88)  100%
         ) !important;
 
-    -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
-    backdrop-filter:          blur(40px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(48px) saturate(220%) brightness(0.80) !important;
+    backdrop-filter:          blur(48px) saturate(220%) brightness(0.80) !important;
 
-    /* Borde derecho luminoso — el canto del vidrio */
-    border-right: 1px solid rgba(255,255,255,.14) !important;
+    /* Sin border nativo — lo hacemos con box-shadow para tener
+       múltiples capas como el rim metálico de iOS 27            */
+    border: none !important;
 
     box-shadow:
-        /* Sombra exterior */
-        16px 0 48px rgba(0,0,0,.50),
-        /* Specular inset superior */
-        inset 0 1px 0 rgba(255,255,255,.40),
-        /* Specular inset lateral izquierdo */
-        inset 1px 0 0 rgba(255,255,255,.12),
-        /* Inner glow azul suave */
-        inset 0 0 60px rgba(40,80,220,.10) !important;
+        /* ① Rim externo derecho — canto luminoso del cristal  */
+        2px 0 0 rgba(255,255,255,.22),
+        /* ② Sombra de profundidad */
+        20px 0 60px rgba(0,0,0,.55),
+        8px  0 20px rgba(0,0,0,.35),
+        /* ③ Specular interno — borde superior del material     */
+        inset 0  1px 0 rgba(255,255,255,.55),
+        /* ④ Specular interno — borde izquierdo (canto trasero) */
+        inset 1px 0  0 rgba(255,255,255,.20),
+        /* ⑤ Rim interior inferior — cierra el bisel            */
+        inset 0 -1px 0 rgba(255,255,255,.08),
+        /* ⑥ Inner glow índigo — luz ambiente del material      */
+        inset 0 0 90px rgba(50,20,180,.22),
+        /* ⑦ Halo violeta en la base                            */
+        inset 0 -80px 100px rgba(90,10,160,.16) !important;
 
     isolation: isolate;
     overflow: hidden !important;
 }
 
-/* Línea especular fina en el borde superior — canto del cristal */
+/* ── ::before — specular diagonal (como en la foto de iOS) ─── */
 .sidebar::before {
     content: '';
     position: absolute;
-    top: 0; left: 8%; right: 8%;
-    height: 1px;
-    background: linear-gradient(90deg,
-        transparent,
-        rgba(255,255,255,.65) 20%,
-        rgba(255,255,255,.65) 80%,
-        transparent
+    /* franja diagonal de luz en la esquina sup-izq */
+    top: -40%; left: -30%;
+    width: 80%; height: 80%;
+    background: radial-gradient(ellipse at 40% 40%,
+        rgba(255,255,255,.11) 0%,
+        transparent            60%
     );
+    transform: rotate(-25deg);
     pointer-events: none;
-    z-index: 3;
+    z-index: 1;
 }
 
-/* Vignette interna sutil — da profundidad al material */
+/* ── ::after — vignette perimetral (da grosor al vidrio) ────── */
 .sidebar::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse 100% 100% at 50% 50%,
-        transparent 40%,
-        rgba(0,0,8,.28) 100%
-    );
+    background:
+        /* Oscurecer los bordes laterales como el rim de la foto */
+        linear-gradient(90deg,
+            rgba(0,0,0,.18)  0%,
+            transparent       12%,
+            transparent       88%,
+            rgba(0,0,0,.28)  100%
+        ),
+        /* Oscurecer bordes verticales */
+        linear-gradient(180deg,
+            rgba(0,0,0,.10)  0%,
+            transparent       8%,
+            transparent       90%,
+            rgba(0,0,0,.25)  100%
+        );
     pointer-events: none;
     z-index: 1;
 }
 
 .sidebar > * { position: relative; z-index: 2; }
 
-/* ── Etiquetas de sección ───────────────────────────────────── */
+/* ── Secciones ──────────────────────────────────────────────── */
 .nav-section {
-    color: rgba(180,195,255,.32) !important;
+    color: rgba(200,190,255,.30) !important;
     letter-spacing: 1.3px;
     font-size: 10px !important;
 }
 
 /* ── Items normales ─────────────────────────────────────────── */
 .nav-item {
-    color: rgba(200,215,255,.65) !important;
-    border-radius: 12px !important;
+    color: rgba(210,205,255,.68) !important;
+    border-radius: 13px !important;
     margin: 2px 10px !important;
     padding: 10px 14px !important;
     transition: background .18s, color .18s, box-shadow .18s !important;
@@ -638,102 +656,113 @@ body.bn-more-open .az-ai-fab { display: none !important; }
 .nav-item svg { stroke: currentColor !important; }
 
 .nav-item:hover {
-    background: rgba(255,255,255,.08) !important;
-    color: rgba(230,240,255,.92) !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.12) !important;
+    background: rgba(255,255,255,.09) !important;
+    color: rgba(235,230,255,.94) !important;
+    box-shadow:
+        inset 0  1px 0 rgba(255,255,255,.16),
+        inset 0 -1px 0 rgba(0,0,0,.10) !important;
 }
 
-/* ── Pill activo — cristal azul iOS 27 ─────────────────────── */
+/* ── Pill activo — vidrio índigo/violeta iOS 27 ─────────────── */
 .nav-item.active {
     color: #fff !important;
-    border-radius: 12px !important;
+    border-radius: 13px !important;
 
     background:
-        /* Specular superior del pill */
+        /* Specular superior — la "carita" del cristal */
         linear-gradient(180deg,
-            rgba(255,255,255,.25) 0%,
-            rgba(255,255,255,.04) 50%,
-            transparent           100%
+            rgba(255,255,255,.30)  0%,
+            rgba(255,255,255,.06) 45%,
+            transparent            70%
         ),
-        /* Color del pill */
+        /* Surface del pill: índigo + violeta oscuro */
         linear-gradient(135deg,
-            rgba(45, 85, 210,.85) 0%,
-            rgba(70, 35, 185,.80) 100%
+            rgba(35, 20,130,.90)  0%,
+            rgba(75, 15,140,.85) 100%
         ) !important;
 
-    border: 1px solid rgba(140,170,255,.40) !important;
-    box-shadow:
-        inset 0  1px 0 rgba(255,255,255,.45),
-        inset 0 -1px 0 rgba(0,0,0,.15),
-        0 4px 20px rgba(45,85,210,.45),
-        0 1px  6px rgba(70,35,185,.35) !important;
+    border: 1px solid rgba(160,140,255,.42) !important;
 
-    -webkit-backdrop-filter: blur(12px) !important;
-    backdrop-filter:          blur(12px) !important;
+    box-shadow:
+        /* Rim superior del pill */
+        inset 0  1.5px 0 rgba(255,255,255,.55),
+        /* Rim inferior oscuro */
+        inset 0 -1px   0 rgba(0,0,0,.25),
+        /* Rim lateral izquierdo */
+        inset 1px 0    0 rgba(255,255,255,.22),
+        /* Sombra exterior con color */
+        0 6px 24px rgba(50,15,130,.55),
+        0 2px  8px rgba(80,10,150,.40) !important;
+
+    -webkit-backdrop-filter: blur(16px) saturate(200%) !important;
+    backdrop-filter:          blur(16px) saturate(200%) !important;
 }
 
 /* Specular en el borde superior del pill */
 .nav-item.active::before {
     content: '' !important;
     position: absolute !important;
-    top: 0 !important; left: 14% !important; right: 14% !important;
+    top: 0 !important; left: 16% !important; right: 16% !important;
     bottom: auto !important; width: auto !important; height: 1px !important;
     background: linear-gradient(90deg,
         transparent,
-        rgba(255,255,255,.70) 35%,
-        rgba(255,255,255,.70) 65%,
+        rgba(255,255,255,.75) 30%,
+        rgba(255,255,255,.75) 70%,
         transparent
     ) !important;
     border-radius: 0 !important;
 }
 
 .nav-item.active svg {
-    filter: drop-shadow(0 0 6px rgba(120,160,255,.60)) !important;
+    filter: drop-shadow(0 0 7px rgba(160,130,255,.65)) !important;
 }
 
 /* ── Sub-items ──────────────────────────────────────────────── */
 .nav-subitem {
-    color: rgba(190,210,255,.55) !important;
+    color: rgba(200,195,255,.55) !important;
     border-radius: 10px !important;
     margin: 1px 10px 1px 28px !important;
     transition: background .15s, color .15s !important;
 }
-.nav-subitem:hover  { background: rgba(255,255,255,.07) !important; color: rgba(225,235,255,.90) !important; }
-.nav-subitem.active { background: rgba(45,85,210,.28)  !important; color: #fff !important; border-radius: 10px !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.16) !important; }
+.nav-subitem:hover  { background: rgba(255,255,255,.07) !important; color: rgba(230,225,255,.92) !important; }
+.nav-subitem.active { background: rgba(55,20,140,.32) !important; color: #fff !important; border-radius: 10px !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.18) !important; }
 
 /* ── Logo ───────────────────────────────────────────────────── */
 .sidebar-logo {
-    border-bottom: 1px solid rgba(255,255,255,.07) !important;
+    border-bottom: 1px solid rgba(255,255,255,.08) !important;
     margin: 0 10px 4px !important;
     padding: 10px 10px 18px !important;
 }
 
 /* ── Footer ─────────────────────────────────────────────────── */
 .sidebar-footer {
-    border-top: 1px solid rgba(255,255,255,.07) !important;
+    border-top: 1px solid rgba(255,255,255,.08) !important;
     margin: 0 10px !important;
     padding: 10px 0 8px !important;
 }
 .user-pill {
-    border-radius: 12px !important;
+    border-radius: 13px !important;
     padding: 8px 10px !important;
-    transition: background .18s !important;
+    transition: background .18s, box-shadow .18s !important;
 }
-.user-pill:hover { background: rgba(255,255,255,.08) !important; }
+.user-pill:hover {
+    background: rgba(255,255,255,.08) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.14) !important;
+}
 
-/* ── Botón cerrar (móvil) ───────────────────────────────────── */
+/* ── Botón cerrar ───────────────────────────────────────────── */
 .sidebar-close-btn {
     background: rgba(255,255,255,.10) !important;
-    border: 1px solid rgba(255,255,255,.16) !important;
+    border: 1px solid rgba(255,255,255,.18) !important;
     border-radius: 10px !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.18) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.22) !important;
 }
 
 /* ── Overlay ────────────────────────────────────────────────── */
 .sidebar-drawer-overlay {
-    -webkit-backdrop-filter: blur(6px) !important;
-    backdrop-filter: blur(6px) !important;
-    background: rgba(0,0,0,.40) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    backdrop-filter: blur(8px) !important;
+    background: rgba(5,0,20,.50) !important;
 }
 </style>
 </head>
