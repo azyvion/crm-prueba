@@ -2697,6 +2697,7 @@ body.theme-dark #cropZoom { background: #3A3A3E; }
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     margin-bottom: 18px;
+    align-items: start;
 }
 .ov-kpi-card {
     background: var(--card);
@@ -2710,6 +2711,7 @@ body.theme-dark #cropZoom { background: #3A3A3E; }
     gap: 12px;
     cursor: pointer;
     transition: box-shadow .18s, transform .18s;
+    min-height: 82px;
 }
 .ov-kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .ov-kpi-card:nth-child(1) { border-top-color: var(--accent); }
