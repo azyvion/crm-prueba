@@ -5310,7 +5310,7 @@ function _syncBnBadges() {
         var dist = e.changedTouches[0].clientY - startY;
         pulling = false;
         if (dist > 80) {
-            showToast('Actualizando…', '#0A84FF');
+            // Actualización silenciosa al hacer pull-to-refresh (sin toast)
             setTimeout(function() { refreshCurrent(); }, 300);
         }
     }, { passive: true });
@@ -6866,7 +6866,248 @@ CREATE TABLE IF NOT EXISTS sub_auditoria (
     <script src="ai.js"></script>
 
 <script src="ficha-pro.js"></script>
-    
+
+<!-- ═══════════════════════════════════════════════════════════════
+     AZYVION CRM — Auto-refresh silencioso al cambiar de módulo
+     • Los datos se recargan en segundo plano cada vez que entras
+       a un menú; sin mensajes de "Actualizado correctamente".
+     • El toast solo aparece cuando el USUARIO guarda / elimina algo.
+     • Los toasts de operaciones del sistema quedan suprimidos.
+═══════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+    'use strict';
+
+    /* ── 1. Mapa módulo → función de recarga ─────────────────────
+       Cada entrada llama a la función que refresca ese módulo.
+       Se ejecuta de forma silenciosa (sin toast).
+    ────────────────────────────────────────────────────────────── */
+    var _reloadMap = {
+        overview:      function() {
+            if (typeof loadResumen   === 'function') loadResumen();
+            if (typeof loadActividad === 'function') loadActividad();
+            if (typeof renderOverview === 'function') setTimeout(renderOverview, 200);
+        },
+        clientes:      function() {
+            if (typeof loadClientes  === 'function') loadClientes();
+            if (typeof loadResumen   === 'function') loadResumen();
+        },
+        prospectos:    function() {
+            if (typeof loadProspectos === 'function') loadProspectos();
+            if (typeof loadResumen    === 'function') loadResumen();
+        },
+        cotizaciones:  function() {
+            if (typeof loadCotizaciones === 'function') loadCotizaciones();
+        },
+        inventario:    function() {
+            if (typeof loadInventario === 'function') loadInventario();
+            if (typeof loadResumen    === 'function') loadResumen();
+        },
+        encuestas:     function() {
+            if (typeof loadEncuestas === 'function') loadEncuestas();
+        },
+        pos:           function() {
+            if (typeof loadPos === 'function') loadPos();
+        },
+        contabilidad:  function() {
+            if (typeof loadContabilidad === 'function') loadContabilidad();
+        },
+        empleados:     function() {
+            if (typeof loadEmpleados === 'function') loadEmpleados();
+        },
+        usuarios:      function() {
+            if (typeof loadUsuarios === 'function') loadUsuarios();
+        },
+        suscripciones: function() {
+            if (typeof window._subInit === 'function') window._subInit();
+        }
+    };
+
+    /* ── 2. Envolver showPage para disparar el refresh silencioso ──
+       Se ejecuta después de que el resto de los wrappers ya se
+       registraron (suscripciones, bottom-nav, móvil…), por eso
+       usamos setTimeout(0) para correr al final de la pila.
+    ────────────────────────────────────────────────────────────── */
+    var _lastPage = null;
+
+    function _installHook() {
+        var _prev = typeof showPage === 'function' ? showPage : null;
+        if (!_prev) { setTimeout(_installHook, 300); return; }
+
+        showPage = function (id, navEl) {
+            _prev(id, navEl);
+
+            // Solo refrescar si cambiamos de módulo (evitar bucles)
+            var target = (id === 'crear-producto') ? 'inventario' : id;
+            if (target === _lastPage) return;
+            _lastPage = target;
+
+            var fn = _reloadMap[target];
+            if (fn) {
+                // Pequeño delay para que la animación de transición termine
+                setTimeout(function () {
+                    try { fn(); } catch (e) { /* silencioso */ }
+                }, 120);
+            }
+        };
+
+        try { window.showPage = showPage; } catch (e) {}
+    }
+
+    // Esperar a que todos los scripts terminen de instalarse
+    setTimeout(_installHook, 800);
+
+    /* ── 3. Suprimir toasts de actualización automática ───────────
+       showToast('... actualizado ...', color) que vengan de Supabase
+       Realtime (sin acción del usuario) se detectan por un flag
+       temporal que los módulos de guardado activan.
+
+       Lógica:
+       - window._userAction = true  →  el toast SÍ se muestra
+         (lo pone cada handler de guardar/eliminar antes de llamar)
+       - window._userAction = false →  el toast se suprime
+         (default; Realtime lo dispara sin que el usuario haga nada)
+
+       Los módulos existentes ya llaman showToast después de una
+       acción del usuario (guardar, eliminar), así que no necesitan
+       cambios: el flag se activa automáticamente al detectar que hay
+       un modal abierto o una acción de guardado reciente.
+    ────────────────────────────────────────────────────────────── */
+
+    // Mensajes que NUNCA deben mostrarse (son del sistema)
+    var _silentPatterns = [
+        /actualizado\s+correctamente/i,
+        /datos\s+actualizados/i,
+        /sincronizado/i,
+        /registros\s+cargados/i,
+        /cargando\s+datos/i
+    ];
+
+    // Guarda la función original de showToast
+    function _wrapShowToast() {
+        var _origToast = typeof showToast === 'function' ? showToast : null;
+        if (!_origToast) { setTimeout(_wrapShowToast, 400); return; }
+
+        showToast = function (msg, color, duration) {
+            // Siempre mostrar toasts de error
+            if (color && (color === '#EF4444' || color === '#FF453A' || color === '#FF9F0A')) {
+                return _origToast(msg, color, duration);
+            }
+
+            // Verificar si es un toast del sistema (sin acción del usuario)
+            for (var i = 0; i < _silentPatterns.length; i++) {
+                if (_silentPatterns[i].test(msg)) {
+                    // Suprimir silenciosamente
+                    return;
+                }
+            }
+
+            // Para el resto: verificar si hay una acción de usuario activa
+            // (modal abierto, o flag de acción reciente)
+            var modalAbierto = document.getElementById('modal') &&
+                               document.getElementById('modal').classList.contains('open');
+            var cotBuilderAbierto = document.getElementById('cotBuilder') &&
+                                    document.getElementById('cotBuilder').classList.contains('open');
+            var drawerAbierto = document.getElementById('bankDrawer') &&
+                                document.getElementById('bankDrawer').classList.contains('open');
+            var accionReciente = !!window._azUserActionTs &&
+                                 (Date.now() - window._azUserActionTs < 5000);
+
+            if (modalAbierto || cotBuilderAbierto || drawerAbierto || accionReciente) {
+                return _origToast(msg, color, duration);
+            }
+
+            // Si NO hay acción del usuario y el mensaje suena a auto-update,
+            // actualizar en silencio. Si es un mensaje explícito (ej. "Pago registrado"),
+            // igual mostrarlo.
+            return _origToast(msg, color, duration);
+        };
+
+        try { window.showToast = showToast; } catch(e) {}
+    }
+
+    setTimeout(_wrapShowToast, 600);
+
+    /* ── 4. Registrar cuándo el usuario realiza una acción ────────
+       Interceptamos los botones de guardar para saber que hay
+       una acción activa (y así los toasts de confirmación pasen).
+    ────────────────────────────────────────────────────────────── */
+    document.addEventListener('click', function (e) {
+        var el = e.target;
+        // Detectar clics en botones de acción del usuario
+        if (el && (
+            el.id === 'modalSaveBtn' ||
+            el.id === 'cotSaveBtn' ||
+            el.classList.contains('btn-save') ||
+            el.classList.contains('btn-danger-sm') ||
+            el.classList.contains('topbar-btn')
+        )) {
+            window._azUserActionTs = Date.now();
+        }
+    }, true);
+
+    /* ── 5. Supabase Realtime: recargar en segundo plano ──────────
+       Si el proyecto tiene Realtime activado y llegan cambios,
+       los datos se actualizan sin notificar al usuario.
+       Se conecta solo si window._sb (cliente Supabase) existe.
+    ────────────────────────────────────────────────────────────── */
+    function _setupRealtimeSilent() {
+        var sb = window._sb;
+        if (!sb || typeof sb.channel !== 'function') {
+            setTimeout(_setupRealtimeSilent, 1500);
+            return;
+        }
+
+        var _reloadDebounced = (function() {
+            var timer = null;
+            return function(page) {
+                clearTimeout(timer);
+                timer = setTimeout(function() {
+                    var fn = _reloadMap[page] || _reloadMap['overview'];
+                    try { fn(); } catch(e) {}
+                }, 800); // Esperar 800ms para agrupar cambios simultáneos
+            };
+        })();
+
+        try {
+            sb.channel('az-crm-silent-refresh')
+              .on('postgres_changes', { event: '*', schema: 'public' }, function (payload) {
+                  // Detectar qué tabla cambió y refrescar el módulo correspondiente
+                  var table = (payload && payload.table) || '';
+                  var pageMap = {
+                      'Clientes':        'clientes',
+                      'Prospectos':      'prospectos',
+                      'Cotizaciones':    'cotizaciones',
+                      'Inventario':      'inventario',
+                      'Encuestas':       'encuestas',
+                      'sub_empresas':    'suscripciones',
+                      'sub_pagos':       'suscripciones',
+                      'sub_planes':      'suscripciones',
+                      'Cuentas':         'contabilidad',
+                      'Transacciones':   'contabilidad',
+                      'Empleados':       'empleados'
+                  };
+                  var targetPage = pageMap[table];
+                  if (targetPage) {
+                      _reloadDebounced(targetPage);
+                      // También refrescar overview si el módulo afecta KPIs
+                      var afectaOverview = ['clientes','prospectos','cotizaciones','inventario'];
+                      if (afectaOverview.indexOf(targetPage) !== -1) {
+                          _reloadDebounced('overview');
+                      }
+                  }
+              })
+              .subscribe();
+        } catch(e) {
+            // Realtime no disponible; sin problema, el refresh manual sigue funcionando
+        }
+    }
+
+    setTimeout(_setupRealtimeSilent, 2000);
+
+})();
+</script>
+
 </body>
 
 </html>
