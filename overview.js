@@ -38,13 +38,22 @@ function _chartDestroy(id) {
 }
 
 function _isDark() {
-    return document.body.classList.contains('theme-dark');
+    try {
+        if (document.body.classList.contains('theme-dark')) return true;
+        var p = JSON.parse(localStorage.getItem('azyvion_crm_prefs') || 'null');
+        if (p && p.preferencias && p.preferencias.tema === 'oscuro') {
+            document.body.classList.add('theme-dark');
+            return true;
+        }
+    } catch(e){}
+    return false;
 }
 
 function _chartColors() {
+    var dark = _isDark();
     return {
-        text: _isDark() ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.45)',
-        grid: _isDark() ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+        text: dark ? '#f8fafc' : '#334155',
+        grid: dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)',
     };
 }
 
@@ -325,10 +334,10 @@ function renderOverview() {
             window._ovGreeting();
             // Actualizar el saludo cada minuto
             setInterval(window._ovGreeting, 60000);
-            // Auto-refrescar datos cada 60 segundos sin necesidad de botón
+            // Auto-refrescar datos cada 60 segundos sin molestar al usuario con toasts
             setInterval(function() {
                 if (typeof refreshCurrent === 'function') {
-                    refreshCurrent();
+                    refreshCurrent(true);
                 }
             }, 60000);
         }, 100);

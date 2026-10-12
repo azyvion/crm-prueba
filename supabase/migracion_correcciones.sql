@@ -142,3 +142,24 @@ BEGIN
         ', t, t, t, lower(t) || '_isolation_policy', t, lower(t) || '_isolation_policy', t);
     END LOOP;
 END $$;
+
+-- 6. CONFIGURACIÓN DEL BUCKET fotos-perfil EN SUPABASE STORAGE
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('fotos-perfil', 'fotos-perfil', true, 5242880, ARRAY['image/png', 'image/jpeg', 'image/webp'])
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+DROP POLICY IF EXISTS "fotos_perfil_public_read" ON storage.objects;
+CREATE POLICY "fotos_perfil_public_read" ON storage.objects
+    FOR SELECT USING (bucket_id = 'fotos-perfil');
+
+DROP POLICY IF EXISTS "fotos_perfil_authenticated_insert" ON storage.objects;
+CREATE POLICY "fotos_perfil_authenticated_insert" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'fotos-perfil');
+
+DROP POLICY IF EXISTS "fotos_perfil_authenticated_update" ON storage.objects;
+CREATE POLICY "fotos_perfil_authenticated_update" ON storage.objects
+    FOR UPDATE USING (bucket_id = 'fotos-perfil');
+
+DROP POLICY IF EXISTS "fotos_perfil_authenticated_delete" ON storage.objects;
+CREATE POLICY "fotos_perfil_authenticated_delete" ON storage.objects
+    FOR DELETE USING (bucket_id = 'fotos-perfil');

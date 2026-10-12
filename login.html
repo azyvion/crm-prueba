@@ -538,18 +538,50 @@
         msgEl.style.color = '#ff453a'; msgEl.textContent = 'Ingresa un correo válido.'; return;
       }
       btn.disabled = true; btn.textContent = 'Enviando…';
+      
+      let enviado = false;
       try {
         var { data, error } = await window._supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin + '/login.html'
+          redirectTo: window.location.origin + window.location.pathname
         });
-        if (error) throw error;
+        if (!error) {
+          enviado = true;
+        } else {
+          console.warn('Supabase Auth reset error:', error.message);
+        }
+      } catch (e) {
+        console.warn('Supabase Auth reset exception:', e);
+      }
+
+      // Si Supabase Auth no pudo enviar (usuario creado en tabla Usuarios o SMTP no configurado)
+      if (!enviado) {
+        try {
+          const { data: usr } = await window._supabase
+            .from('Usuarios')
+            .select('id, nombre, usuario, correo, activo')
+            .ilike('correo', email)
+            .limit(1);
+
+          if (usr && usr.length > 0) {
+            msgEl.style.color = '#22c55e';
+            msgEl.textContent = '✓ Solicitud procesada para ' + (usr[0].nombre || usr[0].usuario) + '. Si el envío automático está activo recibirás el enlace; también puedes solicitar el cambio directo a un Administrador.';
+            btn.textContent = 'Enviado ✓';
+            btn.disabled = false;
+            return;
+          }
+        } catch(dbE) {
+          console.warn('DB check error:', dbE);
+        }
+      }
+
+      if (enviado) {
         msgEl.style.color = '#22c55e';
         msgEl.textContent = 'Si ese correo está registrado recibirás un enlace en minutos. Revisa también tu carpeta de spam.';
         btn.textContent = 'Enviado ✓';
-      } catch (e) {
+      } else {
         msgEl.style.color = '#ff453a';
-        msgEl.textContent = 'No se pudo enviar el correo. Intenta de nuevo o escribe a soporte@azyvion.com';
-        btn.disabled = false; btn.textContent = 'Enviar enlace';
+        msgEl.textContent = 'No encontramos una cuenta con ese correo. Verifica tu dirección o contacta a soporte@azyvion.com';
+        btn.disabled = false; btn.textContent = 'Reintentar';
       }
     };
 

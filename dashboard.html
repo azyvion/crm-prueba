@@ -16,6 +16,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./dashboard.css">
     <link rel="stylesheet" href="./dashboard-premium.css">
+    <script>
+        (function() {
+            try {
+                var p = JSON.parse(localStorage.getItem('azyvion_crm_prefs') || 'null');
+                if (p && p.preferencias && p.preferencias.tema === 'oscuro') {
+                    document.documentElement.classList.add('theme-dark');
+                    document.addEventListener('DOMContentLoaded', function() { document.body.classList.add('theme-dark'); });
+                }
+            } catch(e){}
+        })();
+    </script>
 <style id="liquid-glass-css">
 /* ══ GLASSMORPHISM — Bottom Navigation Bar (flotante) ═══════
    Vidrio esmerilado: blur + saturación, borde luminoso y
@@ -1136,12 +1147,13 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                 </svg>
             </div>
             <div class="page-title" id="pageTitle">Inicio</div>
-            <div class="search-box">
+            <div class="search-box" style="position:relative;">
                 <svg viewBox="0 0 24 24">
                     <circle cx="11" cy="11" r="8" />
                     <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
-                <input type="text" id="searchInput" placeholder="Buscar…" oninput="handleSearch(this.value)" />
+                <input type="text" id="searchInput" placeholder="Buscar clientes, prospectos, cotizaciones…" oninput="handleSearch(this.value)" autocomplete="off" />
+                <div id="globalSearchDropdown" class="global-search-dropdown" style="display:none;"></div>
             </div>
 
             <button class="topbar-btn" id="mainCta" onclick="ctaAction()" style="display:none">
@@ -4046,6 +4058,8 @@ body.bn-more-open .az-ai-fab { display: none !important; }
         }
 
         function handleSearch(q) {
+            var query = (q || '').trim();
+            // 1. Filtrar la tabla de la página actual si aplica
             if (_currentPage === 'pos') {
                 const el = document.getElementById('posSearchInput');
                 if (el) { el.value = q; if (typeof renderPosCatalogo === 'function') renderPosCatalogo(); }
@@ -4056,7 +4070,147 @@ body.bn-more-open .az-ai-fab { display: none !important; }
             if (_currentPage === 'cotizaciones') renderCotizaciones(_filtroCotActual);
             if (_currentPage === 'empleados') { if (typeof renderEmpleados === 'function') renderEmpleados(window._filtroEmpActual || 'Todos'); }
             if (_currentPage === 'usuarios')   renderUsuarios();
+
+            // 2. Buscador global interactivo en topbar
+            const dd = document.getElementById('globalSearchDropdown');
+            if (!dd) return;
+            if (!query || query.length < 2) {
+                dd.style.display = 'none';
+                dd.innerHTML = '';
+                return;
+            }
+
+            const qLower = query.toLowerCase();
+            let html = '';
+
+            // Navegación rápida entre módulos
+            const paginas = [
+                { id: 'overview', nombre: 'Inicio', icon: '📊' },
+                { id: 'clientes', nombre: 'Clientes', icon: '👥' },
+                { id: 'prospectos', nombre: 'Prospectos / Pipeline', icon: '🎯' },
+                { id: 'cotizaciones', nombre: 'Cotizaciones', icon: '📄' },
+                { id: 'pos', nombre: 'Punto de Venta (POS)', icon: '🛒' },
+                { id: 'inventario', nombre: 'Inventario', icon: '📦' },
+                { id: 'contabilidad', nombre: 'Contabilidad', icon: '💳' },
+                { id: 'empleados', nombre: 'Empleados', icon: '👔' },
+                { id: 'encuestas', nombre: 'Encuestas', icon: '📝' },
+                { id: 'perfil', nombre: 'Ajustes / Perfil', icon: '⚙️' }
+            ];
+            const matchingPages = paginas.filter(p => p.nombre.toLowerCase().includes(qLower));
+            if (matchingPages.length) {
+                html += '<div class="gs-section-title">Módulos</div>';
+                matchingPages.slice(0, 3).forEach(p => {
+                    html += `<div class="gs-item" onclick="showPage('${p.id}', document.getElementById('nav-${p.id}')); document.getElementById('globalSearchDropdown').style.display='none';">
+                        <span class="gs-item-icon">${p.icon}</span>
+                        <div><div class="gs-item-title">Ir a ${p.nombre}</div></div>
+                    </div>`;
+                });
+            }
+
+            // Coincidencias en Clientes
+            if (typeof _clientes !== 'undefined' && Array.isArray(_clientes)) {
+                const cliMatches = _clientes.filter(c => 
+                    (c.nombre && c.nombre.toLowerCase().includes(qLower)) ||
+                    (c.empresa && c.empresa.toLowerCase().includes(qLower)) ||
+                    (c.correo && c.correo.toLowerCase().includes(qLower)) ||
+                    (c.nit && c.nit.toLowerCase().includes(qLower))
+                );
+                if (cliMatches.length) {
+                    html += '<div class="gs-section-title">Clientes (' + cliMatches.length + ')</div>';
+                    cliMatches.slice(0, 4).forEach(c => {
+                        html += `<div class="gs-item" onclick="showPage('clientes', document.getElementById('nav-clientes')); if(typeof verFichaCliente==='function')verFichaCliente('${c.id}'); document.getElementById('globalSearchDropdown').style.display='none';">
+                            <span class="gs-item-icon" style="background:rgba(10,132,255,0.12);color:#0A84FF;">👤</span>
+                            <div>
+                                <div class="gs-item-title">${escHtml(c.nombre || 'Sin nombre')}</div>
+                                <div class="gs-item-sub">${escHtml(c.empresa || c.correo || c.telefono || 'Cliente')}</div>
+                            </div>
+                        </div>`;
+                    });
+                }
+            }
+
+            // Coincidencias en Prospectos
+            if (typeof _prospectos !== 'undefined' && Array.isArray(_prospectos)) {
+                const proMatches = _prospectos.filter(p => 
+                    (p.nombre && p.nombre.toLowerCase().includes(qLower)) ||
+                    (p.empresa && p.empresa.toLowerCase().includes(qLower)) ||
+                    (p.contacto && p.contacto.toLowerCase().includes(qLower))
+                );
+                if (proMatches.length) {
+                    html += '<div class="gs-section-title">Prospectos (' + proMatches.length + ')</div>';
+                    proMatches.slice(0, 3).forEach(p => {
+                        html += `<div class="gs-item" onclick="showPage('prospectos', document.getElementById('nav-prospectos')); document.getElementById('globalSearchDropdown').style.display='none';">
+                            <span class="gs-item-icon" style="background:rgba(255,159,10,0.12);color:#FF9F0A;">🎯</span>
+                            <div>
+                                <div class="gs-item-title">${escHtml(p.nombre || 'Prospecto')}</div>
+                                <div class="gs-item-sub">${escHtml(p.etapa || '')} · Q ${Number(p.valorEstimado||0).toLocaleString()}</div>
+                            </div>
+                        </div>`;
+                    });
+                }
+            }
+
+            // Coincidencias en Cotizaciones
+            if (typeof _cotizaciones !== 'undefined' && Array.isArray(_cotizaciones)) {
+                const cotMatches = _cotizaciones.filter(c => 
+                    (c.folio && c.folio.toLowerCase().includes(qLower)) ||
+                    (c.cliente && c.cliente.toLowerCase().includes(qLower))
+                );
+                if (cotMatches.length) {
+                    html += '<div class="gs-section-title">Cotizaciones (' + cotMatches.length + ')</div>';
+                    cotMatches.slice(0, 3).forEach(c => {
+                        html += `<div class="gs-item" onclick="showPage('cotizaciones', document.getElementById('nav-cotizaciones')); if(typeof verCotizacionDetalle==='function')verCotizacionDetalle('${c.id}'); document.getElementById('globalSearchDropdown').style.display='none';">
+                            <span class="gs-item-icon" style="background:rgba(48,209,88,0.12);color:#30D158;">📄</span>
+                            <div>
+                                <div class="gs-item-title">${escHtml(c.folio || 'Cotización')} - ${escHtml(c.cliente || '')}</div>
+                                <div class="gs-item-sub">${escHtml(c.estado || '')} · Q ${Number(c.total||0).toLocaleString()}</div>
+                            </div>
+                        </div>`;
+                    });
+                }
+            }
+
+            // Coincidencias en Inventario
+            if (typeof _inventario !== 'undefined' && Array.isArray(_inventario)) {
+                const invMatches = _inventario.filter(i => 
+                    (i.nombre && i.nombre.toLowerCase().includes(qLower)) ||
+                    (i.codigo && i.codigo.toLowerCase().includes(qLower))
+                );
+                if (invMatches.length) {
+                    html += '<div class="gs-section-title">Inventario (' + invMatches.length + ')</div>';
+                    invMatches.slice(0, 3).forEach(i => {
+                        html += `<div class="gs-item" onclick="showPage('inventario', document.getElementById('nav-inventario')); document.getElementById('globalSearchDropdown').style.display='none';">
+                            <span class="gs-item-icon" style="background:rgba(191,90,242,0.12);color:#BF5AF2;">📦</span>
+                            <div>
+                                <div class="gs-item-title">${escHtml(i.nombre || 'Ítem')}</div>
+                                <div class="gs-item-sub">Stock: ${i.stock||0} · Q ${Number(i.precioVenta||0).toLocaleString()}</div>
+                            </div>
+                        </div>`;
+                    });
+                }
+            }
+
+            if (!html) {
+                html = '<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:13px;">Sin resultados para "<b>' + escHtml(query) + '</b>"</div>';
+            }
+
+            dd.innerHTML = html;
+            dd.style.display = 'flex';
         }
+
+        document.addEventListener('click', function(e) {
+            const sb = document.querySelector('.search-box');
+            const dd = document.getElementById('globalSearchDropdown');
+            if (dd && sb && !sb.contains(e.target)) {
+                dd.style.display = 'none';
+            }
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const dd = document.getElementById('globalSearchDropdown');
+                if (dd) dd.style.display = 'none';
+            }
+        });
 
         /* ═══════════════════════════════════════════════════════
            USUARIOS (Solo Admin)
@@ -5391,9 +5545,9 @@ function _loadAllFallback() {
         // En su lugar, sobreescribimos refreshCurrent para que también limpie caché.
         var _origRefreshCurrent = typeof refreshCurrent === 'function' ? refreshCurrent : null;
         if (_origRefreshCurrent) {
-            refreshCurrent = function() {
+            refreshCurrent = function(silent) {
                 _clearDashCache();
-                _origRefreshCurrent();
+                _origRefreshCurrent(silent);
             };
         }
         return;
@@ -5417,12 +5571,15 @@ if (_origConfirmLogout) {
 
 // ── refreshCurrent usa la nueva carga unificada ────────────
 var _origRefreshCurrent2 = typeof refreshCurrent === 'function' ? refreshCurrent : null;
-refreshCurrent = function() {
+refreshCurrent = function(silent) {
     _clearDashCache();
     if (_origRefreshCurrent2) {
-        _origRefreshCurrent2();
+        _origRefreshCurrent2(silent);
     } else {
-        loadAll(); // silencioso, sin toast
+        loadAll();
+        if (!silent) {
+            showToast('Datos actualizados', '#30D158');
+        }
     }
 };
 

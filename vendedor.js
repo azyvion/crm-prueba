@@ -146,14 +146,16 @@
 
         /* ── 5. GUARDAR refreshCurrent para que solo refresque clientes ─ */
         const _origRefresh = window.refreshCurrent;
-        window.refreshCurrent = function () {
+        window.refreshCurrent = function (silent) {
             if (_isVendedor()) {
                 loadClientes();
                 loadResumen();
-                showToast('Datos actualizados', '#30D158');
+                if (!silent) {
+                    showToast('Datos actualizados', '#30D158');
+                }
                 return;
             }
-            if (typeof _origRefresh === 'function') _origRefresh();
+            if (typeof _origRefresh === 'function') _origRefresh(silent);
         };
     });
 

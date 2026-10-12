@@ -34,18 +34,44 @@
 
         function _aplicarAvatarSidebar() {
             const el = document.getElementById('userAvatar');
-            if (!el) return;
             const fotoUrl = _perfil && _perfil.fotoUrl;
-            el.innerHTML = avatarHtml(_usuario, fotoUrl);
-            el.style.background = fotoUrl ? 'transparent' : 'linear-gradient(135deg, #0A84FF, #5e5ce6)';
-            el.style.overflow = 'hidden';
+            if (el) {
+                el.innerHTML = avatarHtml(_usuario, fotoUrl);
+                el.style.background = fotoUrl ? 'transparent' : 'linear-gradient(135deg, #0A84FF, #5e5ce6)';
+                el.style.overflow = 'hidden';
+            }
+            // Sincronizar nombre y rol en el sidebar inferior
+            const nameEl = document.getElementById('userName');
+            if (nameEl && _usuario) {
+                nameEl.textContent = _usuario;
+            }
+            const roleEl = document.getElementById('userRole');
+            if (roleEl && _perfil && _perfil.cargo) {
+                roleEl.textContent = _perfil.cargo;
+            }
+            // Sincronizar saludo en overview
+            if (typeof window._ovGreeting === 'function') {
+                try { window._ovGreeting(); } catch(e){}
+            }
+            // Persistir cambios en localStorage
+            try {
+                const u = JSON.parse(localStorage.getItem('crm_user') || '{}');
+                u.nombre = _usuario;
+                if (_perfil && _perfil.cargo) u.cargo = _perfil.cargo;
+                if (fotoUrl) u.fotoUrl = fotoUrl;
+                localStorage.setItem('crm_user', JSON.stringify(u));
+            } catch(e){}
         }
 
         /* ── Aplicar preferencias globalmente (tema, densidad) ── */
         function aplicarPreferencias(prefs) {
             if (!prefs) return;
-            document.body.classList.toggle('theme-dark', prefs.tema === 'oscuro');
+            const dark = prefs.tema === 'oscuro';
+            document.body.classList.toggle('theme-dark', dark);
             document.body.classList.toggle('densidad-compacta', prefs.densidadTabla === 'compacta');
+            if (typeof renderOverview === 'function') {
+                try { renderOverview(); } catch(e){}
+            }
         }
 
         function _cachePrefsLocal(datos) {
@@ -925,6 +951,13 @@
                     if (!r || !r.ok) { showToast((r && r.error) || 'No se pudo guardar', '#FF453A'); return; }
                     showToast('Perfil actualizado', '#30D158');
                     _usuario = nombre;
+                    if (_perfil) {
+                        _perfil.nombre = nombre;
+                        _perfil.correo = v('pfCorreo');
+                        _perfil.telefono = v('pfTelefono');
+                        _perfil.cargo = v('pfCargo');
+                    }
+                    _aplicarAvatarSidebar();
                     loadPerfil();
                 })
                 .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = 'Guardar cambios'; showToast('Error: ' + e.message, '#FF453A'); })
