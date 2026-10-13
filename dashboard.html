@@ -2,15 +2,15 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#16171B" media="(prefers-color-scheme: dark)" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#16171B" media="(prefers-color-scheme: dark)">
     <title>Azyvion CRM</title>
-    <link rel="icon" type="image/png" href="logo-crm.png" />
+    <link rel="icon" type="image/png" href="logo-crm.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -806,7 +806,6 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                 <div class="logo-sub">CRM</div>
             </div>
         </div>
-        </div>
 
         <div class="nav-section">General</div>
         <div class="nav-item active" id="nav-overview" onclick="showPage('overview',this)">
@@ -1163,6 +1162,17 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                 </svg>
                 <span id="ctaLabel">Nuevo</span>
             </button>
+        </div>
+
+        <!-- BANNER DE PRUEBA DE 4 DÍAS -->
+        <div id="trialCountdownBanner" class="trial-banner" style="display:none;">
+            <div class="trial-banner-content">
+                <span class="trial-banner-icon">⏱️</span>
+                <span id="trialBannerText"><strong>Prueba de 4 días activa:</strong> Te quedan 4 días de acceso completo.</span>
+            </div>
+            <div class="trial-banner-actions">
+                <button class="trial-btn-upgrade" onclick="openSubscriptionCheckout('pro')">Elegir Plan Pro ($149/mes)</button>
+            </div>
         </div>
 
         <div class="content">
@@ -2702,6 +2712,7 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                             <button class="filter-btn" id="empFiltro-Baja" onclick="filtrarEmpleados('Baja')">Baja</button>
                         </div>
                         <button class="topbar-btn" style="height:34px;font-size:12px;padding:0 14px;" onclick="exportarEmpleadosCSV()">⬇ CSV</button>
+                        <button class="topbar-btn" style="height:34px;font-size:12px;padding:0 14px;background:linear-gradient(135deg,#0A84FF,#6C47FF);color:#fff;" onclick="abrirLiquidacionComisiones()">💼 Liquidar Comisiones</button>
                     </div>
                     <div class="table-wrap">
                         <table class="data-table">
@@ -5156,9 +5167,6 @@ body.bn-more-open .az-ai-fab { display: none !important; }
        ============================================================ */
 // ============================================================
 //  AZYVION CRM — PARCHE FRONTEND: CARGA ULTRARRÁPIDA
-//  Instrucciones: pega este bloque JUSTO ANTES del cierre <\/script>
-//  del segundo bloque <script> en dashboard.html
-//  (justo antes de la línea que dice: <\/script></body></html>)
 //
 //  Este parche:
 //  1. Reemplaza loadAll() con una sola llamada getDashboardInit.
@@ -7294,6 +7302,10 @@ CREATE TABLE IF NOT EXISTS sub_auditoria (
     /* ── Hook en showPage ── */
     var _origShowPage = window.showPage;
     window.showPage = function(id, navEl) {
+        if (id === 'contabilidad' && typeof window.getCurrentPlan === 'function' && window.getCurrentPlan() === 'starter') {
+            window.showUpgradeModal('finanzas');
+            return;
+        }
         if (id === 'suscripciones' && !_esSuper) {
             showToast('Acceso solo para Super Admin', '#F59E0B');
             var _n = document.getElementById('nav-overview');
@@ -7609,6 +7621,455 @@ CREATE TABLE IF NOT EXISTS sub_auditoria (
 })();
 </script>
 
-</body>
 
+<!-- PAYWALL MODAL (Prueba de 4 días finalizada) -->
+<div id="paywallModal" class="paywall-overlay" style="display:none;">
+    <div class="paywall-card">
+        <div class="paywall-badge">🔒 Acceso en Pausa</div>
+        <h2 class="paywall-title">Tu período de prueba de 4 días ha finalizado</h2>
+        <p class="paywall-sub">Tus clientes, cotizaciones, inventario y configuraciones están 100% seguros y guardados. Selecciona tu plan para desbloquear tu cuenta y continuar vendiendo sin interrupciones.</p>
+        
+        <div class="paywall-plans">
+            <!-- STARTER -->
+            <div class="paywall-plan-box">
+                <div>
+                    <div class="paywall-plan-name">Starter</div>
+                    <div class="paywall-plan-price">$59 <span>/mes USD</span></div>
+                    <ul class="paywall-plan-feats">
+                        <li>✓ Hasta 3 usuarios</li>
+                        <li>✓ 1 Sucursal / 1 Caja POS</li>
+                        <li>✓ 2,500 contactos</li>
+                        <li>✓ Cotizaciones PDF con logo</li>
+                        <li>✓ 100 consultas IA / mes</li>
+                    </ul>
+                </div>
+                <button class="paywall-btn outline" onclick="openSubscriptionCheckout('starter')">Elegir Starter ($59)</button>
+            </div>
+
+            <!-- PRO / BUSINESS -->
+            <div class="paywall-plan-box featured">
+                <div>
+                    <div style="font-size:11px;font-weight:700;color:#0A84FF;text-transform:uppercase;margin-bottom:2px;">Más Recomendado</div>
+                    <div class="paywall-plan-name">Pro / Business</div>
+                    <div class="paywall-plan-price">$149 <span>/mes USD</span></div>
+                    <ul class="paywall-plan-feats">
+                        <li>✓ Hasta 10 usuarios</li>
+                        <li>✓ Hasta 3 sucursales / Multicaja</li>
+                        <li>✓ Facturación Oficial SAT (FEL)</li>
+                        <li>✓ Arqueo y turnos de caja POS</li>
+                        <li>✓ Finanzas y Flujo de caja</li>
+                        <li>✓ Precios Mayoristas Plata/Oro</li>
+                        <li>✓ 1,000 consultas IA / mes</li>
+                    </ul>
+                </div>
+                <button class="paywall-btn primary" onclick="openSubscriptionCheckout('pro')">Elegir Pro ($149/mes)</button>
+            </div>
+
+            <!-- ENTERPRISE -->
+            <div class="paywall-plan-box">
+                <div>
+                    <div class="paywall-plan-name">Enterprise</div>
+                    <div class="paywall-plan-price">$299 <span>/mes USD</span></div>
+                    <ul class="paywall-plan-feats">
+                        <li>✓ 30+ usuarios incluidos</li>
+                        <li>✓ Sucursales y cajas ilimitadas</li>
+                        <li>✓ Contactos y clientes ilimitados</li>
+                        <li>✓ Cálculo de comisiones a equipo</li>
+                        <li>✓ Registro de auditoría forense</li>
+                        <li>✓ IA Azyvion ilimitada</li>
+                    </ul>
+                </div>
+                <button class="paywall-btn outline" onclick="openSubscriptionCheckout('enterprise')">Elegir Enterprise ($299)</button>
+            </div>
+        </div>
+
+        <p style="font-size:12px;color:var(--text-muted);margin:0;">Cobro seguro procesado con cifrado bancario de 256 bits. Sin contratos forzosos.</p>
+    </div>
+</div>
+
+<!-- SMART UPGRADE MODAL (Gatillo persuasivo de función) -->
+<div id="upgradeModal" class="upgrade-modal-overlay" style="display:none;" onclick="if(event.target===this)closeUpgradeModal()">
+    <div class="upgrade-modal-card">
+        <button class="upgrade-modal-close" onclick="closeUpgradeModal()">&times;</button>
+        <div class="upgrade-modal-icon" id="upgradeModalIcon">🚀</div>
+        <h3 class="upgrade-modal-title" id="upgradeModalTitle">Función Premium</h3>
+        <p class="upgrade-modal-desc" id="upgradeModalDesc">Esta función avanzada está disponible en planes superiores.</p>
+        
+        <div class="upgrade-modal-plan-box">
+            <div>
+                <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Disponible en</div>
+                <div style="font-weight:700;font-size:15px;" id="upgradeModalPlanName">Plan Pro / Business</div>
+            </div>
+            <div style="font-size:18px;font-weight:800;color:#0A84FF;" id="upgradeModalPlanPrice">$149/mes</div>
+        </div>
+
+        <button class="upgrade-modal-cta" id="upgradeModalCta" onclick="openSubscriptionCheckout('pro')">Actualizar Plan Ahora</button>
+    </div>
+</div>
+
+<script id="trial-upgrade-logic">
+// ══════════════════════════════════════════════════════════════
+// GATILLOS DE UPGRADE, TRIAL DE 4 DÍAS Y PAYWALL
+// ══════════════════════════════════════════════════════════════
+window.getCurrentPlan = function() {
+    try {
+        var u = JSON.parse(localStorage.getItem('crm_user') || '{}');
+        var org = u.empresa || {};
+        return (org.plan_id || u.plan_id || 'starter').toLowerCase();
+    } catch(e) {
+        return 'starter';
+    }
+};
+
+window.UPGRADE_TRIGGERS = {
+    fel: {
+        icon: '📄',
+        title: 'Facturación Electrónica SAT (FEL)',
+        desc: 'Emite facturas tributarias electrónicas certificadas al instante con tu NIT emisor y firma oficial INFILE. Evita multas y formaliza tu negocio con el Plan Pro ($149/mes).',
+        plan: 'Pro / Business',
+        price: '$149/mes',
+        cta: 'Actualizar a Pro y Facturar'
+    },
+    arqueo: {
+        icon: '🔒',
+        title: 'Arqueo de Turnos y Cierre de Caja en POS',
+        desc: 'Protege tu dinero en efectivo. Controla saldo inicial, faltantes, sobrantes y ventas por turno de cada cajero. Función exclusiva del Plan Pro ($149/mes).',
+        plan: 'Pro / Business',
+        price: '$149/mes',
+        cta: 'Actualizar a Pro y Bloquear Descuadres'
+    },
+    precios_mayorista: {
+        icon: '⭐',
+        title: 'Listas de Precio Mayorista (Plata y Oro)',
+        desc: 'Aplica descuentos automáticos a distribuidores y clientes VIP según su categoría sin calcular márgenes a mano. Disponible en el Plan Pro ($149/mes).',
+        plan: 'Pro / Business',
+        price: '$149/mes',
+        cta: 'Desbloquear Precios Mayoristas con Pro'
+    },
+    finanzas: {
+        icon: '📈',
+        title: 'Flujo de Caja, Finanzas y Contabilidad',
+        desc: 'Conoce con exactitud cuánto dinero líquido te queda a fin de mes. Descuenta costos de producto, nómina y gastos operativos en tiempo real con el Plan Pro ($149/mes).',
+        plan: 'Pro / Business',
+        price: '$149/mes',
+        cta: 'Desbloquear Finanzas y Reportes con Pro'
+    },
+    comisiones: {
+        icon: '💼',
+        title: 'Cálculo de Comisiones a Vendedores',
+        desc: 'Automatiza la liquidación de comisiones según cotizaciones cobradas y metas de ventas de cada vendedor. Ahorra días de cálculo manual con el Plan Enterprise ($299/mes).',
+        plan: 'Enterprise',
+        price: '$299/mes',
+        cta: 'Actualizar a Plan Enterprise'
+    },
+    sucursales: {
+        icon: '🏬',
+        title: 'Límite de Sucursales Alcanzado',
+        desc: 'Tu plan actual tiene un límite de sucursales. Para conectar más puntos de venta y bodegas en tiempo real, pasa al siguiente nivel.',
+        plan: 'Pro / Enterprise',
+        price: 'Desde $149/mes',
+        cta: 'Ampliar Sucursales'
+    },
+    ia: {
+        icon: '🤖',
+        title: 'Consultas de IA Azyvion Agotadas',
+        desc: 'Has alcanzado el límite mensual de consultas de IA de tu plan. Aumenta tu capacidad a 1,000 consultas/mes o ilimitadas con nuestros planes superiores.',
+        plan: 'Pro / Enterprise',
+        price: 'Desde $149/mes',
+        cta: 'Aumentar Consultas de IA'
+    }
+};
+
+window.showUpgradeModal = function(key) {
+    var info = window.UPGRADE_TRIGGERS[key] || window.UPGRADE_TRIGGERS.fel;
+    var elIcon = document.getElementById('upgradeModalIcon');
+    var elTitle = document.getElementById('upgradeModalTitle');
+    var elDesc = document.getElementById('upgradeModalDesc');
+    var elPlan = document.getElementById('upgradeModalPlanName');
+    var elPrice = document.getElementById('upgradeModalPlanPrice');
+    var elCta = document.getElementById('upgradeModalCta');
+    if (elIcon) elIcon.textContent = info.icon || '🚀';
+    if (elTitle) elTitle.textContent = info.title;
+    if (elDesc) elDesc.textContent = info.desc;
+    if (elPlan) elPlan.textContent = 'Plan ' + info.plan;
+    if (elPrice) elPrice.textContent = info.price;
+    if (elCta) {
+        elCta.textContent = info.cta;
+        elCta.onclick = function() {
+            var targetPlan = key === 'comisiones' ? 'enterprise' : 'pro';
+            openSubscriptionCheckout(targetPlan);
+        };
+    }
+    var modal = document.getElementById('upgradeModal');
+    if (modal) modal.style.display = 'flex';
+};
+
+window.closeUpgradeModal = function() {
+    var modal = document.getElementById('upgradeModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.checkTrialAndPlanStatus = function() {
+    try {
+        var user = JSON.parse(localStorage.getItem('crm_user') || '{}');
+        var org = user.empresa || {};
+        var estado = org.estado || user.estado || 'TRIAL';
+        var fechaFin = org.fecha_fin || user.fecha_fin;
+
+        var diasRestantes = 4;
+        if (fechaFin) {
+            var diff = new Date(fechaFin) - new Date();
+            diasRestantes = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+        } else {
+            var trialKey = 'azyvion_trial_start';
+            var start = localStorage.getItem(trialKey);
+            if (!start) {
+                start = Date.now();
+                localStorage.setItem(trialKey, start);
+            }
+            var elapsed = Math.floor((Date.now() - parseInt(start, 10)) / (1000 * 60 * 60 * 24));
+            diasRestantes = Math.max(0, 4 - elapsed);
+        }
+
+        if (estado === 'TRIAL' || !org.estado) {
+            if (diasRestantes > 0) {
+                var banner = document.getElementById('trialCountdownBanner');
+                var text = document.getElementById('trialBannerText');
+                if (banner && text) {
+                    text.innerHTML = '⏱️ <strong>Prueba gratuita activa:</strong> Te quedan <strong>' + diasRestantes + ' día' + (diasRestantes === 1 ? '' : 's') + '</strong> de acceso completo.';
+                    banner.style.display = 'flex';
+                }
+            } else {
+                var paywall = document.getElementById('paywallModal');
+                if (paywall) paywall.style.display = 'flex';
+            }
+        } else if (estado === 'EXPIRED' || estado === 'PAST_DUE') {
+            var paywall = document.getElementById('paywallModal');
+            if (paywall) paywall.style.display = 'flex';
+        }
+    } catch(e) {
+        console.error('[Trial] Error verificando estado:', e);
+    }
+};
+
+window.openSubscriptionCheckout = function(planId) {
+    planId = planId || 'pro';
+    var prices = { starter: 59, pro: 149, enterprise: 299 };
+    showToast('Iniciando suscripción a Plan ' + planId.toUpperCase() + ' ($' + (prices[planId]||149) + '/mes)...', '#0A84FF');
+    if (typeof showPage === 'function') {
+        var navItem = document.getElementById('nav-suscripciones');
+        if (navItem && navItem.style.display !== 'none') {
+            showPage('suscripciones', navItem);
+            return;
+        }
+    }
+    window.location.href = 'register.html?plan=' + planId;
+};
+
+// Ejecutar verificación al cargar
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(window.checkTrialAndPlanStatus, 800);
+});
+</script>
+
+
+<!-- MODAL DE CHECKOUT UNIVERSAL (TARJETA / TRANSFERENCIA BANCARIA) -->
+<div id="checkoutModal" class="checkout-overlay" style="display:none;" onclick="if(event.target===this)closeCheckoutModal()">
+    <div class="checkout-card">
+        <button class="upgrade-modal-close" onclick="closeCheckoutModal()">&times;</button>
+        
+        <div class="checkout-header">
+            <div>
+                <h3 class="checkout-title">🔒 Checkout Seguro</h3>
+                <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Procesamiento con cifrado bancario de 256 bits</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Total a Pagar</div>
+                <div id="chkPlanPrecio" style="font-size:22px;font-weight:900;color:#0A84FF;">$149 USD</div>
+            </div>
+        </div>
+
+        <!-- Resumen del Plan -->
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <div id="chkPlanNombre" style="font-weight:800;font-size:15px;">Plan Pro / Business</div>
+                <div id="chkPlanDetalles" style="font-size:12px;color:var(--text-muted);">10 usuarios · 3 sucursales · Facturación FEL SAT</div>
+            </div>
+            <span style="background:rgba(10,132,255,0.15);color:#0A84FF;font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px;">MENSUAL</span>
+        </div>
+
+        <!-- Selector de Métodos de Pago -->
+        <div class="checkout-tabs">
+            <button id="tabCardBtn" class="checkout-tab-btn active" onclick="switchCheckoutTab('tarjeta')">
+                <span>💳</span> Tarjeta de Crédito / Débito
+            </button>
+            <button id="tabTransBtn" class="checkout-tab-btn" onclick="switchCheckoutTab('transferencia')">
+                <span>🏦</span> Transferencia / Depósito
+            </button>
+        </div>
+
+        <!-- SECCIÓN TARJETA -->
+        <div id="secCheckoutCard">
+            <!-- Preview visual de la tarjeta -->
+            <div class="card-preview-box">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div class="card-preview-chip"></div>
+                    <div id="prevCardBrand" style="font-weight:800;font-size:14px;letter-spacing:1px;">VISA</div>
+                </div>
+                <div class="card-preview-num" id="prevCardNumber">•••• •••• •••• ••••</div>
+                <div class="card-preview-footer">
+                    <div>
+                        <div>Titular</div>
+                        <div class="card-preview-val" id="prevCardName">NOMBRE DEL TITULAR</div>
+                    </div>
+                    <div>
+                        <div>Vence</div>
+                        <div class="card-preview-val" id="prevCardExp">MM/AA</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-field" style="margin-bottom:12px;">
+                <label class="form-label">NÚMERO DE TARJETA</label>
+                <input class="form-input" id="chkCardNum" placeholder="1234 5678 9012 3456" maxlength="19" oninput="onCardNumberInput(event)" />
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                <div class="form-field">
+                    <label class="form-label">EXPIRACIÓN (MM/AA)</label>
+                    <input class="form-input" id="chkCardExp" placeholder="12/28" maxlength="5" oninput="onCardExpInput(event)" />
+                </div>
+                <div class="form-field">
+                    <label class="form-label">CÓDIGO DE SEGURIDAD (CVV)</label>
+                    <input class="form-input" id="chkCardCvv" placeholder="123" maxlength="4" type="password" />
+                </div>
+            </div>
+
+            <div class="form-field" style="margin-bottom:18px;">
+                <label class="form-label">NOMBRE EN LA TARJETA</label>
+                <input class="form-input" id="chkCardName" placeholder="Ej. MARIO GÓMEZ" oninput="_actualizarPreviewTarjeta()" />
+            </div>
+        </div>
+
+        <!-- SECCIÓN TRANSFERENCIA / DEPÓSITO -->
+        <div id="secCheckoutTrans" style="display:none;margin-bottom:18px;">
+            <div class="ajustes-alert ajustes-alert-info" style="font-size:12px;margin-bottom:14px;">
+                Depósito directo en ventanilla bancaria o transferencia ACH / inmediata a nuestras cuentas autorizadas:
+            </div>
+            
+            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;margin-bottom:14px;line-height:1.6;">
+                <div>🏢 <strong>Banco Industrial:</strong> Monetaria GTQ <code>001-445892-1</code> (AZYVION CORPORATE, S.A.)</div>
+                <div>🏛️ <strong>BAC Credomatic:</strong> Monetaria USD <code>902-118475-0</code> (AZYVION CORPORATE, S.A.)</div>
+                <div>🏦 <strong>G&T Continental:</strong> Monetaria GTQ <code>018-992341-8</code> (AZYVION CORPORATE, S.A.)</div>
+            </div>
+
+            <div class="form-field" style="margin-bottom:12px;">
+                <label class="form-label">BANCO DONDE DEPOSITASTE</label>
+                <select class="form-select" id="chkTransBanco">
+                    <option value="Banco Industrial">Banco Industrial (BI)</option>
+                    <option value="BAC Credomatic">BAC Credomatic</option>
+                    <option value="Banco G&T Continental">Banco G&T Continental</option>
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label class="form-label">NÚMERO DE BOLETA O TRANSFERENCIA *</label>
+                <input class="form-input" id="chkTransBoleta" placeholder="Ej. 98457218" />
+            </div>
+        </div>
+
+        <!-- Botón de Pago -->
+        <button id="btnSubmitPago" class="upgrade-modal-cta" onclick="procesarPagoSuscripcion()">
+            <span id="btnCobrarTxt">Confirmar Pago y Activar ($149 USD)</span>
+        </button>
+
+        <div class="checkout-trust-badge">
+            <span>🔒 PCI-DSS Certified</span>
+            <span>🛡️ Cifrado 256-bit</span>
+            <span>⚡ Activación Inmediata</span>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE RECIBO DIGITAL EXITOSO -->
+<div id="pagoExitoModal" class="checkout-overlay" style="display:none;">
+    <div class="checkout-card" style="text-align:center;">
+        <div style="width:56px;height:56px;border-radius:50%;background:rgba(48,209,88,0.15);color:#30D158;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px;">✓</div>
+        <h3 style="font-size:22px;font-weight:800;margin-bottom:6px;">¡Suscripción Activada Exitosamente!</h3>
+        <p style="font-size:13.5px;color:var(--text-muted);margin-bottom:20px;">Tu cuenta ha sido desbloqueada. Todas las funciones de tu plan están activas.</p>
+
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:left;font-size:13px;line-height:1.8;margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;"><span>Plan Activado:</span><strong id="exitoPlanTxt" style="color:#0A84FF;">Plan Pro</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span>Monto Cobrado:</span><strong id="exitoMontoTxt">$149.00 USD</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span>Método de Pago:</span><span id="exitoMetodoTxt">Tarjeta</span></div>
+            <div style="display:flex;justify-content:space-between;"><span>Autorización:</span><code id="exitoAuthTxt">AUTH-992144</code></div>
+            <div style="display:flex;justify-content:space-between;"><span>Fecha:</span><span id="exitoFechaTxt">Hoy</span></div>
+        </div>
+
+        <button class="upgrade-modal-cta" onclick="document.getElementById('pagoExitoModal').style.display='none';">Comenzar a Usar Azyvion CRM</button>
+    </div>
+</div>
+
+<!-- MODAL DE CONSOLA DE DESARROLLADOR (DEVTOOLS - CTRL+SHIFT+D) -->
+<div id="devToolsModal" class="devtools-overlay" style="display:none;" onclick="if(event.target===this)toggleDevTools()">
+    <div class="devtools-card">
+        <button class="upgrade-modal-close" style="color:#94a3b8;" onclick="toggleDevTools()">&times;</button>
+        <span class="devtools-badge">🛠️ AZYVION DEVTOOLS & OVERRIDES</span>
+        <h3 style="font-size:18px;font-weight:800;margin:0 0 4px 0;">Consola Maestra de Desarrolladores</h3>
+        <div style="font-size:12px;color:#94a3b8;">Herramientas internas para pruebas, bypass de paywalls y cambio de planes en tiempo real.</div>
+
+        <div id="devInfoContent" class="devtools-info-box">Cargando estado...</div>
+
+        <div style="margin-top:16px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Cambio Rápido de Planes</div>
+        <div class="devtools-grid">
+            <button class="devtools-btn" onclick="devSwitchPlan('starter')">
+                <span>🚀 Plan Starter ($59)</span><span>3 users</span>
+            </button>
+            <button class="devtools-btn" onclick="devSwitchPlan('pro')">
+                <span>⭐ Plan Pro ($149)</span><span>FEL + POS</span>
+            </button>
+            <button class="devtools-btn" onclick="devSwitchPlan('enterprise')">
+                <span>👑 Plan Enterprise ($299)</span><span>Ilimitado</span>
+            </button>
+            <button class="devtools-btn" onclick="devSwitchPlan('superadmin')">
+                <span>🔥 Modo SuperAdmin</span><span>Bypass Total</span>
+            </button>
+        </div>
+
+        <div style="margin-top:16px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Control de Paywall y Prueba de 4 Días</div>
+        <div class="devtools-grid">
+            <button class="devtools-btn" onclick="devBypassPaywall()">
+                <span>🔓 Desbloquear Pantalla (Bypass)</span><span>1-clic</span>
+            </button>
+            <button class="devtools-btn" onclick="devResetTrial()">
+                <span>⏱️ Resetear Trial a 4 Días</span><span>Reiniciar</span>
+            </button>
+            <button class="devtools-btn" onclick="devExpireTrial()">
+                <span>🔒 Simular Trial Vencido</span><span>Activa Paywall</span>
+            </button>
+            <button class="devtools-btn" onclick="devSimularCobro('pro', 149)">
+                <span>💳 Rellenar Tarjeta Demo</span><span>Auto-fill</span>
+            </button>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:18px;">
+            <button class="devtools-btn" style="flex:1;justify-content:center;background:#0284c7;" onclick="devLimpiarCache()">
+                🧹 Limpiar Caché y Recargar
+            </button>
+            <button class="devtools-btn" style="flex:1;justify-content:center;background:#334155;" onclick="toggleDevTools()">
+                Cerrar Consola (Esc)
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- BOTÓN FLOTANTE DISCRETO PARA DESARROLLADORES -->
+<button class="devtools-fab" onclick="toggleDevTools()" title="Consola Dev (Ctrl + Shift + D)">
+    🛠️
+</button>
+
+<script src="pasarela.js"></script>
+<script src="devtools.js"></script>
+
+</body>
 </html>

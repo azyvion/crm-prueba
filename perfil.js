@@ -471,7 +471,7 @@
           <div class="ajustes-row-desc">Emite facturas tributarias reales con certificación SAT en cada venta POS</div>
         </div>
         <label class="switch" id="felHabilitadoSwitch">
-          <input type="checkbox" id="felHabilitado" onchange="this.closest('label').classList.toggle('on', this.checked)"/>
+          <input type="checkbox" id="felHabilitado" onchange="if(this.checked && typeof window.getCurrentPlan === 'function' && window.getCurrentPlan() === 'starter'){ this.checked = false; this.closest('label').classList.remove('on'); if(typeof window.showUpgradeModal==='function') window.showUpgradeModal('fel'); } else { this.closest('label').classList.toggle('on', this.checked); }"/>
           <span class="knob"></span>
         </label>
       </div>
@@ -1283,6 +1283,18 @@
         }
 
         function abrirModalSucursal(sucId) {
+            if (!sucId && typeof window.getCurrentPlan === 'function') {
+                const plan = window.getCurrentPlan();
+                const totalActual = (_adminSucursales || []).length;
+                if (plan === 'starter' && totalActual >= 1) {
+                    if (typeof window.showUpgradeModal === 'function') window.showUpgradeModal('sucursales');
+                    return;
+                }
+                if (plan === 'pro' && totalActual >= 3) {
+                    if (typeof window.showUpgradeModal === 'function') window.showUpgradeModal('sucursales');
+                    return;
+                }
+            }
             const esEdit = !!sucId;
             const s = esEdit ? _adminSucursales.find(x => String(x.id) === String(sucId)) || {} : {};
 

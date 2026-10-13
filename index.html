@@ -2582,7 +2582,7 @@
           <div class="pricing-inner">
             <div class="section-tag">Planes y precios</div>
             <h2 class="section-title">Simple, transparente, sin sorpresas</h2>
-            <p class="section-desc">14 días de prueba gratuita en cualquier plan. Sin tarjeta de crédito. Sin contratos anuales forzosos.</p>
+            <p class="section-desc">4 días de prueba gratuita completa en cualquier plan. Sin contratos forzosos. Cancela cuando quieras.</p>
             <div class="billing-toggle">
               <button class="billing-btn active" onclick="setBilling('monthly')" id="billMonthly">Mensual</button>
               <button class="billing-btn" onclick="setBilling('annual')" id="billAnnual">Anual <span class="save-badge">−20%</span></button>
@@ -2886,20 +2886,85 @@
     document.getElementById('previewUrl').textContent = urls[name] || 'app.azyvion.com';
   };
 
-  // ─── PRICING (Supabase) ────────────────────────────────────
+  // ─── PRICING (Supabase & Fallback) ────────────────────────
   (function(){
     var SUPABASE_URL = 'https://dwtykzporgjjvdustjfq.supabase.co';
     var ANON_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3dHlrenBvcmdqanZkdXN0amZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5MjM2MjIsImV4cCI6MjEwNTQ5OTYyMn0.0SXLE5HhIjHbHz2k0cgyat9bvCper_sjAiiCrkOSmF8';
     var billingCycle = 'monthly';
-    var POPULAR_ID   = 'plan_pro';
+    var POPULAR_ID   = 'pro';
+
+    var DEFAULT_PLANS = [
+      {
+        id: 'starter',
+        nombre: 'Starter',
+        precio: 59,
+        precio_anual: 47,
+        moneda: 'USD',
+        max_usuarios: 3,
+        max_storage_gb: 10,
+        descripcion: 'El plan de despegue para PyMEs y comercios. CRM comercial, cotizaciones PDF y 1 caja POS.',
+        features: [
+          { label: '3 Usuarios incluidos', valor: true },
+          { label: '1 Sucursal / 1 Caja POS', valor: true },
+          { label: '2,500 Contactos y Prospectos', valor: true },
+          { label: 'Cotizaciones PDF con logo', valor: true },
+          { label: 'Catálogo de Inventario (500 ítems)', valor: true },
+          { label: '100 Consultas IA / mes', valor: true },
+          { label: 'Cierre y Arqueo de Turnos POS', valor: false },
+          { label: 'Facturación SAT (FEL)', valor: false },
+          { label: 'Finanzas y Contabilidad', valor: false }
+        ]
+      },
+      {
+        id: 'pro',
+        nombre: 'Pro / Business',
+        precio: 149,
+        precio_anual: 119,
+        moneda: 'USD',
+        max_usuarios: 10,
+        max_storage_gb: 50,
+        descripcion: 'La solución empresarial completa. Facturación SAT FEL, POS multicaja con arqueo, listas de precio y finanzas.',
+        features: [
+          { label: 'Hasta 10 Usuarios incluidos', valor: true },
+          { label: 'Hasta 3 Sucursales / Multicaja', valor: true },
+          { label: '25,000 Contactos y Prospectos', valor: true },
+          { label: 'Cierre y Arqueo de Turnos POS', valor: true },
+          { label: 'Listas de Precio Plata / Oro', valor: true },
+          { label: 'Facturación SAT Oficial (FEL)', valor: true },
+          { label: 'Módulo de Finanzas & Flujo de Caja', valor: true },
+          { label: '1,000 Consultas IA / mes', valor: true },
+          { label: 'Encuestas de Satisfacción ilimitadas', valor: true }
+        ]
+      },
+      {
+        id: 'enterprise',
+        nombre: 'Enterprise',
+        precio: 299,
+        precio_anual: 239,
+        moneda: 'USD',
+        max_usuarios: 30,
+        max_storage_gb: 500,
+        descripcion: 'Para cadenas, franquicias y corporativos con alto volumen. Sucursales ilimitadas, comisiones y auditoría total.',
+        features: [
+          { label: '30+ Usuarios y Vendedores', valor: true },
+          { label: 'Sucursales y Cajas ilimitadas', valor: true },
+          { label: 'Contactos y Clientes ilimitados', valor: true },
+          { label: 'Cálculo de Comisiones a Vendedores', valor: true },
+          { label: 'Registro de Auditoría de Seguridad', valor: true },
+          { label: 'Facturación FEL masiva', valor: true },
+          { label: 'IA Azyvion ilimitada y dedicada', valor: true },
+          { label: 'Gerente de cuenta y SLA 24/7', valor: true }
+        ]
+      }
+    ];
 
     function renderPlans(plans) {
       var grid = document.getElementById('pricingGrid');
-      if(!plans || !plans.length){ grid.innerHTML='<p style="color:#888;text-align:center">No hay planes disponibles.</p>'; return; }
-      var html = plans.map(function(p){
-        var price    = parseFloat(p.precio) || 0;
-        var priceAnn = Math.round(price * 0.8);
-        var isPopular = p.id === POPULAR_ID;
+      var list = (plans && plans.length) ? plans : DEFAULT_PLANS;
+      var html = list.map(function(p){
+        var price    = parseFloat(p.precio) || 59;
+        var priceAnn = p.precio_anual ? parseFloat(p.precio_anual) : Math.round(price * 0.8);
+        var isPopular = p.id === POPULAR_ID || p.destacado === true;
         var users = p.max_usuarios >= 999 ? 'Ilimitados' : p.max_usuarios + ' usuarios';
         var storage = parseFloat(p.max_storage_gb) + ' GB';
         var featHtml = '';
@@ -2911,20 +2976,18 @@
             else { featHtml += '<li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'+f.label+': <strong>'+val+'</strong></li>'; }
           });
         }
-        featHtml = '<li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'+users+'</li>'
+        featHtml = '<li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><strong>'+users+'</strong> incluidos</li>'
                  + '<li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'+storage+' almacenamiento</li>'
                  + featHtml;
-        var priceDisplay = price === 0
-          ? '<div class="price-amount"><span class="price-num">Gratis</span></div>'
-          : '<div class="price-amount"><span class="price-currency">Q</span><span class="price-num" data-monthly="'+price+'" data-annual="'+priceAnn+'">'+price+'</span><span class="price-cycle">/mes</span></div>';
-        var trialNote = price === 0 ? 'Sin tarjeta de crédito' : '14 días de prueba gratuita · Sin tarjeta';
+        var priceDisplay = '<div class="price-amount"><span class="price-currency">$</span><span class="price-num" data-monthly="'+price+'" data-annual="'+priceAnn+'">'+price+'</span><span class="price-cycle">/mes USD</span></div>';
+        var trialNote = '⏱️ 4 días de prueba gratis completa';
         var btnClass = isPopular ? 'price-btn primary' : 'price-btn outline';
-        var btnText  = price === 0 ? 'Empezar gratis' : 'Empezar prueba gratis';
+        var btnText  = 'Empezar 4 días gratis';
         return '<div class="price-card'+(isPopular?' featured':'')+'">'+
           (isPopular ? '<div class="price-badge">Más popular</div>' : '')+
           '<div class="price-plan">'+p.nombre+'</div>'+
           priceDisplay+
-          '<p class="price-desc">'+p.descripcion+'</p>'+
+          '<p class="price-desc">'+(p.descripcion || '')+'</p>'+
           '<a href="register.html?plan='+p.id+'" class="'+btnClass+'">'+btnText+'</a>'+
           '<ul class="price-features">'+featHtml+'</ul>'+
           '<div class="price-note">'+trialNote+'</div>'+
@@ -2943,12 +3006,13 @@
     };
 
     function loadPlans(){
+      renderPlans(DEFAULT_PLANS);
       fetch(SUPABASE_URL+'/rest/v1/sub_planes?select=*&activo=eq.true&order=precio.asc', {
         headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer '+ANON_KEY }
       })
       .then(function(r){ return r.json(); })
-      .then(function(data){ renderPlans(data); })
-      .catch(function(){ document.getElementById('pricingGrid').innerHTML='<p style="color:#888;text-align:center;grid-column:1/-1">No se pudieron cargar los planes. Recarga la página.</p>'; });
+      .then(function(data){ if(Array.isArray(data) && data.length) renderPlans(data); })
+      .catch(function(){ /* default already rendered */ });
     }
 
     loadPlans();

@@ -509,27 +509,23 @@
     <!-- STEP 3 -->
     <div id="step3" style="display:none">
       <h1 class="form-title">Elige tu plan</h1>
-      <p class="form-sub">Comienza gratis y escala cuando lo necesites.</p>
+      <p class="form-sub">Prueba completa por 4 días. Sin cobros durante el período de prueba.</p>
 
       <div class="plan-grid">
-        <label><input type="radio" name="plan" value="free" class="plan-radio" checked />
+        <label><input type="radio" name="plan" value="starter" class="plan-radio" checked />
           <div class="plan-card"><div class="plan-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <div class="plan-name">Gratis</div><div class="plan-price">$0<span>/mes</span></div>
-            <div class="plan-detail">1 usuario · 500 contactos · 5 GB</div></div></label>
-        <label><input type="radio" name="plan" value="starter" class="plan-radio" />
-          <div class="plan-card"><div class="plan-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <div class="plan-name">Starter</div><div class="plan-price">$29<span>/mes</span></div>
-            <div class="plan-detail">5 usuarios · 5,000 contactos · 25 GB</div></div></label>
+            <div class="plan-name">Starter</div><div class="plan-price">$59<span>/mes</span></div>
+            <div class="plan-detail">3 usuarios · 2,500 contactos · 1 Caja POS · 4 días gratis</div></div></label>
         <label><input type="radio" name="plan" value="pro" class="plan-radio" />
           <div class="plan-card"><div class="plan-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <div class="plan-name">Pro</div><div class="plan-price">$79<span>/mes</span></div>
-            <div class="plan-detail">20 usuarios · Ilimitados · 100 GB</div>
+            <div class="plan-name">Pro / Business</div><div class="plan-price">$149<span>/mes</span></div>
+            <div class="plan-detail">10 usuarios · 25,000 contactos · FEL SAT & Finanzas · 4 días gratis</div>
             <div class="plan-badge">Más popular</div></div></label>
         <label><input type="radio" name="plan" value="enterprise" class="plan-radio" />
           <div class="plan-card"><div class="plan-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
             <div class="plan-name">Enterprise</div>
-            <div class="plan-price" style="font-size:14px;padding-top:3px">A medida</div>
-            <div class="plan-detail">Ilimitado · Storage ilimitado</div></div></label>
+            <div class="plan-price">$299<span>/mes</span></div>
+            <div class="plan-detail">30+ usuarios · Sucursales ilimitadas · Comisiones & Auditoría</div></div></label>
       </div>
 
       <div class="error-msg" id="err3"></div>
@@ -868,23 +864,25 @@
   window.goBack = function(n) { setStep(n); };
 
   function setupPayStep() {
-    var plan = (document.querySelector('input[name="plan"]:checked')||{}).value||'free';
-    var names  = {free:'Gratis',starter:'Starter',pro:'Pro',enterprise:'Enterprise'};
-    var prices = {free:'$0/mes',starter:'$29/mes',pro:'$79/mes',enterprise:'A medida'};
-    var notes  = {free:'Sin tarjeta de crédito',starter:'14 días gratis, luego $29/mes',pro:'14 días gratis, luego $79/mes',enterprise:'Contacto personalizado'};
-    var amounts= {starter:'$29 USD',pro:'$79 USD'};
+    var plan = (document.querySelector('input[name="plan"]:checked')||{}).value||'starter';
+    var names  = {starter:'Starter',pro:'Pro / Business',enterprise:'Enterprise'};
+    var prices = {starter:'$59/mes',pro:'$149/mes',enterprise:'$299/mes'};
+    var notes  = {starter:'4 días de prueba gratis, luego $59/mes',pro:'4 días de prueba gratis, luego $149/mes',enterprise:'Contacto personalizado · $299/mes'};
+    var amounts= {starter:'$59 USD',pro:'$149 USD',enterprise:'$299 USD'};
 
-    document.getElementById('sumName').textContent  = 'Plan ' + names[plan];
-    document.getElementById('sumPrice').textContent = prices[plan];
-    document.getElementById('sumNote').textContent  = notes[plan];
+    document.getElementById('sumName').textContent  = 'Plan ' + (names[plan] || 'Starter');
+    document.getElementById('sumPrice').textContent = prices[plan] || '$59/mes';
+    document.getElementById('sumNote').textContent  = notes[plan] || '4 días de prueba gratis';
 
-    document.getElementById('freeSection').style.display      = plan === 'free' ? '' : 'none';
-    document.getElementById('paidSection').style.display      = (plan==='starter'||plan==='pro') ? '' : 'none';
-    document.getElementById('enterpriseSection').style.display = plan === 'enterprise' ? '' : 'none';
+    if (document.getElementById('freeSection')) document.getElementById('freeSection').style.display = 'none';
+    if (document.getElementById('paidSection')) document.getElementById('paidSection').style.display = (plan==='starter'||plan==='pro') ? '' : 'none';
+    if (document.getElementById('enterpriseSection')) document.getElementById('enterpriseSection').style.display = plan === 'enterprise' ? '' : 'none';
 
-    if (plan === 'starter' || plan === 'pro') {
-      document.getElementById('transferAmount').textContent = amounts[plan] || '';
-      document.getElementById('finalCardText').textContent = 'Activar prueba de 14 días · '+prices[plan];
+    if (plan === 'starter' || plan === 'pro' || plan === 'enterprise') {
+      var ta = document.getElementById('transferAmount');
+      if (ta) ta.textContent = amounts[plan] || '';
+      var fc = document.getElementById('finalCardText');
+      if (fc) fc.textContent = 'Activar prueba de 4 días · ' + (prices[plan] || '');
     }
   }
 

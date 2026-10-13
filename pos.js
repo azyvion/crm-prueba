@@ -91,6 +91,12 @@ function posOnClienteChange(sel) {
 }
 
 function posCambiarListaPrecio(lp) {
+    if (lp !== 'Publico' && typeof window.getCurrentPlan === 'function' && window.getCurrentPlan() === 'starter') {
+        if (typeof window.showUpgradeModal === 'function') {
+            window.showUpgradeModal('precios_mayorista');
+        }
+        return;
+    }
     _posListaPrecioActual = lp;
     document.querySelectorAll('.pos-lp-btn').forEach(b => {
         b.classList.toggle('active', b.dataset.lp === lp);
@@ -1207,6 +1213,12 @@ function _renderCajaBar(bar, abierta, data) {
 }
 
 function posAbrirAperturaCaja() {
+    if (typeof window.getCurrentPlan === 'function' && window.getCurrentPlan() === 'starter') {
+        if (typeof window.showUpgradeModal === 'function') {
+            window.showUpgradeModal('arqueo');
+        }
+        return;
+    }
     _modalMode = { type: 'caja_apertura' };
     openModal('Apertura de Caja', `
         <div class="ajustes-alert ajustes-alert-info" style="margin-bottom:16px">
@@ -1293,6 +1305,12 @@ function posConfirmarAperturaCaja() {
 }
 
 function posAbrirCierreCaja() {
+    if (typeof window.getCurrentPlan === 'function' && window.getCurrentPlan() === 'starter') {
+        if (typeof window.showUpgradeModal === 'function') {
+            window.showUpgradeModal('arqueo');
+        }
+        return;
+    }
     _modalMode = { type: 'caja_cierre' };
     openModal('Cierre de Caja', `
         <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;border-radius:12px;padding:20px;text-align:center;margin-bottom:18px">
@@ -1575,6 +1593,12 @@ function posImprimirCorteCaja(cierreData) {
    PROBAR CONEXIÓN FEL — Verificar credenciales con certificador SAT
 ══════════════════════════════════════════════════════════════════ */
 function probarConexionFel() {
+    if (typeof window.getCurrentPlan === 'function' && window.getCurrentPlan() === 'starter') {
+        if (typeof window.showUpgradeModal === 'function') {
+            window.showUpgradeModal('fel');
+        }
+        return;
+    }
     const btn = document.getElementById('btnProbarFel');
     const msgEl = document.getElementById('felEstadoConexionTxt');
     if (!btn || !msgEl) return;
