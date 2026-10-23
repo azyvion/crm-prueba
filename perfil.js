@@ -273,36 +273,7 @@
         <div class="ajustes-row-label"><div class="ajustes-row-name">NIT</div><div class="ajustes-row-desc">Número de identificación tributaria</div></div>
         <div class="ajustes-row-control"><input class="form-input" id="orgNit" placeholder="Ej. 1234567-8" oninput="actualizarMembretePreview()"/></div>
       </div>
-      <div class="ajustes-row">
-        <div class="ajustes-row-label"><div class="ajustes-row-name">Teléfono</div><div class="ajustes-row-desc">Número de contacto de la empresa</div></div>
-        <div class="ajustes-row-control"><input class="form-input" id="orgTelefono" placeholder="Ej. +502 2200-0000" oninput="actualizarMembretePreview()"/></div>
-      </div>
-      <div class="ajustes-row">
-        <div class="ajustes-row-label"><div class="ajustes-row-name">Correo de empresa</div><div class="ajustes-row-desc">Correo de contacto oficial</div></div>
-        <div class="ajustes-row-control"><input class="form-input" id="orgCorreo" type="email" placeholder="ventas@miempresa.com" oninput="actualizarMembretePreview()"/></div>
-      </div>
-      <div class="ajustes-row">
-        <div class="ajustes-row-label"><div class="ajustes-row-name">Sitio web</div><div class="ajustes-row-desc">Dirección de la página web</div></div>
-        <div class="ajustes-row-control"><input class="form-input" id="orgSitio" placeholder="www.miempresa.com" oninput="actualizarMembretePreview()"/></div>
-      </div>
-      <!-- Redes sociales (aparecen en el comprobante del POS) -->
-      <div class="ajustes-row" style="padding-bottom:0"><div class="ajustes-row-name" style="font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted)">Redes sociales (se imprimen en el comprobante)</div></div>
-      <div id="redesMount"></div>
-      <div class="ajustes-row">
-        <div class="ajustes-row-label"><div class="ajustes-row-name">Dirección</div><div class="ajustes-row-desc">Dirección física de la empresa</div></div>
-        <div class="ajustes-row-control"><input class="form-input" id="orgDireccion" placeholder="Ej. 5a Av. 10-50, Zona 1" oninput="actualizarMembretePreview()"/></div>
-      </div>
-      <div class="ajustes-row">
-        <div class="ajustes-row-label"><div class="ajustes-row-name">Prefijo de cotizaciones</div><div class="ajustes-row-desc">Formato correlativo (ej. COT- o COTIZ-)</div></div>
-        <div class="ajustes-row-control" style="max-width:180px"><input class="form-input" id="orgPrefijoCot" placeholder="COT-" oninput="actualizarMembretePreview()"/></div>
-      </div>
-      <div class="ajustes-row">
-        <div class="ajustes-row-label"><div class="ajustes-row-name">Prefijo de tickets POS</div><div class="ajustes-row-desc">Formato correlativo para ventas POS (ej. POS- o FAC-)</div></div>
-        <div class="ajustes-row-control" style="max-width:180px"><input class="form-input" id="orgPrefijoPos" placeholder="POS-" oninput="actualizarMembretePreview()"/></div>
-      </div>
-      <div class="ajustes-row">
-        <div class="ajustes-row-label"><div class="ajustes-row-name">Moneda</div><div class="ajustes-row-desc">Moneda usada en cotizaciones y POS</div></div>
-        <div class="ajustes-row-control" style="max-width:220px"><select class="form-select" id="orgMoneda" onchange="actualizarMembretePreview()"><option value="Q">Q — Quetzal (GTQ)</option><option value="$">$ — Dólar (USD)</option><option value="€">€ — Euro (EUR)</option><option value="L">L — Lempira (HNL)</option><option value="C$">C$ — Córdoba (NIO)</option></select></div>
+      <div class="ajustes-row" style="padding-bottom:0"><div class="ajustes-row-name" style="font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted)">Región, moneda e impuestos</div></div>
       <div class="ajustes-row">
         <div class="ajustes-row-label">
           <div class="ajustes-row-name">País de operación</div>
@@ -344,6 +315,37 @@
             <option value="exento">Exento de IVA / Sin impuesto (0%)</option>
           </select>
         </div>
+      </div>
+      <div class="ajustes-row">
+        <div class="ajustes-row-label"><div class="ajustes-row-name">Moneda</div><div class="ajustes-row-desc">Moneda usada en cotizaciones y POS</div></div>
+        <div class="ajustes-row-control" style="max-width:220px"><select class="form-select" id="orgMoneda" onchange="actualizarMembretePreview()"><option value="Q">Q — Quetzal (GTQ)</option><option value="$">$ — Dólar (USD)</option><option value="€">€ — Euro (EUR)</option><option value="L">L — Lempira (HNL)</option><option value="C$">C$ — Córdoba (NIO)</option></select></div>
+      </div>
+      <div class="ajustes-row">
+        <div class="ajustes-row-label"><div class="ajustes-row-name">Teléfono</div><div class="ajustes-row-desc">Número de contacto de la empresa</div></div>
+        <div class="ajustes-row-control"><input class="form-input" id="orgTelefono" placeholder="Ej. +502 2200-0000" oninput="actualizarMembretePreview()"/></div>
+      </div>
+      <div class="ajustes-row">
+        <div class="ajustes-row-label"><div class="ajustes-row-name">Correo de empresa</div><div class="ajustes-row-desc">Correo de contacto oficial</div></div>
+        <div class="ajustes-row-control"><input class="form-input" id="orgCorreo" type="email" placeholder="ventas@miempresa.com" oninput="actualizarMembretePreview()"/></div>
+      </div>
+      <div class="ajustes-row">
+        <div class="ajustes-row-label"><div class="ajustes-row-name">Sitio web</div><div class="ajustes-row-desc">Dirección de la página web</div></div>
+        <div class="ajustes-row-control"><input class="form-input" id="orgSitio" placeholder="www.miempresa.com" oninput="actualizarMembretePreview()"/></div>
+      </div>
+      <!-- Redes sociales (aparecen en el comprobante del POS) -->
+      <div class="ajustes-row" style="padding-bottom:0"><div class="ajustes-row-name" style="font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted)">Redes sociales (se imprimen en el comprobante)</div></div>
+      <div id="redesMount"></div>
+      <div class="ajustes-row">
+        <div class="ajustes-row-label"><div class="ajustes-row-name">Dirección</div><div class="ajustes-row-desc">Dirección física de la empresa</div></div>
+        <div class="ajustes-row-control"><input class="form-input" id="orgDireccion" placeholder="Ej. 5a Av. 10-50, Zona 1" oninput="actualizarMembretePreview()"/></div>
+      </div>
+      <div class="ajustes-row">
+        <div class="ajustes-row-label"><div class="ajustes-row-name">Prefijo de cotizaciones</div><div class="ajustes-row-desc">Formato correlativo (ej. COT- o COTIZ-)</div></div>
+        <div class="ajustes-row-control" style="max-width:180px"><input class="form-input" id="orgPrefijoCot" placeholder="COT-" oninput="actualizarMembretePreview()"/></div>
+      </div>
+      <div class="ajustes-row">
+        <div class="ajustes-row-label"><div class="ajustes-row-name">Prefijo de tickets POS</div><div class="ajustes-row-desc">Formato correlativo para ventas POS (ej. POS- o FAC-)</div></div>
+        <div class="ajustes-row-control" style="max-width:180px"><input class="form-input" id="orgPrefijoPos" placeholder="POS-" oninput="actualizarMembretePreview()"/></div>
       </div>
       <div class="ajustes-row" style="align-items:flex-start">
         <div class="ajustes-row-label"><div class="ajustes-row-name">Condiciones por defecto</div><div class="ajustes-row-desc">Texto de condiciones en nuevas cotizaciones</div></div>
