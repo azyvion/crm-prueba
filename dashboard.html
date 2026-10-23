@@ -7,26 +7,16 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#16171B" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#F5F7FA" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0D1522" media="(prefers-color-scheme: dark)">
     <title>Azyvion CRM</title>
     <link rel="icon" type="image/png" href="logo-crm.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./dashboard.css">
-    <link rel="stylesheet" href="./dashboard-premium.css">
-    <script>
-        (function() {
-            try {
-                var p = JSON.parse(localStorage.getItem('azyvion_crm_prefs') || 'null');
-                if (p && p.preferencias && p.preferencias.tema === 'oscuro') {
-                    document.documentElement.classList.add('theme-dark');
-                    document.addEventListener('DOMContentLoaded', function() { document.body.classList.add('theme-dark'); });
-                }
-            } catch(e){}
-        })();
-    </script>
+    <!-- Azyvion Enterprise: tema claro/oscuro/sistema antes de pintar (evita parpadeo) -->
+    <script src="./azyvion-theme.js"></script>
 <style id="liquid-glass-css">
 /* ══ GLASSMORPHISM — Bottom Navigation Bar (flotante) ═══════
    Vidrio esmerilado: blur + saturación, borde luminoso y
@@ -714,6 +704,8 @@ body.bn-more-open .az-ai-fab { display: none !important; }
     background: rgba(3,8,20,.55) !important;
 }
 </style>
+    <!-- Azyvion Enterprise: sistema de diseño (debe ir al final del <head>) -->
+    <link rel="stylesheet" href="./azyvion-enterprise.css">
 </head>
 
 <body>

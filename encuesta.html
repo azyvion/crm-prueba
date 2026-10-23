@@ -12,16 +12,16 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #F4F6F9;
+      --bg: #F5F7FA;
       --card-bg: #FFFFFF;
-      --text-main: #1D1D1F;
-      --text-muted: #6E6E73;
-      --accent: #0A84FF;
-      --accent-hover: #0070E0;
-      --accent-soft: #EBF5FF;
-      --success: #30D158;
-      --danger: #FF453A;
-      --border: #E5E8EB;
+      --text-main: #172B4D;
+      --text-muted: #5B6B80;
+      --accent: #1F5F99;
+      --accent-hover: #12345A;
+      --accent-soft: #E8F1FA;
+      --success: #16845B;
+      --danger: #C0392B;
+      --border: #E2E8F0;
       --radius: 16px;
       --shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
     }
@@ -315,6 +315,9 @@
     const answers = {};
     let surveyData = null;
     let questionsData = [];
+    let surveyToken = null;
+    // [AUDIT SEC-11] Escape de contenido proveniente de la BD antes de insertarlo en innerHTML
+    function escHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
     function getParam(param) {
       const urlParams = new URLSearchParams(window.location.search);
@@ -336,42 +339,16 @@
       }
 
       try {
-        // Cargar encuesta: buscar primero por token_publico, o fallback por id
-        let enc = null;
-        try {
-          const { data: encByToken } = await _sb
-            .from('encuestas')
-            .select('*')
-            .eq('token_publico', token)
-            .maybeSingle();
-          if (encByToken) enc = encByToken;
-        } catch(e) {}
+        // [AUDIT FN-03] Carga vía RPC SECURITY DEFINER (el visitante es anónimo;
+        // RLS bloquea la lectura directa de encuestas/encuesta_preguntas).
+        const { data: enc, error: encErr } = await _sb.rpc('get_public_survey', { p_token: token });
+        if (encErr) throw encErr;
+        if (!enc || !enc.id) throw new Error('No se encontró la encuesta o ya no está activa.');
 
-        if (!enc) {
-          const { data: encById, error: encErr } = await _sb
-            .from('encuestas')
-            .select('*')
-            .eq('id', token)
-            .maybeSingle();
-          if (encById) enc = encById;
-          else if (encErr) throw encErr;
-        }
-
-        if (!enc) {
-          throw new Error('No se encontró la encuesta especificada.');
-        }
-
+        surveyToken = token;
         surveyData = enc;
-
-        // Cargar preguntas
-        const { data: pregs, error: pregErr } = await _sb
-          .from('encuesta_preguntas')
-          .select('*')
-          .eq('encuesta_id', enc.id)
-          .order('orden', { ascending: true });
-
-        if (pregErr) throw pregErr;
-        questionsData = pregs || [];
+        questionsData = (Array.isArray(enc.questions) ? enc.questions : [])
+          .slice().sort((a, b) => (a.orden || 0) - (b.orden || 0));
 
         renderForm();
 
@@ -380,7 +357,7 @@
           <div class="card" style="text-align:center;padding:48px 20px;">
             <div style="font-size:40px;margin-bottom:12px">❌</div>
             <h2 style="font-size:20px;font-weight:700;margin-bottom:8px">No se pudo cargar la encuesta</h2>
-            <p style="font-size:14px;color:var(--text-muted)">${err.message || 'Verifica tu conexión a internet.'}</p>
+            <p style="font-size:14px;color:var(--text-muted)">${escHtml(err.message || 'Verifica tu conexión a internet.')}</p>
           </div>`;
       }
     }
@@ -431,10 +408,10 @@
             if (!Array.isArray(opciones)) opciones = [];
             inputContent = `
               <div class="options-grid" id="opt_${qId}">
-                ${opciones.map(opt => `
-                  <div class="option-pill" onclick="selectOption('${qId}', '${opt.replace(/'/g, "\\'")}', this)">
+                ${opciones.map((opt, oi) => `
+                  <div class="option-pill" data-val="${escHtml(opt)}" onclick="selectOption('${qId}', this.dataset.val, this)">
                     <div style="width:16px;height:16px;border-radius:50%;border:2px solid currentColor;display:inline-block"></div>
-                    ${opt}
+                    ${escHtml(opt)}
                   </div>
                 `).join('')}
               </div>`;
@@ -449,7 +426,7 @@
             <div class="card">
               <div class="card-title">
                 <span class="q-num">${idx + 1}</span>
-                <span>${q.titulo}</span>
+                <span>${escHtml(q.titulo)}</span>
               </div>
               ${inputContent}
             </div>`;
@@ -459,8 +436,8 @@
       container.innerHTML = `
         <div class="survey-header-card">
           <div class="survey-badge">Encuesta Corporativa</div>
-          <h1 class="survey-title">${e.nombre}</h1>
-          <p class="survey-desc">${e.notas || 'Agradecemos tu tiempo para responder este cuestionario. Tus respuestas nos ayudan a mejorar continuamente.'}</p>
+          <h1 class="survey-title">${escHtml(e.nombre)}</h1>
+          <p class="survey-desc">${e.notas ? escHtml(e.notas) : 'Agradecemos tu tiempo para responder este cuestionario. Tus respuestas nos ayudan a mejorar continuamente.'}</p>
         </div>
 
         <form id="surveyForm" onsubmit="submitSurvey(event)">
@@ -526,40 +503,16 @@
       const puesto = (document.getElementById('respPuesto')?.value || '').trim();
 
       try {
-        // 1. Insertar el envío
-        const { data: envioData, error: envioErr } = await _sb
-          .from('encuesta_envios')
-          .insert({
-            encuesta_id: surveyData.id,
-            nombre_candidato: nombre,
-            email_candidato: email,
-            puesto: puesto,
-            organization_id: surveyData.organization_id || null,
-            submitted_at: new Date().toISOString()
-          })
-          .select()
-          .single();
+        // [AUDIT FN-03] Envío atómico vía RPC: valida token, preguntas y asigna la
+        // organización en el servidor (el cliente ya no decide organization_id).
+        const p_respuestas = {};
+        questionsData.forEach(q => { if (answers[q.id] != null && answers[q.id] !== '') p_respuestas[q.id] = String(answers[q.id]); });
 
-        if (envioErr) throw envioErr;
-
-        // 2. Insertar cada respuesta
-        const respuestasPayload = questionsData.map(q => ({
-          envio_id: envioData.id,
-          encuesta_id: surveyData.id,
-          pregunta_id: q.id,
-          pregunta_titulo: q.titulo,
-          pregunta_orden: q.orden || 1,
-          respuesta: answers[q.id] || '(Sin respuesta)',
-          organization_id: surveyData.organization_id || null
-        }));
-
-        if (respuestasPayload.length) {
-          const { error: respErr } = await _sb
-            .from('encuesta_respuestas')
-            .insert(respuestasPayload);
-
-          if (respErr) throw respErr;
-        }
+        const { data: res, error: subErr } = await _sb.rpc('submit_public_survey', {
+          p_token: surveyToken, p_nombre: nombre, p_email: email, p_puesto: puesto, p_respuestas
+        });
+        if (subErr) throw subErr;
+        if (!res || res.ok !== true) throw new Error('El servidor no confirmó el envío.');
 
         // Pantalla de confirmación
         const container = document.getElementById('surveyContainer');
@@ -572,7 +525,7 @@
             </div>
             <h2 style="font-size:24px;font-weight:800;color:var(--text-main);margin-bottom:8px">¡Respuestas recibidas!</h2>
             <p style="font-size:15px;color:var(--text-muted);line-height:1.6;max-width:440px;margin:0 auto">
-              Muchas gracias <strong>${nombre}</strong>, tu evaluación ha sido registrada exitosamente.
+              Muchas gracias <strong>${escHtml(nombre)}</strong>, tu evaluación ha sido registrada exitosamente.
             </p>
           </div>`;
 

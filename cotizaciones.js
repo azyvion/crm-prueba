@@ -21,9 +21,11 @@ let _cotClienteListaPrecio = 'Publico';
             const v = Number(n) || 0;
             return 'Q ' + v.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
+        // Mismo redondeo que _r2() en auth.js y numeric en PostgreSQL (1.005 → 1.01).
         function cotR2(n) {
             const v = Number(n);
-            return isNaN(v) ? 0 : Math.round(v * 100) / 100;
+            if (!isFinite(v) || Math.abs(v) < 1e-9) return 0;
+            return Number(Math.round(Number(v + 'e2')) + 'e-2');
         }
         function cotHoyISO() {
             const d = new Date();
@@ -566,8 +568,11 @@ let _cotClienteListaPrecio = 'Publico';
             const emp = _cotEmpresa || (window.EMPRESA || {});
             let localExtra = {};
             try { localExtra = JSON.parse(localStorage.getItem('azyvion_org_extra') || '{}'); } catch(e){}
-            const pct = emp.iva_pct !== undefined ? Number(emp.iva_pct) : (localExtra.iva_pct !== undefined ? Number(localExtra.iva_pct) : 12);
-            const mod = emp.iva_modalidad || localExtra.iva_modalidad || 'incluido';
+            // [AUDIT FN-16] EMPRESA usa ivaPct/ivaModalidad (camelCase); antes se leían claves
+            // inexistentes y el IVA dependía del localStorage de cada navegador.
+            const pctSrc = emp.ivaPct !== undefined ? emp.ivaPct : (emp.iva_pct !== undefined ? emp.iva_pct : localExtra.iva_pct);
+            const pct = pctSrc !== undefined ? Number(pctSrc) : 12;
+            const mod = emp.ivaModalidad || emp.iva_modalidad || localExtra.iva_modalidad || 'incluido';
             return { pct: isNaN(pct) ? 12 : pct, mod: mod };
         }
 

@@ -826,7 +826,12 @@ function posMostrarTicketTermico(t) {
             <div style="margin-top:2px;font-size:9px;font-style:italic">${escHtml(t.fel.fraseSat)}</div>
             <div style="margin-top:4px;font-size:9px"><a href="${escAttr(t.fel.enlaceVerificacionSat)}" target="_blank" style="color:#0A84FF;text-decoration:underline">Verificar DTE en Portal SAT ↗</a></div>
         </div>
-    ` : '';
+    ` : (t.felNoCertificado ? `
+        <div style="border-top:1px dashed #000;border-bottom:1px dashed #000;margin:8px 0;padding:6px 0;font-size:10px;text-align:center">
+            <div style="font-weight:900">COMPROBANTE INTERNO — NO CERTIFICADO</div>
+            <div style="margin-top:2px">Este documento no es una factura electrónica (DTE) ante la SAT.</div>
+        </div>
+    ` : '');
 
     const ticketHtml = `
         <div id="ticketTermicoArea" style="font-family:'Courier New',Courier,monospace;max-width:320px;margin:0 auto;padding:16px;background:#fff;color:#000;border:1px dashed #ccc;line-height:1.3;font-size:12px">

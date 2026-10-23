@@ -38,6 +38,9 @@ function _chartDestroy(id) {
 }
 
 function _isDark() {
+    // Azyvion Enterprise: el motor de tema (azyvion-theme.js) decide el modo resuelto.
+    var resolved = document.documentElement.getAttribute('data-theme');
+    if (resolved) return resolved === 'dark';
     try {
         if (document.body.classList.contains('theme-dark')) return true;
         var p = JSON.parse(localStorage.getItem('azyvion_crm_prefs') || 'null');

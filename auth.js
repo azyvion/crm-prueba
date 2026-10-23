@@ -511,11 +511,19 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             const up={};
             if(p.nombre!==undefined)up.nombre=p.nombre.trim();
             if(p.rol!==undefined)up.rol=p.rol;
-            if(p.activo!==undefined)up.activo=p.activo==='true'||p.activo===true;
             if(p.permisos!==undefined)up.permisos=p.permisos;
             if(p.sucursal_id!==undefined)up.sucursal_id=p.sucursal_id||null;
             const uObj=(_usuarios||[]).find(u=>String(u.id)===String(id));
             const authUid=uObj&&uObj.auth_uid;
+            // [AUDIT SEC-08] Activar/desactivar se hace en el servidor: bloquea el acceso en Auth.
+            if(p.activo!==undefined){
+                const nuevoActivo=p.activo==='true'||p.activo===true;
+                if(!uObj||Boolean(uObj.activo)!==nuevoActivo){
+                    const{data:acData,error:acError}=await _sb.functions.invoke('admin-user-manager',{body:{action:'setUserActive',user_id:id,activo:nuevoActivo}});
+                    if(acError)return{ok:false,error:acError.message};
+                    if(acData&&acData.error)return{ok:false,error:acData.error};
+                }
+            }
             if(p.nuevaContrasena&&p.nuevaContrasena.trim()){
                 if(!authUid)return{ok:false,error:'No se encontró auth_uid del usuario. No se puede restablecer la contraseña.'};
                 const{data:pwData,error:pwError}=await _sb.functions.invoke('admin-user-manager',{body:{action:'resetUserPassword',user_id:authUid,password:p.nuevaContrasena.trim()}});
@@ -538,11 +546,11 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             return{ok:true};
         }
         async function _deleteUsuario(id,authU){
-            const org = _getEffectiveOrgId();
-            let q = _sb.from('Usuarios').delete().eq('id',id);
-            if (org) q = q.eq('organization_id', org);
-            const{error}=await q;
+            // [AUDIT SEC-08] Antes solo se borraba la fila de Usuarios: la cuenta Auth y su
+            // user_roles seguían activos. La Edge Function revoca rol, perfil y cuenta.
+            const{data,error}=await _sb.functions.invoke('admin-user-manager',{body:{action:'deleteUser',user_id:id}});
             if(error)return{ok:false,error:error.message};
+            if(data&&data.error)return{ok:false,error:data.error};
             return{ok:true};
         }
 
@@ -712,7 +720,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
         }
 
         /* ── Config de organización (se carga desde Supabase la primera vez) ── */
-        const _EMPRESA_DEFAULT={nombre:'Mi Empresa',eslogan:'',nit:'C/F',direccion:'',telefono:'',correo:'',sitio:'',logoUrl:'',moneda:'Q',ivaPct:12,condicionesDefault:'Precios expresados en quetzales (GTQ). Tiempo de entrega sujeto a disponibilidad. Esta cotización no constituye una factura.',prefijoCotizacion:'COT-',prefijoTicket:'POS-',paisCodigo:'GT',tipoDocumentoFiscal:'NIT',catalogoFotosHabilitado:true,webhookCorreoFacturas:'',diasVigenciaCotizacion:15,pieTicket:''};
+        const _EMPRESA_DEFAULT={nombre:'Mi Empresa',eslogan:'',nit:'C/F',direccion:'',telefono:'',correo:'',sitio:'',logoUrl:'',moneda:'Q',ivaPct:12,ivaModalidad:'incluido',condicionesDefault:'Precios expresados en quetzales (GTQ). Tiempo de entrega sujeto a disponibilidad. Esta cotización no constituye una factura.',prefijoCotizacion:'COT-',prefijoTicket:'POS-',paisCodigo:'GT',tipoDocumentoFiscal:'NIT',catalogoFotosHabilitado:true,webhookCorreoFacturas:'',diasVigenciaCotizacion:15,pieTicket:''};
         let EMPRESA = Object.assign({}, _EMPRESA_DEFAULT);
         let _orgConfigCargada = false;
 
@@ -733,7 +741,8 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                         sitio: data.sitio || '',
                         logoUrl: data.logo_url || '',
                         moneda: data.moneda || 'Q',
-                        ivaPct: Number(data.iva_pct) || 12,
+                        ivaPct: (data.iva_pct !== null && data.iva_pct !== undefined && !isNaN(Number(data.iva_pct))) ? Number(data.iva_pct) : 12,
+                        ivaModalidad: data.iva_modalidad || 'incluido',
                         condicionesDefault: data.condiciones_default || _EMPRESA_DEFAULT.condicionesDefault,
                         prefijoCotizacion: data.prefijo_cotizacion || 'COT-',
                         prefijoTicket: data.prefijo_ticket || 'POS-',
@@ -764,21 +773,41 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 }
                 let extraLocal = {};
                 try { extraLocal = JSON.parse(localStorage.getItem('azyvion_org_extra') || '{}'); } catch(e) {}
-                let felLocal = {};
-                try { felLocal = JSON.parse(localStorage.getItem('azyvion_fel_config') || '{}'); } catch(e) {}
+                // [AUDIT SEC-09] Las credenciales FEL viven en el servidor (org_fel_secrets);
+                // se purgan las copias que versiones anteriores dejaron en localStorage.
+                const felLocal = _felLocalSinSecretos();
+                let felCred = null;
+                if (orgId) {
+                    const st = await _sb.rpc('get_fel_credentials_status', { p_org_id: orgId });
+                    if (!st.error && st.data && st.data.authorized) felCred = st.data;
+                }
                 const resData = {
+                    ...felLocal,
                     ...(data || {}),
+                    fel_usuario_certificador: '',
+                    fel_api_key: '',
+                    fel_credenciales: felCred,
                     iva_pct: (data && data.iva_pct !== undefined) ? data.iva_pct : (extraLocal.iva_pct !== undefined ? extraLocal.iva_pct : 12),
                     iva_modalidad: (data && data.iva_modalidad) || extraLocal.iva_modalidad || 'incluido',
                     dias_vigencia_cotizacion: (data && data.dias_vigencia_cotizacion !== undefined) ? data.dias_vigencia_cotizacion : (extraLocal.dias_vigencia_cotizacion !== undefined ? extraLocal.dias_vigencia_cotizacion : 15),
-                    pie_ticket: (data && data.pie_ticket !== undefined) ? data.pie_ticket : (extraLocal.pie_ticket || ''),
-                    ...felLocal
+                    pie_ticket: (data && data.pie_ticket !== undefined) ? data.pie_ticket : (extraLocal.pie_ticket || '')
                 };
                 return {ok:true, data: resData};
             } catch(e) {
                 console.error('[Ajustes] Error en _getOrgConfig:', e);
                 return {ok:false, error: e.message};
             }
+        }
+
+        function _felLocalSinSecretos() {
+            let fel = {};
+            try { fel = JSON.parse(localStorage.getItem('azyvion_fel_config') || '{}') || {}; } catch(e) {}
+            if ('fel_api_key' in fel || 'fel_usuario_certificador' in fel) {
+                delete fel.fel_api_key;
+                delete fel.fel_usuario_certificador;
+                try { localStorage.setItem('azyvion_fel_config', JSON.stringify(fel)); } catch(e) {}
+            }
+            return fel;
         }
 
         async function _saveOrgConfig(p, sess) {
@@ -814,8 +843,9 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if (p.fel_codigo_establecimiento !== undefined) up.fel_codigo_establecimiento = String(p.fel_codigo_establecimiento).trim();
             if (p.fel_certificador !== undefined) up.fel_certificador = String(p.fel_certificador).trim();
             if (p.fel_entorno !== undefined) up.fel_entorno = String(p.fel_entorno).trim();
-            if (p.fel_usuario_certificador !== undefined) up.fel_usuario_certificador = String(p.fel_usuario_certificador).trim();
-            if (p.fel_api_key !== undefined) up.fel_api_key = String(p.fel_api_key).trim();
+            // [AUDIT SEC-09] Credenciales FEL: nunca en Organizations; se envían por RPC (solo ADMIN).
+            const felUsuarioNuevo = String(p.fel_usuario_certificador || '').trim();
+            const felKeyNueva = String(p.fel_api_key || '').trim();
             if (p.fel_frase_sat !== undefined) up.fel_frase_sat = String(p.fel_frase_sat).trim();
             up.updated_at = new Date().toISOString();
 
@@ -828,62 +858,29 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 }));
             } catch(e) {}
             try {
-                let targetOrgId = orgId;
-                let existing = null;
-                if (targetOrgId) {
-                    const exRes = await _sb.from('Organizations').select('id').eq('id', targetOrgId).maybeSingle();
-                    if (exRes.data) existing = exRes.data;
-                }
-                if (!existing) {
-                    const firstOrg = await _sb.from('Organizations').select('id').limit(1);
-                    if (firstOrg.data && firstOrg.data.length) {
-                        existing = firstOrg.data[0];
-                        targetOrgId = existing.id;
-                    }
-                }
+                // [AUDIT FN-14] Antes: si no había fila se tomaba "la primera" Organization
+                // visible (para SUPER_ADMIN, cualquier empresa) y, ante un error de columna,
+                // se guardaba solo una parte y se respondía ok:true. Ahora: siempre la org
+                // propia y cualquier error se informa.
+                const targetOrgId = orgId;
+                if (!targetOrgId) return {ok:false, error:'No se pudo determinar la organización.'};
+                const exRes = await _sb.from('Organizations').select('id').eq('id', targetOrgId).maybeSingle();
+                if (exRes.error) return {ok:false, error: exRes.error.message};
 
-                let error;
-                if (existing) {
-                    ({error} = await _sb.from('Organizations').update(up).eq('id', targetOrgId));
+                let res;
+                if (exRes.data) {
+                    res = await _sb.from('Organizations').update(up).eq('id', targetOrgId).select('id');
                 } else {
-                    targetOrgId = targetOrgId || _uuid();
-                    ({error} = await _sb.from('Organizations').insert({id: targetOrgId, ...up}));
+                    res = await _sb.from('Organizations').insert({id: targetOrgId, ...up}).select('id');
                 }
-                if (error) {
-                    console.warn('[Ajustes] Advertencia actualizando Organizations en Supabase, reintentando con campos base:', error);
-                    if (error.message && (error.message.includes('column') || error.message.includes('does not exist') || error.code === '42703')) {
-                        const baseUp = {
-                            nombre: up.nombre, eslogan: up.eslogan, nit: up.nit,
-                            direccion: up.direccion, telefono: up.telefono, correo: up.correo,
-                            sitio: up.sitio, moneda: up.moneda, iva_pct: up.iva_pct,
-                            updated_at: up.updated_at
-                        };
-                        Object.keys(baseUp).forEach(k => baseUp[k] === undefined && delete baseUp[k]);
-                        const r2 = existing ? await _sb.from('Organizations').update(baseUp).eq('id', targetOrgId)
-                                            : await _sb.from('Organizations').insert({id: targetOrgId, ...baseUp});
-                        if (r2.error) {
-                            console.error('[Ajustes] Error guardando baseUp en Organizations:', r2.error);
-                            return {ok:false, error: r2.error.message};
-                        }
-                        try {
-                            localStorage.setItem('azyvion_fel_config', JSON.stringify({
-                                fel_habilitado: up.fel_habilitado,
-                                fel_nit_emisor: up.fel_nit_emisor,
-                                fel_nombre_comercial: up.fel_nombre_comercial,
-                                fel_afiliacion_iva: up.fel_afiliacion_iva,
-                                fel_codigo_establecimiento: up.fel_codigo_establecimiento,
-                                fel_certificador: up.fel_certificador,
-                                fel_entorno: up.fel_entorno,
-                                fel_usuario_certificador: up.fel_usuario_certificador,
-                                fel_api_key: up.fel_api_key,
-                                fel_frase_sat: up.fel_frase_sat
-                            }));
-                        } catch(e) {}
-                        _orgConfigCargada = false;
-                        await _loadOrgConfig();
-                        return {ok:true};
-                    }
-                    return {ok:false, error: error.message};
+                if (res.error) return {ok:false, error: res.error.message};
+                if (!res.data || !res.data.length) return {ok:false, error:'No tienes permiso para modificar la configuración de esta empresa.'};
+
+                if (felUsuarioNuevo || felKeyNueva) {
+                    const {error: felErr} = await _sb.rpc('set_fel_credentials', {
+                        p_org_id: targetOrgId, p_usuario: felUsuarioNuevo || null, p_api_key: felKeyNueva || null
+                    });
+                    if (felErr) return {ok:false, error:'La empresa se guardó, pero no las credenciales FEL: ' + felErr.message};
                 }
                 _orgConfigCargada = false; // forzar recarga
                 await _loadOrgConfig();
@@ -985,12 +982,39 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             return pref + y + '-' + String(max + 1).padStart(4, '0');
         }
 
+        // Redondeo a 2 decimales sin el error binario de Math.round(x*100)/100 (1.005 → 1.01, igual que numeric en PostgreSQL).
+        function _r2(n) {
+            const v = Number(n);
+            if (!isFinite(v) || Math.abs(v) < 1e-9) return 0;
+            return Number(Math.round(Number(v + 'e2')) + 'e-2');
+        }
+
+        // [AUDIT FN-16] Antes el IVA siempre se sumaba encima (total = líneas × 1.12) aunque la
+        // modalidad por defecto es "incluido" y la pantalla mostraba total = líneas. Ahora usa
+        // la misma regla que cotCalcularTotales(): incluido | sobre | exento. Invariante
+        // guardado: total = subtotal - descuento + iva.
         function _calcT(items, dP, iva) {
-            const sub = items.reduce((s, i) => s + Number(i.total || 0), 0);
-            const d = sub * (Math.min(Math.max(Number(dP) || 0, 0), 100) / 100);
-            const b = sub - d;
-            const iv = iva ? b * (EMPRESA.ivaPct / 100) : 0;
-            return {subtotal: Math.round(sub * 100) / 100, descuento: Math.round(d * 100) / 100, iva: Math.round(iv * 100) / 100, total: Math.round((b + iv) * 100) / 100};
+            const sub = _r2(items.reduce((s, i) => s + Number(i.total || 0), 0));
+            const d = _r2(sub * (Math.min(Math.max(Number(dP) || 0, 0), 100) / 100));
+            const bruto = _r2(sub - d);
+            const pct = Number(EMPRESA.ivaPct);
+            const mod = EMPRESA.ivaModalidad || 'incluido';
+            if (!iva || mod === 'exento' || !(pct > 0)) {
+                return {subtotal: sub, descuento: d, iva: 0, total: bruto};
+            }
+            if (mod === 'sobre') {
+                const iv = _r2(bruto * pct / 100);
+                return {subtotal: sub, descuento: d, iva: iv, total: _r2(bruto + iv)};
+            }
+            const neto = _r2(bruto / (1 + pct / 100));
+            const iv = _r2(bruto - neto);
+            return {subtotal: _r2(neto + d), descuento: d, iva: iv, total: bruto};
+        }
+
+        // [AUDIT FN-17] Reemplazo atómico de ítems (RPC replace_cotizacion_items, aplica RLS).
+        async function _guardarItemsCot(cotId, items) {
+            const {error} = await _sb.rpc('replace_cotizacion_items', {p_cotizacion_id: cotId, p_items: items});
+            return error ? {ok: false, error: 'No se pudieron guardar los ítems: ' + error.message} : {ok: true};
         }
 
         function _normItems(raw) {
@@ -1009,7 +1033,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                     cantidad: c,
                     precioUnit: p,
                     descuentoPct: dp,
-                    total: Math.round((b - b * dp / 100) * 100) / 100
+                    total: _r2(b - b * dp / 100)
                 };
             }).filter(i => i.descripcion && i.cantidad > 0);
         }
@@ -1020,13 +1044,14 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if (!items.length) return {ok: false, error: 'Agrega al menos un ítem.'};
             const orgId = _getEffectiveOrgId();
             const iva = p.aplicaIVA === true || String(p.aplicaIVA) === 'true';
+            await _loadOrgConfig();
             const t = _calcT(items, p.descuentoPct, iva);
-            const num = await _nextNumCot();
+            let num = await _nextNumCot();
             const id = _uuid();
             const r = {
                 id,
                 numero: num,
-                clienteId: p.clienteId || '',
+                clienteId: p.clienteId || null,   // [AUDIT FN-22] columna uuid: '' hacía fallar el alta
                 cliente: String(p.cliente).trim(),
                 empresa: p.empresa || '',
                 correo: p.correo || '',
@@ -1044,17 +1069,24 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 fechaReg: new Date().toISOString(),
                 organization_id: orgId
             };
-            const {error} = await _sb.from('Cotizaciones').insert(r);
+            // [AUDIT FN-18] Índice único (organization_id, numero): si otro usuario tomó el
+            // mismo número a la vez, se recalcula y reintenta.
+            let error = null;
+            for (let intento = 0; intento < 3; intento++) {
+                ({error} = await _sb.from('Cotizaciones').insert(r));
+                if (!error || error.code !== '23505') break;
+                num = await _nextNumCot();
+                r.numero = num;
+            }
             if (error) {
                 console.error('[Cotizaciones] Error creando cotización:', error);
                 return {ok: false, error: error.message};
             }
-            if (items.length) {
-                const ir = items.map(it => ({id: _uuid(), cotizacionId: id, ...it, organization_id: orgId}));
-                const {error: itemErr} = await _sb.from('CotizacionItems').insert(ir);
-                if (itemErr) {
-                    console.error('[Cotizaciones] Error insertando items:', itemErr);
-                }
+            // [AUDIT FN-17] Antes, si fallaban los ítems quedaba la cotización vacía y se respondía ok.
+            const ir = await _guardarItemsCot(id, items);
+            if (!ir.ok) {
+                await _sb.from('Cotizaciones').delete().eq('id', id);
+                return ir;
             }
             return {ok: true, id, numero: num};
         }
@@ -1072,7 +1104,11 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             const {data: ex} = await qEx.single();
             if (!ex) return {ok: false, error: 'Cotización no encontrada.'};
             const iva = p.aplicaIVA !== undefined ? (p.aplicaIVA === true || String(p.aplicaIVA) === 'true') : (ex.aplicaIVA === true);
+            await _loadOrgConfig();
             const t = _calcT(items, p.descuentoPct !== undefined ? p.descuentoPct : ex.descuentoPct, iva);
+            // [AUDIT FN-17] Primero los ítems (atómico); si fallan no se toca nada más.
+            const ir = await _guardarItemsCot(p.id, items);
+            if (!ir.ok) return ir;
             const up = {
                 ...t,
                 aplicaIVA: iva,
@@ -1083,19 +1119,13 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             ['clienteId', 'empresa', 'correo', 'telefono', 'direccion', 'validezDias', 'condiciones', 'notas', 'descuentoPct'].forEach(k => {
                 if (p[k] !== undefined) up[k] = p[k];
             });
+            if (up.clienteId === '') up.clienteId = null;   // [AUDIT FN-22]
             let qUp = _sb.from('Cotizaciones').update(up).eq('id', p.id);
             if (orgId) qUp = qUp.eq('organization_id', orgId);
             const {error} = await qUp;
             if (error) {
                 console.error('[Cotizaciones] Error actualizando cotización:', error);
                 return {ok: false, error: error.message};
-            }
-            await _sb.from('CotizacionItems').delete().eq('cotizacionId', p.id);
-            if (items.length) {
-                const {error: upItemErr} = await _sb.from('CotizacionItems').insert(items.map(it => ({id: _uuid(), cotizacionId: p.id, ...it, organization_id: orgId})));
-                if (upItemErr) {
-                    console.error('[Cotizaciones] Error reinsertando items:', upItemErr);
-                }
             }
             return {ok: true};
         }
@@ -1162,29 +1192,35 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if (!orig.ok) return orig;
             const c = orig.data, items = orig.items || [];
             const orgId = _getEffectiveOrgId();
+            const CONCEPTO_VENTA_COT = 'Venta - Cotización';
 
-            // 1. Descontar stock de productos
-            for (const it of items) {
-                if (it.tipo !== 'Servicio' && it.itemId) {
-                    try {
-                        const {data: pr} = await _sb.from('Inventario').select('unidades').eq('id', it.itemId).single();
-                        if (pr && pr.unidades !== undefined) {
-                            const newUnits = Math.max(0, Number(pr.unidades || 0) - Number(it.cantidad || 0));
-                            await _sb.from('Inventario').update({unidades: newUnits}).eq('id', it.itemId);
-                        }
-                    } catch (e) {
-                        console.warn('[Azyvion] Descuento stock conversión cotización:', e);
-                    }
-                }
+            // [AUDIT FN-21] Antes el ingreso se escribía en TransaccionesCRM (tabla inexistente):
+            // la venta nunca llegaba a Contabilidad, la cotización quedaba Aprobada y se
+            // respondía éxito. Tampoco se impedía convertir dos veces la misma cotización.
+            {
+                let qDup = _sb.from('Transacciones').select('id').eq('concepto', CONCEPTO_VENTA_COT).eq('referencia', c.numero).limit(1);
+                if (orgId) qDup = qDup.eq('organization_id', orgId);
+                const {data: dup, error: dupErr} = await qDup;
+                if (dupErr) return {ok: false, error: dupErr.message};
+                if (dup && dup.length) return {ok: false, error: 'Esta cotización ya fue convertida en venta.'};
+            }
+
+            // 1. Descontar stock de productos (atómico, rechaza si falta existencia) [AUDIT FN-19]
+            const stockItems = items
+                .filter(it => it.tipo !== 'Servicio' && it.itemId)
+                .map(it => ({id: it.itemId, tipo: it.tipo || 'Producto', cantidad: Number(it.cantidad) || 0}));
+            if (stockItems.length) {
+                const {error: stErr} = await _sb.rpc('pos_mover_stock', {p_items: stockItems, p_devolver: false});
+                if (stErr) return {ok: false, error: stErr.message || 'No se pudo descontar el inventario.'};
             }
 
             // 2. Registrar transacción en Contabilidad
-            const trxId = _uuid();
-            await _sb.from('TransaccionesCRM').insert({
-                id: trxId,
+            const {error: trxErr} = await _sb.from('Transacciones').insert({
+                id: _uuid(),
                 fecha: new Date().toISOString().slice(0, 10),
                 tipo: 'Ingreso',
-                categoria: 'Ventas - Cotización',
+                concepto: CONCEPTO_VENTA_COT,
+                referencia: c.numero,
                 descripcion: 'Venta cerrada desde Cotización ' + c.numero + ' - ' + c.cliente,
                 monto: Number(c.total || 0),
                 cuentaBancariaId: p.cuentaBancariaId || null,
@@ -1193,9 +1229,16 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 fechaReg: new Date().toISOString(),
                 organization_id: orgId
             });
+            if (trxErr) {
+                if (stockItems.length) await _sb.rpc('pos_mover_stock', {p_items: stockItems, p_devolver: true});
+                return {ok: false, error: 'No se registró la venta: ' + trxErr.message};
+            }
 
             // 3. Actualizar estado cotización a Aprobada
-            await _updateEstadoCot({id: p.id, estado: 'Aprobada'}, u);
+            const est = await _updateEstadoCot({id: p.id, estado: 'Aprobada'}, u);
+            if (est && est.ok === false) {
+                return {ok: false, error: 'La venta se registró, pero no se pudo marcar la cotización como Aprobada: ' + est.error};
+            }
 
             return {ok: true, mensaje: 'Cotización convertida en venta exitosamente.', numero: c.numero, total: c.total};
         }
@@ -1271,17 +1314,6 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 });
             } catch(e) {}
 
-            // 2. Buscar en TransaccionesCRM si existe
-            try {
-                let qPos2 = _sb.from('TransaccionesCRM').select('descripcion');
-                if (orgId) qPos2 = qPos2.eq('organization_id', orgId);
-                const {data: tData2} = await qPos2;
-                (tData2 || []).forEach(t => {
-                    const m = String(t.descripcion || '').match(rePos);
-                    if (m) maxPos = Math.max(maxPos, Number(m[1]));
-                });
-            } catch(e) {}
-
             // 3. Incremento atómico en memoria/localStorage para evitar duplicados en ventas consecutivas
             const localSeqKey = 'pos_ticket_seq_' + (orgId || 'org') + '_' + y;
             try {
@@ -1292,7 +1324,11 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             try { localStorage.setItem(localSeqKey, String(nextSeq)); } catch(e) {}
             const ticketNum = prefPos + y + '-' + String(nextSeq).padStart(5, '0');
 
-            const total = Number(p.total) || 0;
+            // [AUDIT FN-20] El monto registrado es el validado aquí, no el enviado por el cliente.
+            if (Math.abs((Number(p.total) || 0) - expectedTotal) > 0.05) {
+                return {ok: false, error: 'El total de la venta no coincide con sus líneas. Revisa el carrito.'};
+            }
+            const total = expectedTotal;
             const metodoPago = p.metodoPago || 'Efectivo';
             const clienteNombre = p.clienteNombre || 'Consumidor Final (C/F)';
             const nit = p.nit || 'C/F';
@@ -1329,18 +1365,15 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             }
 
             // 4. Descontar inventario
-            for (const item of p.items) {
-                if (item.id && item.tipo !== 'Servicio') {
-                    try {
-                        const {data: pr} = await _sb.from('Inventario').select('unidades').eq('id', item.id).single();
-                        if (pr && pr.unidades !== undefined) {
-                            const newUnits = Math.max(0, Number(pr.unidades || 0) - Number(item.cantidad || 1));
-                            await _sb.from('Inventario').update({unidades: newUnits}).eq('id', item.id);
-                        }
-                    } catch (e) {
-                        console.warn('[Azyvion POS] Descuento stock:', e);
-                    }
-                }
+            // [AUDIT FN-19] Antes: leer y luego escribir por producto (ventas simultáneas perdían
+            // descuentos), truncar a 0 sin avisar y ocultar errores. Ahora un RPC atómico que
+            // rechaza la venta completa si falta existencia.
+            const stockItems = p.items
+                .filter(it => it.id && it.tipo !== 'Servicio')
+                .map(it => ({id: it.id, tipo: it.tipo || 'Producto', cantidad: Number(it.cantidad) || 0}));
+            if (stockItems.length) {
+                const {error: stErr} = await _sb.rpc('pos_mover_stock', {p_items: stockItems, p_devolver: false});
+                if (stErr) return {ok: false, error: stErr.message || 'No se pudo descontar el inventario.'};
             }
 
             // 5. Registrar asiento / transacción contable
@@ -1349,8 +1382,10 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             const trxDesc = 'Ticket ' + ticketNum + ' · ' + clienteNombre + ' · Pago: ' + metodoPago + (nit !== 'C/F' ? ' · NIT: ' + nit : '');
             
             // Inserción en Transacciones (tabla principal de Contabilidad de Azyvion)
-            try {
-                await _sb.from('Transacciones').insert({
+            // [AUDIT FN-20] supabase-js no lanza excepciones: antes un fallo aquí dejaba la venta
+            // "exitosa" sin ingreso contable. Ahora se revisa el error y se repone el inventario.
+            {
+                const {error: trxErr} = await _sb.from('Transacciones').insert({
                     id: trxId,
                     fecha: new Date().toISOString().slice(0, 10),
                     tipo: 'Ingreso',
@@ -1365,27 +1400,16 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                     sucursal_id: sucursalId,
                     caja_turno_id: cajaTurnoId
                 });
-            } catch(e) {
-                console.warn('[POS] Inserción Transacciones:', e);
+                if (trxErr) {
+                    console.error('[POS] Inserción Transacciones:', trxErr);
+                    if (stockItems.length) {
+                        const {error: devErr} = await _sb.rpc('pos_mover_stock', {p_items: stockItems, p_devolver: true});
+                        if (devErr) console.error('[POS] No se pudo reponer el inventario:', devErr);
+                    }
+                    return {ok: false, error: 'La venta no se registró: ' + trxErr.message};
+                }
             }
-
-            // Inserción en TransaccionesCRM si la tabla existe
-            try {
-                await _sb.from('TransaccionesCRM').insert({
-                    id: _uuid(),
-                    fecha: new Date().toISOString().slice(0, 10),
-                    tipo: 'Ingreso',
-                    categoria: 'Venta POS',
-                    descripcion: trxDesc,
-                    monto: total,
-                    cuentaBancariaId: ctaBanco,
-                    creadoPor: u,
-                    fechaReg: new Date().toISOString(),
-                    organization_id: orgId,
-                    sucursal_id: sucursalId,
-                    caja_turno_id: cajaTurnoId
-                });
-            } catch(e) {}
+            // [AUDIT FN-10] Se eliminó la escritura a TransaccionesCRM (la tabla no existe).
 
             // Si es con cuenta bancaria (Transferencia o Depósito), actualizar saldo en CuentasBancarias
             if (ctaBanco) {
@@ -1406,26 +1430,12 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 orgData = od;
             } catch(e) {}
 
-            let felConfig = null;
-            try { felConfig = JSON.parse(localStorage.getItem('azyvion_fel_config') || 'null'); } catch(e) {}
-            const esFel = (orgData && orgData.fel_habilitado) || (felConfig && felConfig.fel_habilitado);
-
-            if (esFel) {
-                const uuidSat = _uuid().toUpperCase();
-                const serieDte = ((orgData && orgData.fel_certificador) || 'INFILE').substring(0, 4).toUpperCase() + y;
-                const numDte = String(nextSeq).padStart(8, '0');
-                dteInfo = {
-                    esFel: true,
-                    uuidSat: uuidSat,
-                    serieDte: serieDte,
-                    numeroDte: numDte,
-                    fechaCertificacionSat: new Date().toISOString(),
-                    certificador: (orgData && orgData.fel_certificador) || 'INFILE, S.A.',
-                    nitEmisor: (orgData && orgData.fel_nit_emisor) || (orgData && orgData.nit) || 'C/F',
-                    fraseSat: (orgData && orgData.fel_frase_sat) || 'Sujeto a pagos trimestrales ISR',
-                    enlaceVerificacionSat: 'https://fel.sat.gob.gt/consultas/dte/' + uuidSat
-                };
-            }
+            const felConfig = _felLocalSinSecretos();
+            const esFel = !!((orgData && orgData.fel_habilitado) || felConfig.fel_habilitado);
+            // [AUDIT FN-15] Antes se inventaba un "UUID SAT", serie, número y enlace de
+            // verificación y el ticket se presentaba como DTE certificado sin haber
+            // llamado a ningún certificador. Sin integración real, dteInfo queda null y
+            // el ticket se marca como comprobante interno no certificado.
 
             // 7. Preparar datos para imprimir ticket térmico o comprobante
             return {
@@ -1446,7 +1456,8 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                     cambio: Number(p.cambio || 0),
                     cajero: u,
                     empresa: EMPRESA,
-                    fel: dteInfo
+                    fel: dteInfo,
+                    felNoCertificado: esFel && !dteInfo
                 }
             };
         }
@@ -2060,9 +2071,11 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             const key = String(p.apiKey || '').trim();
             const entorno = p.entorno || 'Pruebas';
             if (!nit || !key) return { ok: false, error: 'El NIT y la clave API de certificador son requeridos.' };
+            // [AUDIT FN-15] Antes respondía "Conexión verificada… Credenciales autorizadas"
+            // sin contactar a ningún certificador. No hay integración FEL en el backend.
             return {
-                ok: true,
-                mensaje: 'Conexión verificada con ' + cert + ' (' + entorno + '). Credenciales autorizadas para NIT ' + nit + '.'
+                ok: false,
+                error: 'La verificación con ' + cert + ' (' + entorno + ') aún no está disponible: la integración FEL no está implementada en el servidor. No se realizó ninguna verificación.'
             };
         }
 
@@ -2075,15 +2088,8 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if (p && p.hasta) q = q.lte('fecha', p.hasta);
             let {data, error} = await q;
 
-            // Fallback a TransaccionesCRM si Transacciones no arrojó registros
-            if (error || !data || !data.length) {
-                let q2 = _sb.from('TransaccionesCRM').select('*').order('fecha', {ascending: false});
-                if (orgId) q2 = q2.eq('organization_id', orgId);
-                if (p && p.desde) q2 = q2.gte('fecha', p.desde);
-                if (p && p.hasta) q2 = q2.lte('fecha', p.hasta);
-                const r2 = await q2;
-                if (r2.data && r2.data.length) data = r2.data;
-            }
+            // [AUDIT FN-10] Se quitó el fallback a TransaccionesCRM (tabla inexistente) que ocultaba errores.
+            if (error) return {ok: false, error: error.message};
 
             // Mapeo opcional de nombres de cuentas bancarias
             let mapaBancos = {};
@@ -2145,15 +2151,8 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if (p && p.hasta) q = q.lte('fecha', p.hasta);
             let {data, error} = await q;
 
-            // Fallback a TransaccionesCRM si Transacciones está vacía
-            if (error || !data || !data.length) {
-                let q2 = _sb.from('TransaccionesCRM').select('*');
-                if (orgId) q2 = q2.eq('organization_id', orgId);
-                if (p && p.desde) q2 = q2.gte('fecha', p.desde);
-                if (p && p.hasta) q2 = q2.lte('fecha', p.hasta);
-                const r2 = await q2;
-                if (r2.data && r2.data.length) data = r2.data;
-            }
+            // [AUDIT FN-10] Se quitó el fallback a TransaccionesCRM (tabla inexistente) que ocultaba errores.
+            if (error) return {ok: false, error: error.message};
 
             let ingresos = 0, egresos = 0;
             const porCat = {};
@@ -2305,7 +2304,9 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
         }
         async function _getResumenCotizaciones(){const r=await _getCotizaciones({});const d=r.data||[];const h=new Date(),mes=h.getMonth(),anio=h.getFullYear();const dM=d.filter(c=>{const dd=new Date(c.fecha);return!isNaN(dd)&&dd.getMonth()===mes&&dd.getFullYear()===anio;});const ap=d.filter(c=>c.estado==='Aprobada'),en=d.filter(c=>c.estado==='Enviada');return{ok:true,empresa:EMPRESA,total:d.length,borradores:d.filter(c=>c.estado==='Borrador').length,enviadas:en.length,aprobadas:ap.length,rechazadas:d.filter(c=>c.estado==='Rechazada').length,vencidas:d.filter(c=>c.vencida).length,montoTotal:d.reduce((s,c)=>s+Number(c.total||0),0),montoAprobado:ap.reduce((s,c)=>s+Number(c.total||0),0),montoEnviado:en.reduce((s,c)=>s+Number(c.total||0),0),cotizacionesMes:dM.length,montoMes:dM.reduce((s,c)=>s+Number(c.total||0),0),tasaAprobacion:d.length?Math.round(ap.length/d.length*100):0};}
 
-        async function _getFicha(p,rol){if(!p||!p.id)return{ok:false,error:'ID requerido.'};const tipo=String(p.tipo||'').trim()==='Prospecto'?'Prospecto':'Cliente';const tabla=tipo==='Cliente'?'Clientes':'Prospectos';const{data:ent}=await _sb.from(tabla).select('*').eq('id',p.id).single();if(!ent)return{ok:false,error:tipo+' no encontrado.'};const[cR,nR,aR,cotR]=await Promise.all([_sb.from('Contactos').select('*').eq('tipo',tipo).eq('refId',p.id),_sb.from('NotasCRM').select('*').eq('tipo',tipo).eq('refId',p.id).order('fecha',{ascending:false}),_sb.from('ActividadesCRM').select('*').eq('tipo',tipo).eq('refId',p.id).order('fecha',{ascending:false}),_sb.from('Cotizaciones').select('id,numero,fecha,total,estado').or('clienteId.eq.'+p.id+',cliente.ilike.%'+encodeURIComponent(ent.nombre)+'%')]);const contactos=(cR.data||[]).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),'es'));const notas=nR.data||[];const actividades=(aR.data||[]).map(a=>({...a,origen:'ficha'}));const cotizaciones=(cotR.data||[]).sort((a,b)=>String(b.numero).localeCompare(String(a.numero)));const hoy=new Date();hoy.setHours(0,0,0,0);let prox=null;actividades.forEach(a=>{if(!a.fechaSeguimiento)return;const d=new Date(a.fechaSeguimiento);if(d>=hoy&&(!prox||d<new Date(prox.fecha)))prox={fecha:a.fechaSeguimiento,titulo:a.titulo||a.categoria,usuario:a.usuario};});return{ok:true,tipo,entidad:ent,contactos,notas,actividades,prospectos:[],clientes:[],cotizaciones,proximoSeguimiento:prox,resumen:{totalContactos:contactos.length,totalNotas:notas.length,totalActividades:actividades.length,totalCotizaciones:cotizaciones.length,montoCotizado:cotizaciones.reduce((s,c)=>s+Number(c.total||0),0),ultimaActividad:actividades.length?actividades[0].fecha:''},permisos:{puedeEditar:true,puedeEliminar:_currentUserRole==='ADMIN'||_currentUserRole==='SUPER_ADMIN'||_currentUserRole==='GERENTE',esAdmin:_currentUserRole==='ADMIN'||_currentUserRole==='SUPER_ADMIN'}};}
+        // Valor entre comillas para filtros or()/and() de PostgREST (comas, paréntesis, comillas).
+        function _pgrstQuote(v){return '"'+String(v==null?'':v).replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"';}
+        async function _getFicha(p,rol){if(!p||!p.id)return{ok:false,error:'ID requerido.'};const tipo=String(p.tipo||'').trim()==='Prospecto'?'Prospecto':'Cliente';const tabla=tipo==='Cliente'?'Clientes':'Prospectos';const{data:ent}=await _sb.from(tabla).select('*').eq('id',p.id).single();if(!ent)return{ok:false,error:tipo+' no encontrado.'};const[cR,nR,aR,cotR]=await Promise.all([_sb.from('Contactos').select('*').eq('tipo',tipo).eq('refId',p.id),_sb.from('NotasCRM').select('*').eq('tipo',tipo).eq('refId',p.id).order('fecha',{ascending:false}),_sb.from('ActividadesCRM').select('*').eq('tipo',tipo).eq('refId',p.id).order('fecha',{ascending:false}),_sb.from('Cotizaciones').select('id,numero,fecha,total,estado').or('clienteId.eq.'+p.id+',and(clienteId.is.null,cliente.eq.'+_pgrstQuote(ent.nombre)+')')]);/* [AUDIT FN-23] antes cliente.ilike.%nombre% mezclaba cotizaciones de otros clientes */const contactos=(cR.data||[]).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),'es'));const notas=nR.data||[];const actividades=(aR.data||[]).map(a=>({...a,origen:'ficha'}));const cotizaciones=(cotR.data||[]).sort((a,b)=>String(b.numero).localeCompare(String(a.numero)));const hoy=new Date();hoy.setHours(0,0,0,0);let prox=null;actividades.forEach(a=>{if(!a.fechaSeguimiento)return;const d=new Date(a.fechaSeguimiento);if(d>=hoy&&(!prox||d<new Date(prox.fecha)))prox={fecha:a.fechaSeguimiento,titulo:a.titulo||a.categoria,usuario:a.usuario};});return{ok:true,tipo,entidad:ent,contactos,notas,actividades,prospectos:[],clientes:[],cotizaciones,proximoSeguimiento:prox,resumen:{totalContactos:contactos.length,totalNotas:notas.length,totalActividades:actividades.length,totalCotizaciones:cotizaciones.length,montoCotizado:cotizaciones.reduce((s,c)=>s+Number(c.total||0),0),ultimaActividad:actividades.length?actividades[0].fecha:''},permisos:{puedeEditar:true,puedeEliminar:_currentUserRole==='ADMIN'||_currentUserRole==='SUPER_ADMIN'||_currentUserRole==='GERENTE',esAdmin:_currentUserRole==='ADMIN'||_currentUserRole==='SUPER_ADMIN'}};}
         async function _addContacto(p,u){if(!p.nombre||!String(p.nombre).trim())return{ok:false,error:'El nombre del contacto es requerido.'};const r={id:_uuid(),tipo:p.tipo||'Cliente',refId:p.refId,nombre:String(p.nombre).trim(),cargo:p.cargo||'',telefono:p.telefono||'',correo:p.correo||'',notas:p.notas||'',creadoPor:u,fechaReg:new Date().toISOString(),organization_id:_currentOrgId};const{error}=await _sb.from('Contactos').insert(r);if(error)return{ok:false,error:error.message};return{ok:true,id:r.id};}
         async function _updateContacto(p,u){const up={};['nombre','cargo','telefono','correo','notas'].forEach(k=>{if(p[k]!==undefined)up[k]=p[k];});const{error}=await _sb.from('Contactos').update(up).eq('id',p.id);if(error)return{ok:false,error:error.message};return{ok:true};}
         async function _deleteContacto(p,u){const{error}=await _sb.from('Contactos').delete().eq('id',p.id);if(error)return{ok:false,error:error.message};return{ok:true};}

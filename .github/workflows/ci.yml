@@ -1,0 +1,33 @@
+# CI de Azyvion CRM: bloquea la publicación si hay errores de sintaxis o
+# pruebas unitarias/regresión fallidas. Las pruebas SQL (tests/rls/*.sql) se
+# ejecutan contra Supabase y requieren un secreto SUPABASE_DB_URL (staging);
+# si no está configurado, ese job se omite y queda marcado como "skipped".
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Sintaxis (.js y <script> inline)
+        run: node tests/check_syntax.js
+      - name: Pruebas unitarias y de regresión
+        run: node --test "tests/unit/*.test.js"
+
+  database:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Regresión RLS / RPC (siempre revierte)
+        if: ${{ env.SUPABASE_DB_URL != '' }}
+        run: bash tests/rls/run_all.sh

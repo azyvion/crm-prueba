@@ -10,17 +10,17 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root{
-  --navy:#0b1929;
-  --navy2:#0e2040;
-  --blue:#1a6bcc;
-  --blue2:#1558aa;
-  --sky:#3d9be9;
+  --navy:#12345A;
+  --navy2:#0E2A4A;
+  --blue:#1F5F99;
+  --blue2:#12345A;
+  --sky:#63B3E5;
   --sky2:#6dbdff;
   --white:#fff;
-  --off:#f2f5fa;
-  --border:#dde4ed;
-  --text:#0b1929;
-  --muted:#5a6b80;
+  --off:#F5F7FA;
+  --border:#E2E8F0;
+  --text:#172B4D;
+  --muted:#5B6B80;
   --light:#a0b0c4;
 }
 
@@ -961,32 +961,47 @@ let _encuestaId = null;
 /* ══════════════════════════════════════════════════════════════════
    INICIALIZACIÓN: obtener / crear el registro de encuesta en la DB
 ══════════════════════════════════════════════════════════════════ */
-(async function initEncuesta() {
+/* [AUDIT FN-02] El visitante es anónimo: RLS bloquea leer/crear `encuestas`
+   directamente. Se usa el token público + RPC SECURITY DEFINER. */
+const ENCUESTA_TOKEN = 'ed4950ef-7464-43a7-9929-7dfd582aa3a2';
+let _preguntasPorOrden = {};   // orden (1..5) -> id de pregunta en BD
+
+const _encuestaReady = (async function initEncuesta() {
   try {
-    const { data, error } = await _sbFree
-      .from('encuestas')
-      .select('id')
-      .eq('nombre', ENCUESTA_NOMBRE)
-      .limit(1)
-      .maybeSingle();
-
-    if (error) { console.warn('[Freelancer] No se pudo conectar con la DB:', error.message); return; }
-
-    if (data) {
+    const { data, error } = await _sbFree.rpc('get_public_survey', { p_token: ENCUESTA_TOKEN });
+    if (error) { console.warn('[Freelancer] No se pudo cargar la encuesta:', error.message); return; }
+    if (data && data.id) {
       _encuestaId = data.id;
-    } else {
-      /* La encuesta no existe: crearla automáticamente */
-      const { data: nueva, error: insErr } = await _sbFree
-        .from('encuestas')
-        .insert({ nombre: ENCUESTA_NOMBRE, tipo: 'Mixta', estado: 'Activa', preg_total: 5 })
-        .select('id')
-        .single();
-      if (!insErr && nueva) _encuestaId = nueva.id;
+      (data.questions || []).forEach(q => { _preguntasPorOrden[q.orden] = q.id; });
     }
   } catch (e) {
     console.warn('[Freelancer] initEncuesta:', e);
   }
 })();
+
+/* Envía las respuestas; lanza error si el servidor no confirma. */
+async function _enviarRespuestasEncuesta(answers, nombre) {
+  await _encuestaReady;
+  if (!_encuestaId) throw new Error('La evaluación no está disponible en este momento.');
+  const p_respuestas = {};
+  for (let i = 1; i <= TITLES.length; i++) {
+    const qid = _preguntasPorOrden[i];
+    if (qid && answers[i]) p_respuestas[qid] = answers[i];
+  }
+  const { data, error } = await _sbFree.rpc('submit_public_survey', {
+    p_token: ENCUESTA_TOKEN,
+    p_nombre: (nombre || '').trim() || 'Candidato sin nombre',
+    p_email: '', p_puesto: ENCUESTA_NOMBRE, p_respuestas
+  });
+  if (error) throw error;
+  if (!data || data.ok !== true) throw new Error('El servidor no confirmó el envío.');
+}
+
+function _mostrarErrorEnvio(btn, label, err) {
+  console.error('[Freelancer] envío:', err);
+  if (btn) { btn.disabled = false; btn.textContent = label; }
+  alert('No se pudieron enviar tus respuestas. Revisa tu conexión e inténtalo de nuevo.');
+}
 
 /* ══════════════════════════════════════════════════════════════════
    LÓGICA DE LA EVALUACIÓN
@@ -1078,26 +1093,13 @@ async function submitFromStep(){
     if (error) console.warn('[Freelancer] TestReclutamiento insert error:', error.message);
   } catch(e){ console.warn('[Freelancer] TestReclutamiento:', e); }
 
-  /* 2. Guardar también en encuesta_envios + respuestas si tenemos el ID */
-  if (_encuestaId) {
-    try {
-      const envioId = _genUUID();
-      await _sbFree.from('encuesta_envios').insert({
-        id:              envioId,
-        encuesta_id:     _encuestaId,
-        puesto:          ENCUESTA_NOMBRE,
-        nombre_candidato: _nombreCandidato || null,
-        submitted_at:    new Date().toISOString()
-      });
-      const filas = TITLES.map((titulo, idx) => ({
-        envio_id:        envioId,
-        encuesta_id:     _encuestaId,
-        pregunta_orden:  idx + 1,
-        pregunta_titulo: titulo,
-        respuesta:       answers[idx + 1] || ''
-      }));
-      await _sbFree.from('encuesta_respuestas').insert(filas);
-    } catch(e){ console.warn('[Freelancer] encuesta_envios:', e); }
+  /* 2. Guardar en encuesta_envios + respuestas (vía RPC). Solo se muestra
+        éxito si el servidor confirma [AUDIT FN-02]. */
+  try {
+    await _enviarRespuestasEncuesta(answers, _nombreCandidato);
+  } catch (e) {
+    _mostrarErrorEnvio(btn, 'Enviar →', e);
+    return;
   }
 
   for(let i=1;i<=5;i++) document.getElementById(`card${i}`).classList.remove('visible');
@@ -1166,33 +1168,11 @@ async function submitTest(){
   for(let i=1;i<=5;i++) answers[i] = document.getElementById(`a${i}`).value.trim();
 
   /* ── GUARDAR EN SUPABASE ── */
-  if (_encuestaId) {
-    try {
-      const envioId = _genUUID();
-
-      const { error: envErr } = await _sbFree
-        .from('encuesta_envios')
-        .insert({
-          id:           envioId,
-          encuesta_id:  _encuestaId,
-          puesto:       ENCUESTA_NOMBRE,
-          submitted_at: new Date().toISOString()
-        });
-      if (envErr) throw envErr;
-
-      const filas = TITLES.map((titulo, idx) => ({
-        envio_id:        envioId,
-        encuesta_id:     _encuestaId,
-        pregunta_orden:  idx + 1,
-        pregunta_titulo: titulo,
-        respuesta:       answers[idx + 1] || ''
-      }));
-      const { error: respErr } = await _sbFree.from('encuesta_respuestas').insert(filas);
-      if (respErr) throw respErr;
-
-    } catch (err) {
-      console.error('[Freelancer] submitTest:', err);
-    }
+  try {
+    await _enviarRespuestasEncuesta(answers, _nombreCandidato);
+  } catch (err) {
+    _mostrarErrorEnvio(sendBtn, '✓ Enviar evaluación', err);
+    return;
   }
 
   /* Mostrar pantalla de éxito */

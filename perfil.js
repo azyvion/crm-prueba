@@ -66,8 +66,10 @@
         /* ── Aplicar preferencias globalmente (tema, densidad) ── */
         function aplicarPreferencias(prefs) {
             if (!prefs) return;
-            const dark = prefs.tema === 'oscuro';
-            document.body.classList.toggle('theme-dark', dark);
+            // Azyvion Enterprise: la preferencia del servidor solo aplica si el usuario no
+            // eligió claro/oscuro/sistema en el selector del encabezado.
+            if (window.AzTheme) window.AzTheme.syncFromServer(prefs.tema);
+            else document.body.classList.toggle('theme-dark', prefs.tema === 'oscuro');
             document.body.classList.toggle('densidad-compacta', prefs.densidadTabla === 'compacta');
             if (typeof renderOverview === 'function') {
                 try { renderOverview(); } catch(e){}
@@ -669,8 +671,15 @@
                     setVal('felNitEmisor', fel.fel_nit_emisor || d.nit || '');
                     setVal('felNombreComercial', fel.fel_nombre_comercial || d.nombre || '');
                     setVal('felCodigoEstablecimiento', fel.fel_codigo_establecimiento || '1');
-                    setVal('felUsuarioCertificador', fel.fel_usuario_certificador || '');
-                    setVal('felApiKey', fel.fel_api_key || '');
+                    // [AUDIT SEC-09] El servidor nunca devuelve las credenciales: solo si existen
+                    // y una pista enmascarada. Campo vacío al guardar = conservar la actual.
+                    const cred = d.fel_credenciales || {};
+                    setVal('felUsuarioCertificador', '');
+                    setVal('felApiKey', '');
+                    const inpU = document.getElementById('felUsuarioCertificador');
+                    const inpK = document.getElementById('felApiKey');
+                    if (inpU) inpU.placeholder = cred.has_usuario ? ('Guardado (' + cred.usuario_hint + ') · escribe para reemplazar') : 'Usuario o Client ID de Certificador';
+                    if (inpK) inpK.placeholder = cred.has_api_key ? ('Guardada (' + cred.api_key_hint + ') · escribe para reemplazar') : '••••••••••••••••••••••••••••••';
 
                     const selAf = document.getElementById('felAfiliacionIva');
                     if (selAf && fel.fel_afiliacion_iva) {
@@ -774,6 +783,7 @@
             const felKey = (document.getElementById('felApiKey') || {}).value || '';
             const felFrase = (document.getElementById('felFraseSat') || {}).value || 'Sujeto a pagos trimestrales ISR';
 
+            // [AUDIT SEC-09] Sin credenciales en localStorage.
             const felLocal = {
                 fel_habilitado: felHabilitado,
                 fel_nit_emisor: felNit,
@@ -782,8 +792,6 @@
                 fel_codigo_establecimiento: felEst,
                 fel_certificador: felCert,
                 fel_entorno: felEnt,
-                fel_usuario_certificador: felUser,
-                fel_api_key: felKey,
                 fel_frase_sat: felFrase
             };
             try { localStorage.setItem('azyvion_fel_config', JSON.stringify(felLocal)); } catch(e) {}
@@ -808,7 +816,9 @@
                 webhook_correo_facturas: (document.getElementById('orgWebhookCorreo') || {}).value || '',
                 dias_vigencia_cotizacion: Number((document.getElementById('orgDiasVigenciaCot') || {}).value) || 15,
                 pie_ticket: (document.getElementById('orgPieTicket') || {}).value || '',
-                ...felLocal
+                ...felLocal,
+                fel_usuario_certificador: felUser.trim(),
+                fel_api_key: felKey.trim()
             };
 
             try {
@@ -832,8 +842,11 @@
                     resetBtns();
                     if (!r || !r.ok) { showToast((r && r.error) || 'No se pudo guardar', '#FF453A'); return; }
                     showToast('Configuración de empresa y FEL guardada ✓', '#30D158');
+                    loadOrgConfigPanel();
                 })
                 .withFailureHandler(function(e) { resetBtns(); showToast('Error: ' + e.message, '#FF453A'); })
+                // [AUDIT FN-14] Faltaba esta llamada: el botón quedaba en "Guardando…" y nada llegaba al servidor.
+                .saveOrgConfig(datos);
         }
         window.guardarOrgConfig = guardarOrgConfig;
 
@@ -984,6 +997,7 @@
                     showToast('Preferencias guardadas', '#30D158');
                     _perfil.preferencias = r.preferencias;
                     _cachePrefsLocal({ fotoUrl: _perfil.fotoUrl, preferencias: r.preferencias });
+                    if (window.AzTheme) window.AzTheme.set(datos.tema);   // elección explícita en Perfil
                     aplicarPreferencias(r.preferencias);
                 })
                 .withFailureHandler(function (e) { showToast('Error: ' + e.message, '#FF453A'); })
