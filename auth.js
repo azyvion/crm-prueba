@@ -2346,7 +2346,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 runner[name]=function(){
                     const args=Array.from(arguments);
                     _dispatch(name,args).then(data=>{
-                        if(data&&data.ok===false&&data.error&&data.error.includes('Sesión inválida')){localStorage.removeItem('azyvion_session');window.location.href='index.html';return;}
+                        if(data&&data.ok===false&&data.error&&data.error.includes('Sesión inválida')){localStorage.removeItem('azyvion_session');window.location.href='login.html?expired=1';return;}
                         if(onSuccess)onSuccess(data);
                     }).catch(err=>{console.error('[Azyvion]',name,err);if(onFailure)onFailure(err);});
                 };
@@ -2453,14 +2453,14 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
 
             // Sin token → login de inmediato
             if (!sessLocal || !sessLocal.token) {
-                window.location.href = 'index.html?expired=1';
+                window.location.href = 'login.html?expired=1';
                 return;
             }
 
             // Token expirado localmente → login de inmediato
             if (sessLocal.expira && new Date(sessLocal.expira) <= new Date()) {
                 localStorage.removeItem('azyvion_session');
-                window.location.href = 'index.html?expired=1';
+                window.location.href = 'login.html?expired=1';
                 return;
             }
 
@@ -2530,12 +2530,12 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             _setSplashStatus('Verificando acceso…');
             (function restaurarSesionSupabase() {
                 var s = (function(){ try { return JSON.parse(localStorage.getItem('azyvion_session')); } catch(e){ return null; } })();
-                if (!s || !s.token) { localStorage.removeItem('azyvion_session'); window.location.href = 'index.html'; return; }
+                if (!s || !s.token) { localStorage.removeItem('azyvion_session'); window.location.href = 'login.html'; return; }
                 window._sb.auth.setSession({ access_token: s.token, refresh_token: s.refresh_token || '' })
                     .then(function(res) {
                         if (res.error || !res.data || !res.data.session) {
                             localStorage.removeItem('azyvion_session');
-                            window.location.href = 'index.html?expired=1';
+                            window.location.href = 'login.html?expired=1';
                             return;
                         }
                         var newSess = res.data.session;
@@ -2593,7 +2593,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                         // a intentarlo cuando haya conectividad.
                         _hideSplash();
                         localStorage.removeItem('azyvion_session');
-                        window.location.href = 'index.html?expired=1';
+                        window.location.href = 'login.html?expired=1';
                     });
             })();
         });
