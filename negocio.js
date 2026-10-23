@@ -505,6 +505,79 @@
     }
     function segCsv() { if (!SEG.data) return; const f = SEG.data.recompra.map(c => ({ Tipo: 'Recompra', Cliente: c.nombre, Telefono: c.telefono || '', Correo: c.correo || '', UltimaCompra: c.ultima_compra, DiasSinComprar: c.dias, Compras: c.compras, Total: c.total })).concat(SEG.data.cumpleanos.map(c => ({ Tipo: 'Cumpleaños', Cliente: c.nombre, Telefono: c.telefono || '', Correo: '', UltimaCompra: '', DiasSinComprar: '', Compras: '', Total: '' }))); if (f.length) descargarCSV(f, 'seguimiento_clientes'); }
 
+    /* ═════════════════════ CONTACTAR PROSPECTOS (WhatsApp asistido) ═════════════════════ */
+    // No hay envío automático: cada mensaje se abre en WhatsApp y lo envía la persona. Al abrirlo se registra
+    // una actividad en la ficha del prospecto para no repetir contactos.
+    const CT = { prosp: [], hechos: {}, etapa: 'Nuevo', origen: '', q: '', ocultar: true, cargado: false };
+    const CT_MSG = 'Hola {nombre}, soy {vendedor} de {empresa}. Vi que mostró interés en nuestros productos y quería saber si puedo ayudarle con alguna cotización o duda.';
+    const ctClave = () => 'azyvion_contactar_msg';
+    function ctPlantilla() { try { return localStorage.getItem(ctClave()) || CT_MSG; } catch (e) { return CT_MSG; } }
+    function ctVendedor() { try { const s = JSON.parse(localStorage.getItem('azyvion_session') || '{}'); return s.nombre || s.usuario || ''; } catch (e) { return ''; } }
+    function ctTexto(p) {
+        const primer = String(p.nombre || '').trim().split(/\s+/)[0] || 'buen día';
+        return aplicar(($('ctMsg') || {}).value || ctPlantilla(), { nombre: primer, empresa: empresa().nombre || 'nuestra empresa', vendedor: ctVendedor() || 'el equipo', prospecto_empresa: p.empresa || '' });
+    }
+    async function renderContactar() {
+        const page = $('page-contactar'); if (!page) return;
+        page.innerHTML = '<div class="neg-wrap">' + loading('Cargando prospectos…') + '</div>';
+        const [pr, ha] = await Promise.all([call('getProspectos'), call('getContactadosWhatsApp')]);
+        if (!pr.ok) { page.innerHTML = '<div class="neg-wrap">' + errBox(pr) + '</div>'; return; }
+        CT.prosp = pr.data || []; CT.hechos = {};
+        ((ha && ha.data) || []).forEach(a => { if (!CT.hechos[a.refId]) CT.hechos[a.refId] = a; });
+        CT.cargado = true;
+        const etapas = [...new Set(CT.prosp.map(p => p.etapa).filter(Boolean))];
+        if (CT.etapa !== '' && etapas.indexOf(CT.etapa) < 0 && etapas.length) CT.etapa = etapas.indexOf('Nuevo') >= 0 ? 'Nuevo' : '';
+        const origenes = [...new Set(CT.prosp.map(p => p.origen).filter(Boolean))].sort();
+        page.innerHTML = `<div class="neg-wrap"><div class="neg-head"><h2>Contactar prospectos por WhatsApp</h2>
+            <div class="pos-muted">Cada botón abre WhatsApp con el mensaje listo; <b>usted lo envía</b>. Al abrirlo se anota en la ficha del prospecto para no repetir. Envíe pocos por día y personalice el mensaje: WhatsApp bloquea los envíos masivos a quien no los espera.</div></div>
+            <div class="neg-filtros">
+                <select class="pos-in sm2" id="ctEtapa" onchange="Negocio.ctFiltrar()" aria-label="Etapa"><option value="">Todas las etapas</option>${etapas.map(e => `<option ${e === CT.etapa ? 'selected' : ''}>${E(e)}</option>`).join('')}</select>
+                <select class="pos-in sm2" id="ctOrigen" onchange="Negocio.ctFiltrar()" aria-label="Origen"><option value="">Todos los orígenes</option>${origenes.map(o => `<option>${E(o)}</option>`).join('')}</select>
+                <input class="pos-in sm2" id="ctBuscar" placeholder="Buscar nombre o empresa…" oninput="Negocio.ctFiltrar()" />
+                <label class="pos-check"><input type="checkbox" id="ctOcultar" ${CT.ocultar ? 'checked' : ''} onchange="Negocio.ctFiltrar()"/> Ocultar ya contactados</label>
+            </div>
+            <div class="form-field"><label class="pos-lbl" for="ctMsg">Mensaje (variables: {nombre} {empresa} {vendedor} {prospecto_empresa})</label>
+                <textarea class="pos-in" id="ctMsg" rows="3" oninput="Negocio.ctGuardarMsg()">${E(ctPlantilla())}</textarea></div>
+            <div class="neg-filtros"><span class="pos-muted" id="ctResumen"></span>
+                <button type="button" class="pos-btn" onclick="Negocio.ctCopiar()">Copiar lista de enlaces</button>
+                <button type="button" class="pos-btn" onclick="Negocio.ctCsv()">Exportar CSV con enlaces</button></div>
+            <div id="ctBody"></div></div>`;
+        ctFiltrar();
+    }
+    function ctGuardarMsg() { try { localStorage.setItem(ctClave(), ($('ctMsg') || {}).value || ''); } catch (e) { /* sin almacenamiento */ } ctPintar(); }
+    function ctFiltrar() {
+        CT.etapa = ($('ctEtapa') || {}).value || ''; CT.origen = ($('ctOrigen') || {}).value || ''; CT.q = (($('ctBuscar') || {}).value || '').toLowerCase(); CT.ocultar = !!($('ctOcultar') || {}).checked;
+        ctPintar();
+    }
+    function ctLista() {
+        return CT.prosp.filter(p => (!CT.etapa || p.etapa === CT.etapa) && (!CT.origen || p.origen === CT.origen) && (!CT.q || ((p.nombre || '') + ' ' + (p.empresa || '')).toLowerCase().indexOf(CT.q) >= 0)
+            && !(CT.ocultar && CT.hechos[p.id]));
+    }
+    function ctPintar() {
+        const b = $('ctBody'); if (!b) return;
+        const lista = ctLista(), validos = lista.filter(p => telWa(p.telefono));
+        const r = $('ctResumen'); if (r) r.textContent = lista.length + ' prospecto(s) · ' + validos.length + ' con teléfono válido · ' + Object.keys(CT.hechos).length + ' ya contactados en total' + (validos.length > 30 ? ' · muchos pendientes: envíe de a pocos por día' : '');
+        b.innerHTML = tabla([{ t: 'Prospecto', f: p => '<b>' + E(p.nombre) + '</b>' + (p.empresa ? '<div class="pos-muted">' + E(p.empresa) + '</div>' : '') },
+            { t: 'Teléfono', f: p => E(p.telefono || '—') }, { t: 'Etapa', f: p => E(p.etapa || '') + (p.origen ? '<div class="pos-muted">' + E(p.origen) + '</div>' : '') },
+            { t: 'Estado', f: p => CT.hechos[p.id] ? '<span class="pos-chip-st ok">Contactado ' + fecha(CT.hechos[p.id].fecha + 'T12:00:00') + '</span>' : '<span class="pos-chip-st off">Sin contactar</span>' },
+            { t: '', f: p => { const l = waLink(p.telefono, ctTexto(p)); return l ? '<a class="pos-btn sm ok" href="' + A(l) + '" target="_blank" rel="noopener" onclick="Negocio.ctMarcar(\'' + A(p.id) + '\')">WhatsApp</a>' : '<span class="pos-muted">sin teléfono válido</span>'; } }],
+            lista, 'No hay prospectos con ese filtro.');
+    }
+    async function ctMarcar(id) {
+        const p = CT.prosp.find(x => String(x.id) === String(id)); if (!p) return;
+        const r = await call('addActividadCRM', { tipo: 'Prospecto', refId: p.id, categoria: 'Seguimiento', titulo: 'Contactado por WhatsApp', descripcion: ctTexto(p) });
+        if (!r.ok) { showToast('Se abrió WhatsApp pero no se pudo anotar el contacto: ' + r.error, '#FF9F0A'); return; }
+        CT.hechos[p.id] = { refId: p.id, fecha: ymd(new Date()) };
+        setTimeout(ctPintar, 400);
+    }
+    function ctEnlaces() { return ctLista().map(p => ({ p: p, l: waLink(p.telefono, ctTexto(p)) })).filter(x => x.l); }
+    function ctCopiar() {
+        const t = ctEnlaces().map(x => x.p.nombre + (x.p.empresa ? ' (' + x.p.empresa + ')' : '') + ': ' + x.l).join('\n');
+        if (!t) { showToast('No hay enlaces para copiar con ese filtro', '#FF9F0A'); return; }
+        (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => showToast(ctEnlaces().length + ' enlace(s) copiados ✓', '#30D158')).catch(() => prompt('Copie la lista:', t));
+    }
+    function ctCsv() { const f = ctEnlaces().map(x => ({ Prospecto: x.p.nombre, Empresa: x.p.empresa || '', Telefono: x.p.telefono || '', Etapa: x.p.etapa || '', Enlace_WhatsApp: x.l })); if (f.length) descargarCSV(f, 'prospectos_whatsapp'); else showToast('No hay enlaces para exportar', '#FF9F0A'); }
+
     /* ═════════════════════ AUDITORÍA ═════════════════════ */
     const AUD = { data: [] };
     function renderAuditoria() {
@@ -527,7 +600,7 @@
     function audCsv() { if (AUD.data.length) descargarCSV(AUD.data.map(a => ({ Fecha: a.fecha, Usuario: a.usuario, Accion: a.accion, Entidad: a.entidad, Id: a.entidad_id, Detalle: JSON.stringify(a.detalle || {}) })), 'auditoria_pos'); }
 
     /* ── Enganche con showPage ────────────────────────────────────── */
-    const PAGES = { reportes: renderReportes, compras: renderCompras, seguimiento: renderSeguimiento, auditoria: renderAuditoria };
+    const PAGES = { reportes: renderReportes, compras: renderCompras, seguimiento: renderSeguimiento, auditoria: renderAuditoria, contactar: renderContactar };
     function onShow(id) {
         if (!PAGES[id]) return;
         if (!perms) { call('posMisPermisos').then(r => { if (r.ok) { perms = Object.assign({}, r.permisos, { privilegiado: !!r.privilegiado }); PAGES[id](); } else if ($('page-' + id)) $('page-' + id).innerHTML = '<div class="neg-wrap">' + errBox(r) + '</div>'; }); return; }
@@ -543,6 +616,6 @@
         provForm: provForm, provGuardar: provGuardar, repCsv2: repCsv2, repCompra: repCompra,
         conteoNuevo: conteoNuevo, conteoCrear: conteoCrear, conteoAbrir: conteoAbrir, conteoCalc: conteoCalc, conteoFiltrar: conteoFiltrar, conteoGuardar: conteoGuardar, conteoAplicar: conteoAplicar,
         kardexVer: kardexVer, ajusteForm: ajusteForm, ajusteOk: ajusteOk, etFiltrar: etFiltrar, etImprimir: etImprimir,
-        segCargar: segCargar, segCsv: segCsv, audCargar: audCargar, audCsv: audCsv, telWa: telWa, waLink: waLink, aplicar: aplicar
+        ctFiltrar: ctFiltrar, ctGuardarMsg: ctGuardarMsg, ctMarcar: ctMarcar, ctCopiar: ctCopiar, ctCsv: ctCsv, segCargar: segCargar, segCsv: segCsv, audCargar: audCargar, audCsv: audCsv, telWa: telWa, waLink: waLink, aplicar: aplicar
     };
 })(window);
