@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arnés de pruebas del POS</title>
+<!-- Usa el marcado, CSS y scripts REALES del POS con un servidor simulado (mock_api.js).
+     Servir con: node tests/ui/serve.js  →  http://localhost:4173/tests/ui/pos_harness.html -->
+<link rel="stylesheet" href="../../dashboard.css">
+<link rel="stylesheet" href="../../azyvion-enterprise.css">
+<link rel="stylesheet" href="../../pos.css">
+<style>body{margin:0;padding:16px;background:var(--az-bg);font-family:Inter,system-ui,sans-serif}.page{display:block!important}</style>
+</head>
+<body>
+<div id="mount"></div>
+<div class="toast" id="toast"></div>
+<script src="../../utils.js"></script>
+<script src="mock_api.js"></script>
+<script src="../../pos-calc.js"></script>
+<script src="../../pos-config-ui.js"></script>
+<script>
+  var _currentPage = 'pos';
+  var EMPRESA = { nombre: 'Empresa Demo', nit: '123456-7', ivaPct: 12, ivaModalidad: 'incluido', catalogoFotosHabilitado: false };
+  function esAdmin() { return false; }
+  window.getCurrentPlan = function () { return (new URLSearchParams(location.search).get('plan')) || 'pro'; };
+  var t = new URLSearchParams(location.search).get('theme'); if (t) document.documentElement.setAttribute('data-theme', t);
+  fetch('../../dashboard.html').then(r => r.text()).then(function (html) {
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      var page = doc.getElementById('page-pos');
+      document.getElementById('mount').appendChild(document.importNode(page, true));
+      var s = document.createElement('script'); s.src = '../../pos.js';
+      s.onload = function () { window.__listo = true; loadPos(); };
+      document.body.appendChild(s);
+  });
+</script>
+</body>
+</html>

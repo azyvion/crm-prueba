@@ -123,3 +123,16 @@ Trabajo en la misma carpeta por decisión del propietario (sin clon ni rama). Re
 - Nuevos: `azyvion-theme.js`, `azyvion-enterprise.css`, `docs/design/AZYVION-ENTERPRISE-DESIGN-SPEC.md`.
 - Modificados (solo presentación / hooks de tema): `dashboard.html` (+6/−14: motor de tema, CSS final, sin el enlace roto a `dashboard-premium.css`, `theme-color`), `perfil.js` (+5/−2: switch de Perfil → `AzTheme`), `overview.js` (+3: gráficas usan el tema resuelto), `login.html`, `register.html`, `encuesta.html`, `Freelancer.html` (solo valores de `:root`).
 - Sin cambios en BD, Edge, Auth, RLS, cálculos ni consultas. `dashboard.css` intacto; 546 IDs y 318 `onclick` de `dashboard.html` sin cambios.
+
+## Lote 4 — 2026-10-23 UTC (POS: rediseño operativo y garantías transaccionales)
+Detalle completo, orden de despliegue y pendientes: [`POS-LOTE4.md`](./POS-LOTE4.md). Respaldo previo: `supabase/backup/20261023_lote4/`. **Nada aplicado en producción ni publicado.**
+- Nueva migración `20261023_06_pos_ventas.sql` (+ rollback): ventas, pagos, devoluciones, movimientos de caja y auditoría; funciones transaccionales e idempotentes; cierres inmutables; protección de `permisos`/`sucursal_id` de usuarios.
+- Frontend: `pos.js` reescrito, `pos-calc.js`, `pos.css`, `auth.js` (RPC), permisos POS en el formulario de usuarios.
+- Pruebas: SQL 61/61 (ensayo revertido), suites previas 14/14·19/19·7/7·8/8, unitarias 46/46, interfaz con servidor simulado (red caída, doble clic, móvil, oscuro).
+- Abiertos: concurrencia real y E2E autenticado en staging; tarjeta y FEL requieren integraciones externas.
+
+## Lote 5 — 2026-10-23 UTC (Configuración del POS por empresa)
+Detalle en [`POS-LOTE4.md`](./POS-LOTE4.md) (sección Lote 5). Migración `20261023_07_pos_config.sql` **no aplicada**; frontend **no publicado**. Pruebas: SQL 29/29 + 61/61 + suites previas, unitarias 53/53, interfaz en arnés.
+
+## Lote 6 — 2026-10-23 UTC (Negocio: reportes, compras, kardex, seguimiento)
+Detalle en [`POS-LOTE4.md`](./POS-LOTE4.md) (sección Lote 6). Migración `20261023_08_negocio.sql` **no aplicada**; frontend **no publicado**. Pruebas: SQL 28/28 + suites previas, unitarias 60/60, interfaz en arnés.

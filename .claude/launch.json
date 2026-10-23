@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "pos-harness", "runtimeExecutable": "node", "runtimeArgs": ["tests/ui/serve.js", "4173"], "port": 4173 }
+  ]
+}

@@ -3,3 +3,6 @@ node_modules/
 .env.local
 .DS_Store
 Thumbs.db
+
+# Metadatos locales de la CLI de Supabase
+supabase/.temp/

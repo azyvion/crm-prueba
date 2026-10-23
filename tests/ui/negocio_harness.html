@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arnés de pruebas · Negocio</title>
+<!-- Páginas de Negocio con servidor simulado. node tests/ui/serve.js → http://localhost:4173/tests/ui/negocio_harness.html -->
+<link rel="stylesheet" href="../../dashboard.css"><link rel="stylesheet" href="../../azyvion-enterprise.css"><link rel="stylesheet" href="../../pos.css">
+<style>body{margin:0;padding:16px;background:var(--az-bg);font-family:Inter,system-ui,sans-serif}.page{display:block!important}</style>
+</head>
+<body>
+<div class="page" id="page-reportes"></div><div class="page" id="page-compras" style="display:none!important"></div>
+<div class="page" id="page-seguimiento" style="display:none!important"></div><div class="page" id="page-auditoria" style="display:none!important"></div>
+<div class="page" id="page-contactar" style="display:none!important"></div>
+<div class="toast" id="toast"></div>
+<script src="../../utils.js"></script><script src="mock_api.js"></script><script src="../../pos-calc.js"></script>
+<script>
+  var _currentPage = 'x'; var EMPRESA = { nombre: 'Empresa Demo' }; function esAdmin() { return true; }
+  var t = new URLSearchParams(location.search).get('theme'); if (t) document.documentElement.setAttribute('data-theme', t);
+</script>
+<script src="../../pos.js"></script><script src="../../negocio.js"></script>
+<script>
+  function ver(id) {
+    document.querySelectorAll('.page').forEach(function (p) { p.style.cssText = p.id === 'page-' + id ? '' : 'display:none!important'; });
+    Negocio.onShow(id);
+  }
+</script>
+</body>
+</html>
