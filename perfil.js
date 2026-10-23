@@ -1447,3 +1447,40 @@
             }
         }
         window._onPaisChange = _onPaisChange;
+
+
+/* ── Foto y nombre en la barra lateral desde el inicio de sesión ────────────────
+   Antes la foto solo cargaba al abrir Ajustes. Ahora se pinta al instante desde el caché local
+   y se refresca con el perfil del servidor al entrar. */
+(function () {
+    function iniciales(n) { return (n || '??').substring(0, 2).toUpperCase(); }
+    function pintar(foto) {
+        var el = document.getElementById('userAvatar'); if (!el) return;
+        var nombre = ''; try { nombre = (typeof _usuario !== 'undefined' && _usuario) || (JSON.parse(localStorage.getItem('azyvion_session') || '{}').nombre) || ''; } catch (e) {}
+        if (foto) {
+            el.innerHTML = avatarHtml(nombre, foto);
+            el.style.background = 'transparent'; el.style.overflow = 'hidden';
+        }
+    }
+    function arrancar(intento) {
+        var c = _leerPrefsCache(); if (c && c.fotoUrl) pintar(c.fotoUrl);
+        if (!window.api || !window.api.getPerfil || !document.getElementById('userAvatar')) { if (intento < 20) setTimeout(function () { arrancar(intento + 1); }, 500); return; }
+        var s = null; try { s = JSON.parse(localStorage.getItem('azyvion_session') || 'null'); } catch (e) {}
+        if (!s || !s.token) return;
+        window.api.withSuccessHandler(function (r) {
+            if (!r || !r.ok || !r.data) return;
+            _cachePrefsLocal({ fotoUrl: r.data.fotoUrl, preferencias: r.data.preferencias });
+            pintar(r.data.fotoUrl);
+        }).withFailureHandler(function () {}).getPerfil();
+    }
+    if (document.readyState === 'complete') setTimeout(function () { arrancar(0); }, 800);
+    else window.addEventListener('load', function () { setTimeout(function () { arrancar(0); }, 800); });
+    // si el avatar se reescribe con iniciales (p. ej. al refrescar la sesión), se vuelve a poner la foto
+    document.addEventListener('DOMContentLoaded', function () {
+        var el = document.getElementById('userAvatar'); if (!el || !window.MutationObserver) return;
+        var veces = 0;   // tope: si la URL de la foto está rota no se repinta en bucle
+        new MutationObserver(function () {
+            var c = _leerPrefsCache(); if (veces < 3 && c && c.fotoUrl && !el.querySelector('img')) { veces++; pintar(c.fotoUrl); }
+        }).observe(el, { childList: true, characterData: true });
+    });
+})();
