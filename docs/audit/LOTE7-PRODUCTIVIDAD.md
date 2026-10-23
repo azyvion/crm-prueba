@@ -1,6 +1,6 @@
 # Lote 7 — Productividad: tareas, plantillas, importación, auditoría general, metas y pendientes del POS
 
-Estado (2026-10-23): **implementado y probado en local. La migración 09 NO está aplicada y el frontend NO está publicado.**
+Estado (2026-10-23): **migración 09 APLICADA en producción** (registrada en el historial como `20261023200000 crm_productividad_20261023`; `productividad.sql` 19/19 PASS después de aplicarla). **Frontend pendiente de publicar** (lo publica el propietario).
 
 ## Estado real de producción (verificado hoy, en solo lectura)
 - Las migraciones **06, 07 y 08 ya están aplicadas** en Supabase, aunque no figuran en `list_migrations` (se aplicaron fuera del historial).
