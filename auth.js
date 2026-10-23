@@ -1366,6 +1366,103 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             p = p || {};
             return await _posRpc('pos_listar_auditoria', {p_desde: p.desde || null, p_hasta: p.hasta || null, p_accion: p.accion || null, p_limite: p.limite || 200});
         }
+        /* ─── API PRODUCTIVIDAD (Lote 7): tareas, plantillas, importación, auditoría, metas, pendientes POS ───
+           Reglas y permisos en el servidor (supabase/migrations/20261023_09_crm_productividad.sql). */
+        const _PRIORIDADES = ['Baja', 'Normal', 'Alta'];
+        const _esFecha = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
+        const _esHora = v => /^\d{2}:\d{2}$/.test(String(v || ''));
+        async function _crmTareas(p) { p = p || {}; return await _posRpc('crm_tareas', {p_desde: p.desde || null, p_hasta: p.hasta || null, p_solo_mias: p.soloMias !== false, p_completadas: !!p.completadas}); }
+        async function _addTarea(p, u) {
+            p = p || {};
+            const titulo = String(p.titulo || '').trim();
+            if (!titulo) return {ok: false, error: 'Escriba qué hay que hacer.'};
+            if (!_esFecha(p.fechaSeguimiento)) return {ok: false, error: 'Indique la fecha de la tarea.'};
+            const tipo = p.tipo === 'Cliente' || p.tipo === 'Prospecto' ? p.tipo : 'General';
+            if (tipo !== 'General' && !p.refId) return {ok: false, error: 'Falta el cliente o prospecto.'};
+            const r = {id: _uuid(), tipo: tipo, refId: tipo === 'General' ? null : p.refId, categoria: p.categoria || 'Tarea', titulo: titulo.slice(0, 200),
+                descripcion: String(p.descripcion || '').slice(0, 2000), fecha: new Date().toISOString().slice(0, 10), fechaSeguimiento: p.fechaSeguimiento,
+                hora_seguimiento: _esHora(p.hora) ? p.hora : null, prioridad: _PRIORIDADES.includes(p.prioridad) ? p.prioridad : 'Normal',
+                responsable: String(p.responsable || '').trim() || u, usuario: u, fechaReg: new Date().toISOString(), organization_id: _currentOrgId};
+            const {error} = await _sb.from('ActividadesCRM').insert(r);
+            if (error) return {ok: false, error: error.message};
+            return {ok: true, id: r.id};
+        }
+        async function _updateTarea(p, u) {
+            if (!p || !p.id) return {ok: false, error: 'ID requerido.'};
+            const up = {};
+            if (p.completada !== undefined) { up.completada = !!p.completada; up.completada_en = p.completada ? new Date().toISOString() : null; up.completada_por = p.completada ? u : null; }
+            if (p.fechaSeguimiento !== undefined) { if (!_esFecha(p.fechaSeguimiento)) return {ok: false, error: 'Fecha inválida.'}; up.fechaSeguimiento = p.fechaSeguimiento; }
+            if (p.hora !== undefined) up.hora_seguimiento = _esHora(p.hora) ? p.hora : null;
+            if (p.prioridad !== undefined && _PRIORIDADES.includes(p.prioridad)) up.prioridad = p.prioridad;
+            if (p.responsable !== undefined) up.responsable = String(p.responsable || '').trim() || null;
+            if (p.titulo !== undefined) { const t = String(p.titulo || '').trim(); if (!t) return {ok: false, error: 'El título no puede quedar vacío.'}; up.titulo = t.slice(0, 200); }
+            if (p.descripcion !== undefined) up.descripcion = String(p.descripcion || '').slice(0, 2000);
+            const {data, error} = await _sb.from('ActividadesCRM').update(up).eq('id', p.id).select('id');
+            if (error) return {ok: false, error: error.message};
+            if (!data || !data.length) return {ok: false, error: 'La tarea no existe o no tiene permiso para modificarla.'};
+            return {ok: true};
+        }
+        async function _getPlantillas() {
+            const {data, error} = await _sb.from('crm_plantillas').select('*').order('canal').order('nombre');
+            if (error) return {ok: false, error: error.message};
+            return {ok: true, data: data || []};
+        }
+        async function _savePlantilla(p, u) {
+            p = p || {};
+            const canal = p.canal === 'Correo' ? 'Correo' : 'WhatsApp';
+            const r = {nombre: String(p.nombre || '').trim(), canal: canal, asunto: canal === 'Correo' ? (String(p.asunto || '').trim() || null) : null,
+                cuerpo: String(p.cuerpo || '').trim(), activo: p.activo !== false, updated_at: new Date().toISOString()};
+            if (!r.nombre) return {ok: false, error: 'La plantilla necesita un nombre.'};
+            if (!r.cuerpo) return {ok: false, error: 'La plantilla necesita un texto.'};
+            const q = p.id ? _sb.from('crm_plantillas').update(r).eq('id', p.id).select('id') : _sb.from('crm_plantillas').insert(Object.assign(r, {creado_por: u})).select('id');
+            const {data, error} = await q;
+            if (error) return {ok: false, error: error.code === '23505' ? 'Ya existe una plantilla con ese nombre en ese canal.' : (error.code === '42501' ? 'Solo un administrador o gerente puede editar plantillas.' : error.message)};
+            if (!data || !data.length) return {ok: false, error: 'No tiene permiso para editar plantillas.'};
+            return {ok: true, id: data[0].id};
+        }
+        async function _deletePlantilla(p) {
+            const {data, error} = await _sb.from('crm_plantillas').delete().eq('id', p && p.id).select('id');
+            if (error) return {ok: false, error: error.message};
+            if (!data || !data.length) return {ok: false, error: 'No tiene permiso para eliminar plantillas.'};
+            return {ok: true};
+        }
+        /** Deja constancia en la ficha de un mensaje enviado (WhatsApp o correo). */
+        async function _registrarMensaje(p, u) {
+            p = p || {};
+            if (!p.refId || (p.tipo !== 'Cliente' && p.tipo !== 'Prospecto')) return {ok: false, error: 'Falta el cliente o prospecto.'};
+            const canal = p.canal === 'Correo' ? 'Correo' : 'WhatsApp';
+            const r = {id: _uuid(), tipo: p.tipo, refId: p.refId, categoria: canal, titulo: canal + ': ' + String(p.plantilla || p.asunto || 'mensaje').slice(0, 150),
+                descripcion: String(p.texto || '').slice(0, 2000), fecha: new Date().toISOString().slice(0, 10), usuario: u, fechaReg: new Date().toISOString(), organization_id: _currentOrgId};
+            const {error} = await _sb.from('ActividadesCRM').insert(r);
+            if (error) return {ok: false, error: error.message};
+            return {ok: true, id: r.id};
+        }
+        async function _crmImportar(p) {
+            p = p || {};
+            const fn = p.tipo === 'productos' ? 'crm_importar_productos' : 'crm_importar_clientes';
+            return await _posRpc(fn, {p_filas: Array.isArray(p.filas) ? p.filas : [], p_actualizar: !!p.actualizar, p_simular: p.simular !== false});
+        }
+        async function _crmListarAuditoria(p) { p = p || {}; return await _posRpc('crm_listar_auditoria', {p_desde: p.desde || null, p_hasta: p.hasta || null, p_tabla: p.tabla || null, p_texto: p.texto || null, p_limite: p.limite || 300}); }
+        async function _crmMetasProgreso(p) { return await _posRpc('crm_metas_progreso', {p_periodo: (p && p.periodo) || null}); }
+        async function _crmMetaGuardar(p) { return await _posRpc('crm_meta_guardar', {p: p || {}}); }
+        async function _posPendientes() {
+            const {data, error} = await _sb.from('pos_ventas_pendientes').select('id,usuario,nota,datos,created_at').order('created_at', {ascending: false}).limit(100);
+            if (error) return {ok: false, error: error.message};
+            return {ok: true, data: data || []};
+        }
+        async function _posPendienteGuardar(p) {
+            p = p || {};
+            const {data, error} = await _sb.from('pos_ventas_pendientes').insert({nota: String(p.nota || '').slice(0, 120) || null, datos: p.datos || {}, sucursal_id: p.sucursalId || null}).select('id');
+            if (error) return {ok: false, error: error.message};
+            return {ok: true, id: data && data[0] && data[0].id};
+        }
+        async function _posPendienteEliminar(p) {
+            const {data, error} = await _sb.from('pos_ventas_pendientes').delete().eq('id', p && p.id).select('id');
+            if (error) return {ok: false, error: error.message};
+            // 0 filas = otro equipo ya la retomó: se informa para no duplicar la venta.
+            return data && data.length ? {ok: true} : {ok: false, error: 'Esta venta pendiente ya fue retomada o descartada en otro equipo.', yaTomada: true};
+        }
+
         async function _seguimientoClientes(p) { return await _posRpc('seguimiento_clientes', {p_dias_sin_compra: (p && p.diasSinCompra) || 60, p_dias_cumple: (p && p.diasCumple) || 14}); }
         async function _proveedorGuardar(p) { return await _posRpc('proveedor_guardar', {p: p}); }
         async function _compraRegistrar(p) { return await _posRpc('compra_registrar', {p: p}); }
@@ -2038,7 +2135,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
         async function _deleteContacto(p,u){const{error}=await _sb.from('Contactos').delete().eq('id',p.id);if(error)return{ok:false,error:error.message};return{ok:true};}
         async function _addNotaCRM(p,u){if(!p.contenido||!String(p.contenido).trim())return{ok:false,error:'El contenido es requerido.'};const r={id:_uuid(),tipo:p.tipo||'Cliente',refId:p.refId,contenido:String(p.contenido).trim(),usuario:u,fecha:new Date().toISOString(),organization_id:_currentOrgId};const{error}=await _sb.from('NotasCRM').insert(r);if(error)return{ok:false,error:error.message};return{ok:true,id:r.id};}
         async function _deleteNotaCRM(p,u){const{error}=await _sb.from('NotasCRM').delete().eq('id',p.id);if(error)return{ok:false,error:error.message};return{ok:true};}
-        async function _addActividadCRM(p,u){const cats=['Llamada','Correo','Reunión','Visita','Seguimiento','Otro'];const r={id:_uuid(),tipo:p.tipo||'Cliente',refId:p.refId,categoria:cats.includes(p.categoria)?p.categoria:'Otro',titulo:String(p.titulo||'').trim(),descripcion:p.descripcion||'',fecha:p.fecha||(new Date().toISOString().slice(0,10)),fechaSeguimiento:p.fechaSeguimiento||'',usuario:u,fechaReg:new Date().toISOString(),organization_id:_currentOrgId};const{error}=await _sb.from('ActividadesCRM').insert(r);if(error)return{ok:false,error:error.message};return{ok:true,id:r.id};}
+        async function _addActividadCRM(p,u){const cats=['Llamada','Correo','WhatsApp','Reunión','Visita','Seguimiento','Tarea','Otro'];const r={id:_uuid(),tipo:p.tipo||'Cliente',refId:p.refId,categoria:cats.includes(p.categoria)?p.categoria:'Otro',titulo:String(p.titulo||'').trim(),descripcion:p.descripcion||'',fecha:p.fecha||(new Date().toISOString().slice(0,10)),fechaSeguimiento:p.fechaSeguimiento||null,hora_seguimiento:/^\d{2}:\d{2}$/.test(String(p.hora||''))?p.hora:null,prioridad:['Baja','Normal','Alta'].includes(p.prioridad)?p.prioridad:'Normal',responsable:p.fechaSeguimiento?(String(p.responsable||'').trim()||u):null,usuario:u,fechaReg:new Date().toISOString(),organization_id:_currentOrgId};const{error}=await _sb.from('ActividadesCRM').insert(r);if(error)return{ok:false,error:error.message};return{ok:true,id:r.id};}
         async function _deleteActividadCRM(p,u){const{error}=await _sb.from('ActividadesCRM').delete().eq('id',p.id);if(error)return{ok:false,error:error.message};return{ok:true};}
 
         async function _getPerfil(sess){const{data:{session:supa}}=await _sb.auth.getSession();const authUid=supa&&supa.user&&supa.user.id;let q=_sb.from('Usuarios').select('*');if(authUid)q=q.eq('auth_uid',authUid);else q=q.eq('usuario',sess.usuario||sess.nombre).eq('organization_id',_currentOrgId);const{data:usr}=await q.single();if(!usr)return{ok:false,error:'Usuario no encontrado.'};return{ok:true,data:{id:usr.id,usuario:usr.usuario,nombre:usr.nombre,rol:usr.rol,correo:usr.correo||'',telefono:usr.telefono||'',cargo:usr.cargo||'',fotoUrl:usr.fotoUrl||'',fechaReg:usr.fechaReg||'',fechaPerfilActualizado:usr.fechaPerfilActualizado||'',preferencias:_prefsUsuario(usr)}};}
@@ -2169,6 +2266,20 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 case 'posReporteComisiones':return await _posReporteComisiones(args[0]);
                 case 'posListarAuditoria':return await _posListarAuditoria(args[0]);
                 case 'seguimientoClientes':return await _seguimientoClientes(args[0]);
+                case 'crmTareas':return await _crmTareas(args[0]);
+                case 'addTarea':return await _addTarea(args[0],usuario);
+                case 'updateTarea':return await _updateTarea(args[0],usuario);
+                case 'getPlantillas':return await _getPlantillas();
+                case 'savePlantilla':return await _savePlantilla(args[0],usuario);
+                case 'deletePlantilla':return await _deletePlantilla(args[0]);
+                case 'registrarMensaje':return await _registrarMensaje(args[0],usuario);
+                case 'crmImportar':return await _crmImportar(args[0]);
+                case 'crmListarAuditoria':return await _crmListarAuditoria(args[0]);
+                case 'crmMetasProgreso':return await _crmMetasProgreso(args[0]);
+                case 'crmMetaGuardar':return await _crmMetaGuardar(args[0]);
+                case 'posPendientes':return await _posPendientes();
+                case 'posPendienteGuardar':return await _posPendienteGuardar(args[0]);
+                case 'posPendienteEliminar':return await _posPendienteEliminar(args[0]);
                 case 'proveedorGuardar':return await _proveedorGuardar(args[0]);
                 case 'compraRegistrar':return await _compraRegistrar(args[0]);
                 case 'compraPagar':return await _compraPagar(args[0]);
@@ -2230,7 +2341,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 withSuccessHandler:fn=>api(fn,onFailure),
                 withFailureHandler:fn=>api(onSuccess,fn)
             };
-            const METHODS=['logout','getResumen','getActividad','getClientes','addCliente','updateCliente','deleteCliente','getProspectos','addProspecto','updateProspecto','deleteProspecto','convertirProspecto','getInventario','addInventario','updateInventario','deleteInventario','getCategorias','addCategoria','updateCategoria','deleteCategoria','getEncuestas','addEncuesta','updateEncuesta','deleteEncuesta','getUsuarios','addUsuario','updateUsuario','deleteUsuario','getCuentasBancarias','addCuentaBancaria','updateCuentaBancaria','deleteCuentaBancaria','getPlanCuentas','addCuentaContable','updateCuentaContable','deleteCuentaContable','getTransacciones','addTransaccion','deleteTransaccion','getResumenContable','getCotizaciones','getCotizacion','getCotizacionHtml','addCotizacion','updateCotizacion','updateEstadoCotizacion','deleteCotizacion','duplicarCotizacion','convertirCotizacionAVenta','enviarCotizacion','getResumenCotizaciones','getPosInit','registrarVentaPos','posObtenerVenta','posDevolverVenta','posBuscarVentas','posMisPermisos','posCajaMovimiento','posReabrirCaja','posHistorialCliente','posReporteVentas','posReporteCierres','posReporteComisiones','posListarAuditoria','seguimientoClientes','proveedorGuardar','compraRegistrar','compraPagar','compraAnular','invAjustar','invConteoCrear','invConteoGuardar','invConteoAplicar','invReposicion','getProveedores','getContactadosWhatsApp','getCompras','getCompraItems','getKardex','getConteos','getConteoItems','getLibroDiario','getEstadoResultados','getFicha','addContacto','updateContacto','deleteContacto','addNotaCRM','deleteNotaCRM','addActividadCRM','deleteActividadCRM','getPerfil','updatePerfil','updatePreferencias','changePasswordPropio','uploadFotoPerfil','deleteFotoPerfil','getDashboardInit','getOrgConfig','saveOrgConfig','uploadLogoOrg','deleteLogoOrg','consultarNitSat','getCajaStatus','abrirCajaPOS','cerrarCajaPOS','getVentasTurnoCaja','uploadFotoProducto','probarConexionFel','getCierresCaja','getSucursales','addSucursal','updateSucursal','deleteSucursal','enviarTicketCorreo','getReporteVentasSucursal'];
+            const METHODS=['logout','getResumen','getActividad','getClientes','addCliente','updateCliente','deleteCliente','getProspectos','addProspecto','updateProspecto','deleteProspecto','convertirProspecto','getInventario','addInventario','updateInventario','deleteInventario','getCategorias','addCategoria','updateCategoria','deleteCategoria','getEncuestas','addEncuesta','updateEncuesta','deleteEncuesta','getUsuarios','addUsuario','updateUsuario','deleteUsuario','getCuentasBancarias','addCuentaBancaria','updateCuentaBancaria','deleteCuentaBancaria','getPlanCuentas','addCuentaContable','updateCuentaContable','deleteCuentaContable','getTransacciones','addTransaccion','deleteTransaccion','getResumenContable','getCotizaciones','getCotizacion','getCotizacionHtml','addCotizacion','updateCotizacion','updateEstadoCotizacion','deleteCotizacion','duplicarCotizacion','convertirCotizacionAVenta','enviarCotizacion','getResumenCotizaciones','getPosInit','registrarVentaPos','posObtenerVenta','posDevolverVenta','posBuscarVentas','posMisPermisos','posCajaMovimiento','posReabrirCaja','posHistorialCliente','posReporteVentas','posReporteCierres','posReporteComisiones','posListarAuditoria','seguimientoClientes','crmTareas','addTarea','updateTarea','getPlantillas','savePlantilla','deletePlantilla','registrarMensaje','crmImportar','crmListarAuditoria','crmMetasProgreso','crmMetaGuardar','posPendientes','posPendienteGuardar','posPendienteEliminar','proveedorGuardar','compraRegistrar','compraPagar','compraAnular','invAjustar','invConteoCrear','invConteoGuardar','invConteoAplicar','invReposicion','getProveedores','getContactadosWhatsApp','getCompras','getCompraItems','getKardex','getConteos','getConteoItems','getLibroDiario','getEstadoResultados','getFicha','addContacto','updateContacto','deleteContacto','addNotaCRM','deleteNotaCRM','addActividadCRM','deleteActividadCRM','getPerfil','updatePerfil','updatePreferencias','changePasswordPropio','uploadFotoPerfil','deleteFotoPerfil','getDashboardInit','getOrgConfig','saveOrgConfig','uploadLogoOrg','deleteLogoOrg','consultarNitSat','getCajaStatus','abrirCajaPOS','cerrarCajaPOS','getVentasTurnoCaja','uploadFotoProducto','probarConexionFel','getCierresCaja','getSucursales','addSucursal','updateSucursal','deleteSucursal','enviarTicketCorreo','getReporteVentasSucursal'];
             METHODS.forEach(name=>{
                 runner[name]=function(){
                     const args=Array.from(arguments);
