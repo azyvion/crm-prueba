@@ -24,7 +24,15 @@
         let _filtroPlanActual  = 'Todos';
         let _drawerCuentaId    = null;
         let _contTabActual     = 'cuentas';
-        
+
+        /* ── Formato de moneda: signo antes del símbolo (-Q 1,549.50) ── */
+        function fmtQ(n) {
+            const v = Number(n || 0);
+            const s = 'Q ' + Math.abs(v).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2});
+            return v < 0 ? '-' + s : s;
+        }
+        window.fmtQ = fmtQ;
+
         /* ── Mostrar módulo solo a Admin y Gerente ── */
         function _initContabilidad() {
             const esContAccess = (_rol === 'Admin' || _rol === 'ADMIN' || _rol === 'SUPER_ADMIN' || _rol === 'Gerente' || _rol === 'GERENTE' || window._esSuperAdmin === true);
@@ -61,12 +69,14 @@
             window.api
                 .withSuccessHandler(function(r) {
                     if (!r.ok) return;
-                    const fQ = n => 'Q ' + Number(n || 0).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2});
+                    const fQ = fmtQ;
                     document.getElementById('cont-saldo').textContent    = fQ(r.saldoTotal);
                     document.getElementById('cont-saldo-d').innerHTML    = `<svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg> ${r.cuentasActivas} de ${r.totalCuentas} activas`;
                     document.getElementById('cont-ing-mes').textContent  = fQ(r.ingresosMes);
                     document.getElementById('cont-egr-mes').textContent  = fQ(r.egresosMes);
-                    document.getElementById('cont-util-mes').textContent = fQ(r.utilidadMes);
+                    const utilVal = document.getElementById('cont-util-mes');
+                    utilVal.textContent = fQ(r.utilidadMes);
+                    utilVal.classList.toggle('is-neg', r.utilidadMes < 0);
                     const utilEl = document.getElementById('cont-util-d');
                     if (r.utilidadMes >= 0) {
                         utilEl.className = 'kpi-delta up';
@@ -141,7 +151,7 @@
         function renderLibroDiario() {
             const tbody = document.getElementById('diarioTbody');
             if (!tbody) return;
-            const fQ = n => 'Q ' + Number(n || 0).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2});
+            const fQ = fmtQ;
             if (!_libroDiario.length) {
                 tbody.innerHTML = '<tr><td colspan="7" class="empty-cell">No hay partidas registradas en el período seleccionado.</td></tr>';
                 const elD = document.getElementById('diarioTotalDebe');
@@ -154,17 +164,18 @@
             const html = _libroDiario.map(p => {
                 totDebe += Number(p.debeMonto || 0);
                 totHaber += Number(p.haberMonto || 0);
+                const cat = p.categoria && p.categoria !== p.concepto ? `<div class="cell-sub">${escHtml(p.categoria)}</div>` : '';
                 return `<tr>
-                    <td style="font-weight:600">#${escHtml(p.partidaNo)}</td>
-                    <td class="cell-sub">${fechaCorta(p.fecha)}</td>
+                    <td class="cont-partida">#${escHtml(p.partidaNo)}</td>
+                    <td class="cont-nowrap">${fechaCorta(p.fecha)}</td>
                     <td>
-                        <div style="font-weight:500">${escHtml(p.concepto)}</div>
-                        <div class="cell-sub" style="font-size:11px">${escHtml(p.categoria || '')}</div>
+                        <div class="cell-main">${escHtml(p.concepto)}</div>
+                        ${cat}
                     </td>
-                    <td><span class="tag" style="background:rgba(10,132,255,.1);color:#0A84FF;font-weight:500">${escHtml(p.debe)}</span></td>
-                    <td class="cell-num" style="font-weight:600">${fQ(p.debeMonto)}</td>
-                    <td><span class="tag" style="background:rgba(48,209,88,.1);color:#30D158;font-weight:500">${escHtml(p.haber)}</span></td>
-                    <td class="cell-num" style="font-weight:600">${fQ(p.haberMonto)}</td>
+                    <td><span class="cont-acct cont-acct-debe">${escHtml(p.debe)}</span></td>
+                    <td class="cell-num cont-amt">${fQ(p.debeMonto)}</td>
+                    <td><span class="cont-acct cont-acct-haber">${escHtml(p.haber)}</span></td>
+                    <td class="cell-num cont-amt">${fQ(p.haberMonto)}</td>
                 </tr>`;
             }).join('');
             tbody.innerHTML = html;
@@ -177,15 +188,9 @@
             const badge = document.getElementById('diarioBalanceBadge');
             if (badge) {
                 const diff = Math.abs(totDebe - totHaber);
-                if (diff < 0.01) {
-                    badge.style.background = 'rgba(48,209,88,.15)';
-                    badge.style.color = '#30D158';
-                    badge.textContent = 'Sumas Iguales Cuadradas ✓';
-                } else {
-                    badge.style.background = 'rgba(255,69,58,.15)';
-                    badge.style.color = '#FF453A';
-                    badge.textContent = 'Descuadre: ' + fQ(diff);
-                }
+                const cuadra = diff < 0.01;
+                badge.className = 'cont-badge ' + (cuadra ? 'is-ok' : 'is-bad');
+                badge.textContent = cuadra ? 'Partidas cuadradas' : 'Descuadre: ' + fQ(diff);
             }
         }
 
@@ -235,7 +240,7 @@
         function renderEstadoResultados() {
             if (!_estadoResultados) return;
             const r = _estadoResultados;
-            const fQ = n => 'Q ' + Number(n || 0).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2});
+            const fQ = fmtQ;
 
             const ingEl = document.getElementById('pnl-ingresos');
             const egrEl = document.getElementById('pnl-egresos');
@@ -245,8 +250,15 @@
 
             if (ingEl) ingEl.textContent = fQ(r.ingresos);
             if (egrEl) egrEl.textContent = fQ(r.egresos);
-            if (utilEl) utilEl.textContent = fQ(r.utilidadNeta);
-            if (marEl) marEl.textContent = (r.margenPct || 0) + '%';
+            if (utilEl) {
+                utilEl.textContent = fQ(r.utilidadNeta);
+                utilEl.classList.toggle('is-pos', r.utilidadNeta > 0);
+                utilEl.classList.toggle('is-neg', r.utilidadNeta < 0);
+            }
+            if (marEl) {
+                marEl.textContent = (r.margenPct || 0) + '%';
+                marEl.classList.toggle('is-neg', Number(r.margenPct) < 0);
+            }
 
             if (utilDelta) {
                 if (r.utilidadNeta >= 0) {
@@ -271,21 +283,19 @@
             const html = cats.map(([cat, monto]) => {
                 const esIngreso = monto >= 0;
                 const pct = Math.min(100, Math.round((Math.abs(monto) / maxAbs) * 100));
-                const colorBar = esIngreso ? '#30D158' : '#FF453A';
+                const tono = esIngreso ? 'is-pos' : 'is-neg';
                 return `<tr>
-                    <td style="font-weight:600">${escHtml(cat)}</td>
+                    <td class="cell-main">${escHtml(cat)}</td>
                     <td>
-                        <span class="tag" style="background:${esIngreso ? 'rgba(48,209,88,.15)' : 'rgba(255,69,58,.15)'};color:${colorBar}">
-                            ${esIngreso ? 'Ingreso Operativo' : 'Costo / Gasto'}
+                        <span class="tag ${esIngreso ? 'tag-success' : 'tag-danger'}">
+                            ${esIngreso ? 'Ingreso operativo' : 'Costo / gasto'}
                         </span>
                     </td>
-                    <td class="cell-num" style="font-weight:600;color:${colorBar}">${fQ(monto)}</td>
+                    <td class="cell-num cont-amt ${tono}">${fQ(monto)}</td>
                     <td>
-                        <div style="display:flex;align-items:center;gap:8px">
-                            <div style="flex:1;background:var(--border);height:6px;border-radius:3px;overflow:hidden">
-                                <div style="background:${colorBar};height:100%;width:${pct}%;border-radius:3px"></div>
-                            </div>
-                            <span class="cell-sub" style="font-size:11px;width:35px;text-align:right">${pct}%</span>
+                        <div class="cont-share ${tono}">
+                            <div class="cont-share-track"><div class="cont-share-fill" style="width:${pct}%"></div></div>
+                            <span class="cont-share-pct">${pct}%</span>
                         </div>
                     </td>
                 </tr>`;
@@ -329,9 +339,9 @@
                 const saldo  = Number(c.saldo || 0);
                 const activa = c.activa === true || c.activa === 'true';
                 const saldoCls = saldo >= 0 ? 'positivo' : 'negativo';
-                const fQ = n => 'Q ' + Number(n).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2});
+                const fQ = fmtQ;
                 return `
-                <div class="bank-card" onclick="openBankDrawer('${c.id}')">
+                <div class="bank-card${activa ? '' : ' is-inactive'}" onclick="openBankDrawer('${c.id}')">
                     <div class="bank-card-top">
                         <div class="bank-logo-wrap bank-logo-${escHtml(c.logo)}" title="${escHtml(c.banco)}">
                             <img src="logo-banco-${escHtml(c.logo).toLowerCase()}.png" alt="${escHtml(c.banco)}"
@@ -370,7 +380,7 @@
             if (!c) return;
             _drawerCuentaId = cuentaId;
         
-            const fQ = n => 'Q ' + Number(n||0).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2});
+            const fQ = fmtQ;
             const saldo = Number(c.saldo || 0);
         
             document.getElementById('drawerBankName').textContent = c.nombre;
@@ -402,26 +412,24 @@
                 Transferencia: '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>',
                 Ajuste:        '<circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>'
             };
-            const TIPO_BG   = {Ingreso:'#E3FAE9',Egreso:'#FFE9E8',Transferencia:'#E3F0FF',Ajuste:'#FFF4E0'};
-            const TIPO_STR  = {Ingreso:'var(--success)',Egreso:'var(--danger)',Transferencia:'var(--accent)',Ajuste:'var(--warning)'};
             const TIPO_CLS  = {Ingreso:'ing',Egreso:'egr',Transferencia:'tra',Ajuste:'adj'};
-            const SIGN      = {Ingreso:'+',Egreso:'-',Transferencia:'+',Ajuste:'±'};
-        
+            const SIGN      = {Ingreso:'+',Egreso:'-',Transferencia:'+',Ajuste:''};
+
             if (!trxCuenta.length) {
-                listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Sin movimientos aún</div>';
+                listEl.innerHTML = '<div class="az-empty">Sin movimientos aún</div>';
             } else {
                 listEl.innerHTML = trxCuenta.slice(0, 30).map(t => `
                 <div class="drawer-trx-item">
-                    <div class="drawer-trx-icon" style="background:${TIPO_BG[t.tipo]||'#f2f2f7'}">
-                        <svg viewBox="0 0 24 24" style="stroke:${TIPO_STR[t.tipo]||'#8E8E93'}">${TIPO_ICON[t.tipo]||''}</svg>
+                    <div class="drawer-trx-icon ${TIPO_CLS[t.tipo]||''}">
+                        <svg viewBox="0 0 24 24">${TIPO_ICON[t.tipo]||''}</svg>
                     </div>
                     <div style="flex:1;min-width:0">
-                        <div class="drawer-trx-concept">${escHtml(t.concepto)}</div>
+                        <div class="drawer-trx-concept" title="${escAttr(t.concepto)}">${escHtml(t.concepto)}</div>
                         <div class="drawer-trx-date">${fechaCorta(t.fecha)}${t.referencia?' · Ref: '+escHtml(t.referencia):''}</div>
                     </div>
-                    <div>
-                        <div class="drawer-trx-amount ${TIPO_CLS[t.tipo]||''}">${SIGN[t.tipo]||''}Q ${Number(t.monto||0).toLocaleString('es-GT',{minimumFractionDigits:2})}</div>
-                        ${esAdmin()?`<button class="btn-danger-sm" style="margin-top:3px;font-size:10px" onclick="confirmDeleteTrx('${t.id}','${escAttr(t.concepto)}')">Eliminar</button>`:''}
+                    <div class="drawer-trx-side">
+                        <div class="drawer-trx-amount ${TIPO_CLS[t.tipo]||''}">${SIGN[t.tipo]||''}${fQ(t.monto)}</div>
+                        ${esAdmin()?`<button class="drawer-trx-del" onclick="confirmDeleteTrx('${t.id}','${escAttr(t.concepto)}')" title="Eliminar movimiento" aria-label="Eliminar movimiento"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>`:''}
                     </div>
                 </div>`).join('');
             }
@@ -462,11 +470,11 @@
                 ? data.map(c => {
                     const activa = c.activa === true || c.activa === 'true';
                     return `<tr>
-                    <td><span style="font-family:monospace;font-size:12px;font-weight:600">${escHtml(c.codigo)}</span></td>
-                    <td style="font-weight:500">${escHtml(c.nombre)}</td>
+                    <td><span class="cont-code">${escHtml(c.codigo)}</span></td>
+                    <td class="cell-main">${escHtml(c.nombre)}</td>
                     <td><span class="tag ${PLAN_TAG_CLS[c.tipo]||'tag-gray'}">${escHtml(c.tipo)}</span></td>
-                    <td>${escHtml(c.rubro)||'—'}</td>
-                    <td style="color:var(--text-secondary);max-width:200px" title="${escHtml(c.descripcion)}">${escHtml(c.descripcion)||'—'}</td>
+                    <td class="cont-nowrap">${escHtml(c.rubro)||'—'}</td>
+                    <td class="cell-clip" title="${escHtml(c.descripcion)}">${escHtml(c.descripcion)||'—'}</td>
                     <td><span class="tag ${activa?'tag-success':'tag-danger'}">${activa?'Activa':'Inactiva'}</span></td>
                     <td>
                         <div class="row-actions">
@@ -500,26 +508,27 @@
             if (hasta) data = data.filter(t => new Date(t.fecha) <= new Date(hasta + 'T23:59:59'));
         
             const admin = esAdmin();
-            const fQ = n => 'Q ' + Number(n||0).toLocaleString('es-GT',{minimumFractionDigits:2});
-        
+            const fQ = fmtQ;
+
             document.getElementById('trxTbody').innerHTML = data.length
                 ? data.map(t => {
                     const cb = _cuentasBancarias.find(c => String(c.id) === String(t.cuentaBancariaId));
                     const cc = _planCuentas.find(c => String(c.id) === String(t.cuentaContableId));
-                    const sign = {Ingreso:'+',Egreso:'-',Transferencia:'±',Ajuste:'~'}[t.tipo]||'';
+                    const sign = {Ingreso:'+',Egreso:'-'}[t.tipo]||'';
+                    const tono = {Ingreso:'is-pos',Egreso:'is-neg'}[t.tipo]||'';
                     const amtCls = {Ingreso:'tag-trx-Ingreso',Egreso:'tag-trx-Egreso',Transferencia:'tag-trx-Transferencia',Ajuste:'tag-trx-Ajuste'}[t.tipo]||'';
                     return `<tr>
-                    <td>${fechaCorta(t.fecha)}</td>
+                    <td class="cont-nowrap">${fechaCorta(t.fecha)}</td>
                     <td><span class="tag ${amtCls}">${escHtml(t.tipo)}</span></td>
                     <td>
-                        <div style="font-weight:500">${escHtml(t.concepto)}</div>
+                        <div class="cell-main">${escHtml(t.concepto)}</div>
                         ${t.descripcion?`<div class="cell-sub">${escHtml(t.descripcion)}</div>`:''}
                     </td>
-                    <td>${cb?escHtml(cb.nombre):'—'}</td>
-                    <td>${cc?`<span style="font-family:monospace;font-size:11px">${escHtml(cc.codigo)}</span> ${escHtml(cc.nombre)}`:'—'}</td>
-                    <td>${t.referencia?escHtml(t.referencia):'—'}</td>
-                    <td class="cell-num" style="font-weight:700;color:${t.tipo==='Egreso'?'var(--danger)':'var(--success)'}">${sign}${fQ(t.monto)}</td>
-                    <td>${admin?`<button class="btn-danger-sm" onclick="confirmDeleteTrx('${t.id}','${escAttr(t.concepto)}')">Eliminar</button>`:''}</td>
+                    <td class="cont-nowrap">${cb?escHtml(cb.nombre):'—'}</td>
+                    <td class="cont-nowrap">${cc?`<span class="cont-code">${escHtml(cc.codigo)}</span> ${escHtml(cc.nombre)}`:'—'}</td>
+                    <td class="cont-nowrap">${t.referencia?`<span class="cont-code">${escHtml(t.referencia)}</span>`:'—'}</td>
+                    <td class="cell-num cont-amt ${tono}">${sign}${fQ(t.monto)}</td>
+                    <td><div class="row-actions">${admin?`<button class="btn-danger-sm" onclick="confirmDeleteTrx('${t.id}','${escAttr(t.concepto)}')">Eliminar</button>`:''}</div></td>
                     </tr>`;
                 }).join('')
                 : '<tr><td colspan="8" class="empty-cell">Sin transacciones con estos filtros</td></tr>';
@@ -530,7 +539,10 @@
                 return s;
             },0);
             const foot = document.getElementById('trxFoot');
-            if (foot) foot.innerHTML = `<span><strong>${data.length}</strong> transacciones</span><span>Balance filtrado: <strong style="color:${total>=0?'var(--success)':'var(--danger)'}">${total>=0?'+':''}${fQ(total)}</strong></span>`;
+            if (foot) {
+                foot.className = 'table-foot cont-totals';
+                foot.innerHTML = `<span class="cont-totals-label">${data.length} transacciones</span><div class="cont-totals-values"><span>Balance filtrado <strong class="${total>=0?'is-pos':'is-neg'}">${total>0?'+':''}${fQ(total)}</strong></span></div>`;
+            }
         }
         
         function actualizarSelectCuentas() {
@@ -1001,21 +1013,21 @@
 
         function loadCierresCajaContab() {
             const tbody = document.getElementById('cierresCajaTbody');
-            if (tbody) tbody.innerHTML = '<tr><td colspan="11" class="empty-cell">Cargando historial de cierres de caja…</td></tr>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="empty-cell">Cargando historial de cierres de caja…</td></tr>';
             const desde = (document.getElementById('cierresDesde') || {}).value || null;
             const hasta = (document.getElementById('cierresHasta') || {}).value || null;
 
             window.api
                 .withSuccessHandler(function(r) {
                     if (!r || !r.ok) {
-                        if (tbody) tbody.innerHTML = `<tr><td colspan="11" class="empty-cell" style="color:var(--danger)">Error al cargar cierres: ${escHtml((r && r.error) || 'Desconocido')}</td></tr>`;
+                        if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="empty-cell" style="color:var(--danger)">Error al cargar cierres: ${escHtml((r && r.error) || 'Desconocido')}</td></tr>`;
                         return;
                     }
                     _cierresCajaList = r.data || [];
                     renderCierresCaja();
                 })
                 .withFailureHandler(function(e) {
-                    if (tbody) tbody.innerHTML = `<tr><td colspan="11" class="empty-cell" style="color:var(--danger)">Error de conexión: ${escHtml(e.message)}</td></tr>`;
+                    if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="empty-cell" style="color:var(--danger)">Error de conexión: ${escHtml(e.message)}</td></tr>`;
                 })
                 .getCierresCaja({ desde: desde, hasta: hasta });
         }
@@ -1027,13 +1039,20 @@
             if (!tbody) return;
 
             if (!_cierresCajaList.length) {
-                tbody.innerHTML = '<tr><td colspan="11" class="empty-cell">No se encontraron turnos de caja en este período</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="empty-cell">No se encontraron turnos de caja en este período</td></tr>';
                 if (foot) foot.innerHTML = '';
                 return;
             }
 
-            const fQ = n => 'Q ' + Number(n || 0).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2});
-            const fF = iso => iso ? new Date(iso).toLocaleString('es-GT', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '—';
+            const fQ = fmtQ;
+            const fD = iso => new Date(iso).toLocaleDateString('es-GT', {day:'2-digit', month:'2-digit', year:'numeric'});
+            const fH = iso => new Date(iso).toLocaleTimeString('es-GT', {hour:'2-digit', minute:'2-digit'});
+            const fTurno = (ap, ci) => {
+                if (!ap) return '—';
+                const mismoDia = ci && fD(ap) === fD(ci);
+                const fin = !ci ? 'en curso' : (mismoDia ? fH(ci) : fD(ci) + ' ' + fH(ci));
+                return `<div class="cont-nowrap">${fD(ap)}</div><div class="cell-sub cont-nowrap">${fH(ap)} – ${fin}</div>`;
+            };
 
             let totFondo = 0, totVentasEf = 0, totEsperado = 0, totContado = 0, totDif = 0;
 
@@ -1051,42 +1070,45 @@
                 totContado += cont;
                 totDif += dif;
 
-                const difColor = dif === 0 ? 'var(--success)' : dif > 0 ? 'var(--accent)' : '#FF453A';
-                const difTxt = (dif >= 0 ? '+' : '') + fQ(dif);
+                const difTono = dif === 0 ? '' : dif > 0 ? 'is-pos' : 'is-neg';
+                const difTxt = (dif > 0 ? '+' : '') + fQ(dif);
 
                 return `<tr>
-                    <td style="font-weight:600">${escHtml(c.cajero || '—')}</td>
-                    <td>${escHtml(c.sucursales ? c.sucursales.nombre : 'Central')}</td>
-                    <td style="font-size:12px;color:var(--text-secondary)">${fF(c.fecha_apertura)}</td>
-                    <td style="font-size:12px;color:var(--text-secondary)">${fF(c.fecha_cierre)}</td>
-                    <td class="cell-num">${fQ(fondo)}</td>
-                    <td class="cell-num font-mono" style="font-weight:600">${fQ(vEf)}</td>
-                    <td class="cell-num font-mono">${fQ(esp)}</td>
-                    <td class="cell-num font-mono">${abierta ? '—' : fQ(cont)}</td>
-                    <td class="cell-num font-mono" style="font-weight:700;color:${abierta ? 'inherit' : difColor}">${abierta ? '—' : difTxt}</td>
                     <td>
-                        <span class="tag ${abierta ? 'tag-accent' : 'tag-success'}" style="font-size:10.5px">
-                            ${abierta ? '● ABIERTA' : '✓ CERRADA'}
+                        <div class="cell-main cont-nowrap">${escHtml(c.cajero || '—')}</div>
+                        <div class="cell-sub cont-nowrap">${escHtml(c.sucursales ? c.sucursales.nombre : 'Central')}</div>
+                    </td>
+                    <td>${fTurno(c.fecha_apertura, c.fecha_cierre)}</td>
+                    <td class="cell-num">${fQ(fondo)}</td>
+                    <td class="cell-num cont-amt">${fQ(vEf)}</td>
+                    <td class="cell-num">${fQ(esp)}</td>
+                    <td class="cell-num">${abierta ? '—' : fQ(cont)}</td>
+                    <td class="cell-num cont-amt ${abierta ? '' : difTono}">${abierta ? '—' : difTxt}</td>
+                    <td>
+                        <span class="tag ${abierta ? 'tag-accent' : 'tag-success'} cont-nowrap">
+                            ${abierta ? 'Abierta' : 'Cerrada'}
                         </span>
                     </td>
-                    <td style="text-align:right">
+                    <td>
+                        <div class="row-actions">
                         ${!abierta ? `
-                        <button class="topbar-btn" style="height:28px;padding:0 8px;font-size:11px" onclick="imprimirCierreFromContab(${idx})" title="Imprimir comprobante">
-                            🖨️ Ticket
+                        <button class="btn-ghost" onclick="imprimirCierreFromContab(${idx})" title="Imprimir comprobante">
+                            <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                            Ticket
                         </button>` : ''}
+                        </div>
                     </td>
                 </tr>`;
             }).join('');
 
             if (foot) {
+                foot.className = 'table-foot cont-totals';
                 foot.innerHTML = `
-                    <div style="display:flex;justify-content:space-between;padding:10px 16px;background:var(--card-subtle);font-weight:700;font-size:13px;border-top:1.5px solid var(--border)">
-                        <span>Total de turnos: ${_cierresCajaList.length}</span>
-                        <div style="display:flex;gap:24px">
-                            <span>Ventas Efectivo: ${fQ(totVentasEf)}</span>
-                            <span>Efectivo Contado: ${fQ(totContado)}</span>
-                            <span>Diferencia Total: <span style="color:${totDif >= 0 ? 'var(--success)' : '#FF453A'}">${(totDif >= 0 ? '+' : '') + fQ(totDif)}</span></span>
-                        </div>
+                    <span class="cont-totals-label">${_cierresCajaList.length} turnos</span>
+                    <div class="cont-totals-values">
+                        <span>Ventas efectivo <strong>${fQ(totVentasEf)}</strong></span>
+                        <span>Efectivo contado <strong>${fQ(totContado)}</strong></span>
+                        <span>Diferencia total <strong class="${totDif === 0 ? '' : totDif > 0 ? 'is-pos' : 'is-neg'}">${(totDif > 0 ? '+' : '') + fQ(totDif)}</strong></span>
                     </div>`;
             }
         }
@@ -1131,7 +1153,7 @@
                         if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="empty-cell" style="color:var(--danger)">Error al cargar reporte: ${escHtml((r && r.error) || 'Desconocido')}</td></tr>`;
                         return;
                     }
-                    const fQ = n => 'Q ' + Number(n || 0).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2});
+                    const fQ = fmtQ;
                     const d = r.data || [];
                     const granTotal = Number(r.granTotal || 0);
 
@@ -1167,23 +1189,21 @@
                             const pct = granTotal > 0 ? ((numTot / granTotal) * 100).toFixed(1) : '0.0';
 
                             return `<tr>
-                                <td style="font-weight:700">
+                                <td class="cell-main cont-nowrap">
                                     ${escHtml(s.nombre || 'Sin nombre')}
-                                    ${s.es_central ? '<span class="tag tag-accent" style="margin-left:6px;font-size:10px">Central</span>' : ''}
+                                    ${s.es_central ? '<span class="tag tag-accent cont-tag-inline">Central</span>' : ''}
                                 </td>
-                                <td style="font-size:12px;color:var(--text-secondary)">${escHtml(s.codigo || '—')}</td>
+                                <td><span class="cont-code">${escHtml(s.codigo || '—')}</span></td>
                                 <td class="cell-num">${numTrx}</td>
-                                <td class="cell-num font-mono">${fQ(numEf)}</td>
-                                <td class="cell-num font-mono">${fQ(numTar)}</td>
-                                <td class="cell-num font-mono">${fQ(numTrans)}</td>
-                                <td class="cell-num font-mono">${fQ(numOtr)}</td>
-                                <td class="cell-num font-mono" style="font-weight:800;color:var(--text-primary)">${fQ(numTot)}</td>
+                                <td class="cell-num">${fQ(numEf)}</td>
+                                <td class="cell-num">${fQ(numTar)}</td>
+                                <td class="cell-num">${fQ(numTrans)}</td>
+                                <td class="cell-num">${fQ(numOtr)}</td>
+                                <td class="cell-num cont-amt">${fQ(numTot)}</td>
                                 <td>
-                                    <div style="display:flex;align-items:center;gap:8px">
-                                        <div style="flex:1;background:var(--border);height:8px;border-radius:4px;overflow:hidden">
-                                            <div style="width:${pct}%;background:var(--accent);height:100%"></div>
-                                        </div>
-                                        <span style="font-size:11.5px;font-weight:600;min-width:38px">${pct}%</span>
+                                    <div class="cont-share">
+                                        <div class="cont-share-track"><div class="cont-share-fill" style="width:${pct}%"></div></div>
+                                        <span class="cont-share-pct">${pct}%</span>
                                     </div>
                                 </td>
                             </tr>`;
@@ -1192,14 +1212,13 @@
 
                     const foot = document.getElementById('ventasSucFoot');
                     if (foot) {
+                        foot.className = 'table-foot cont-totals';
                         foot.innerHTML = `
-                            <div style="display:flex;justify-content:space-between;padding:10px 16px;background:var(--card-subtle);font-weight:700;font-size:13px;border-top:1.5px solid var(--border)">
-                                <span>Total General (${d.length} sucursales · ${totTrx} ventas)</span>
-                                <div style="display:flex;gap:20px">
-                                    <span>Efectivo: ${fQ(totEf)}</span>
-                                    <span>Electrónico: ${fQ(totTar + totTrans + totOtr)}</span>
-                                    <span style="color:var(--accent)">Gran Total: ${fQ(granTotal)}</span>
-                                </div>
+                            <span class="cont-totals-label">${d.length} sucursales · ${totTrx} ventas</span>
+                            <div class="cont-totals-values">
+                                <span>Efectivo <strong>${fQ(totEf)}</strong></span>
+                                <span>Electrónico <strong>${fQ(totTar + totTrans + totOtr)}</strong></span>
+                                <span>Gran total <strong class="is-accent">${fQ(granTotal)}</strong></span>
                             </div>`;
                     }
                 })

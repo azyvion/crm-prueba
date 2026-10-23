@@ -2365,12 +2365,12 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                                 <button class="filter-tab" onclick="filtrarPlan('Ingreso',this)">Ingreso</button>
                                 <button class="filter-tab" onclick="filtrarPlan('Egreso',this)">Egreso</button>
                             </div>
-                            <div style="display:flex;gap:8px">
-                                <button class="topbar-btn" onclick="cargarNomenclaturaEstandarBtn()" title="Cargar catálogo y cuentas contables estándar para Guatemala/NIIF" style="height:30px;font-size:12px;background:var(--card);border:1px solid var(--border);color:var(--text-primary)">
-                                    <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                                    Nomenclatura Estándar
+                            <div class="toolbar-right">
+                                <button class="btn-ghost" onclick="cargarNomenclaturaEstandarBtn()" title="Cargar catálogo y cuentas contables estándar para Guatemala/NIIF">
+                                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                    Nomenclatura estándar
                                 </button>
-                                <button class="topbar-btn" onclick="openNuevaCuentaContable()" style="height:30px;font-size:12px">
+                                <button class="topbar-btn cont-btn" onclick="openNuevaCuentaContable()">
                                     <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                                     Nueva cuenta
                                 </button>
@@ -2412,8 +2412,9 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                                 <select class="mini-select" id="trxFiltroCuenta" onchange="renderTransacciones(_filtroTrxActual)">
                                     <option value="">Todas las cuentas</option>
                                 </select>
-                                <input type="date" class="mini-select" id="trxDesde" onchange="renderTransacciones(_filtroTrxActual)" style="width:130px">
-                                <input type="date" class="mini-select" id="trxHasta" onchange="renderTransacciones(_filtroTrxActual)" style="width:130px">
+                                <input type="date" class="mini-date" id="trxDesde" onchange="renderTransacciones(_filtroTrxActual)" aria-label="Desde">
+                                <span class="cont-range-sep">a</span>
+                                <input type="date" class="mini-date" id="trxHasta" onchange="renderTransacciones(_filtroTrxActual)" aria-label="Hasta">
                                 <button class="btn-ghost" onclick="exportarTransacciones()">
                                     <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                     Exportar
@@ -2446,20 +2447,20 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                 <!-- ── Sub-tab: Libro Diario ── -->
                 <div class="cont-panel" id="contPanel-diario">
                     <div class="table-card">
-                        <div class="table-toolbar" style="gap:12px;flex-wrap:wrap;justify-content:space-between">
-                            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                                <span style="font-weight:600;font-size:13px;color:var(--text-primary)">Período contable:</span>
-                                <input type="date" class="mini-select" id="diarioDesde" onchange="loadLibroDiario()" style="width:135px">
-                                <span style="font-size:12px;color:var(--text-muted)">a</span>
-                                <input type="date" class="mini-select" id="diarioHasta" onchange="loadLibroDiario()" style="width:135px">
-                                <button class="topbar-btn" onclick="loadLibroDiario()" style="height:32px;font-size:12px;padding:0 12px">
+                        <div class="table-toolbar cont-filterbar">
+                            <div class="cont-filter-group">
+                                <span class="cont-filter-label">Período contable</span>
+                                <input type="date" class="mini-date" id="diarioDesde" onchange="loadLibroDiario()" aria-label="Desde">
+                                <span class="cont-range-sep">a</span>
+                                <input type="date" class="mini-date" id="diarioHasta" onchange="loadLibroDiario()" aria-label="Hasta">
+                                <button class="topbar-btn cont-btn" onclick="loadLibroDiario()">
                                     <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                                     Filtrar
                                 </button>
                             </div>
-                            <div class="toolbar-right" style="display:flex;align-items:center;gap:8px">
-                                <div id="diarioBalanceBadge" style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:rgba(48,209,88,.15);color:#30D158">
-                                    Partidas Cuadradas ✓
+                            <div class="toolbar-right">
+                                <div id="diarioBalanceBadge" class="cont-badge is-ok">
+                                    Partidas cuadradas
                                 </div>
                                 <button class="btn-ghost" onclick="exportarLibroDiario()">
                                     <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -2485,57 +2486,60 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                                 </tbody>
                             </table>
                         </div>
-                        <div class="table-foot" id="diarioFoot" style="display:flex;justify-content:flex-end;gap:30px;padding:12px 18px;background:var(--bg-secondary);font-weight:700">
-                            <div>Total Debe: <span id="diarioTotalDebe" style="color:var(--accent)">Q 0.00</span></div>
-                            <div>Total Haber: <span id="diarioTotalHaber" style="color:var(--accent)">Q 0.00</span></div>
+                        <div class="table-foot cont-totals" id="diarioFoot">
+                            <span class="cont-totals-label">Sumas iguales</span>
+                            <div class="cont-totals-values">
+                                <span>Total Debe <strong id="diarioTotalDebe">Q 0.00</strong></span>
+                                <span>Total Haber <strong id="diarioTotalHaber">Q 0.00</strong></span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- ── Sub-tab: Estado de Resultados (P&L) ── -->
                 <div class="cont-panel" id="contPanel-pnl">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                            <span style="font-weight:600;font-size:13px;color:var(--text-primary)">Período de análisis:</span>
-                            <input type="date" class="mini-select" id="pnlDesde" onchange="loadEstadoResultados()" style="width:135px">
-                            <span style="font-size:12px;color:var(--text-muted)">a</span>
-                            <input type="date" class="mini-select" id="pnlHasta" onchange="loadEstadoResultados()" style="width:135px">
-                            <button class="topbar-btn" onclick="loadEstadoResultados()" style="height:32px;font-size:12px;padding:0 12px">
+                    <div class="cont-filterbar cont-filterbar-card">
+                        <div class="cont-filter-group">
+                            <span class="cont-filter-label">Período de análisis</span>
+                            <input type="date" class="mini-date" id="pnlDesde" onchange="loadEstadoResultados()" aria-label="Desde">
+                            <span class="cont-range-sep">a</span>
+                            <input type="date" class="mini-date" id="pnlHasta" onchange="loadEstadoResultados()" aria-label="Hasta">
+                            <button class="topbar-btn cont-btn" onclick="loadEstadoResultados()">
                                 Actualizar
                             </button>
                         </div>
                         <button class="btn-ghost" onclick="exportarEstadoResultados()">
                             <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            Exportar P&L
+                            Exportar P&amp;L
                         </button>
                     </div>
 
-                    <div class="kpi-grid" style="margin-bottom:20px;">
+                    <div class="kpi-grid cont-kpi-grid">
                         <div class="kpi-card">
-                            <div class="kpi-label">Ingresos Operativos</div>
-                            <div class="kpi-value" id="pnl-ingresos" style="color:#30D158">Q 0.00</div>
+                            <div class="kpi-label">Ingresos operativos</div>
+                            <div class="kpi-value is-pos" id="pnl-ingresos">Q 0.00</div>
                             <div class="kpi-delta up">Ventas y cobranzas</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-label">Costos y Gastos</div>
-                            <div class="kpi-value" id="pnl-egresos" style="color:#FF453A">Q 0.00</div>
+                            <div class="kpi-label">Costos y gastos</div>
+                            <div class="kpi-value is-neg" id="pnl-egresos">Q 0.00</div>
                             <div class="kpi-delta down">Egresos operativos</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-label">Utilidad Neta</div>
+                            <div class="kpi-label">Utilidad neta</div>
                             <div class="kpi-value" id="pnl-utilidad">Q 0.00</div>
-                            <div class="kpi-delta" id="pnl-utilidad-delta">Resultado neto</div>
+                            <div class="kpi-delta neu" id="pnl-utilidad-delta">Resultado neto</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-label">Margen Operativo</div>
+                            <div class="kpi-label">Margen operativo</div>
                             <div class="kpi-value" id="pnl-margen">0.0%</div>
-                            <div class="kpi-delta" id="pnl-margen-delta">Sobre ingresos</div>
+                            <div class="kpi-delta neu" id="pnl-margen-delta">Sobre ingresos</div>
                         </div>
                     </div>
 
                     <div class="table-card">
                         <div class="table-toolbar">
-                            <span style="font-weight:600;font-size:14px;">Desglose por Categoría y Rubro Contable</span>
+                            <span class="cont-card-title">Desglose por categoría y rubro contable</span>
                         </div>
                         <div class="table-scroll">
                             <table>
@@ -2544,7 +2548,7 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                                         <th>Categoría / Cuenta</th>
                                         <th>Naturaleza</th>
                                         <th class="cell-num">Monto Neto</th>
-                                        <th style="width:200px">Participación</th>
+                                        <th style="width:220px">Participación</th>
                                     </tr>
                                 </thead>
                                 <tbody id="pnlTbody">
@@ -2557,40 +2561,38 @@ body.bn-more-open .az-ai-fab { display: none !important; }
 
                 <!-- ── Sub-tab: Cierres de Caja (Arqueos) ── -->
                 <div class="cont-panel" id="contPanel-cierres-caja">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                            <span style="font-weight:600;font-size:13px;color:var(--text-primary)">Historial de cierres:</span>
-                            <input type="date" class="mini-select" id="cierresDesde" style="width:135px">
-                            <span style="font-size:12px;color:var(--text-muted)">a</span>
-                            <input type="date" class="mini-select" id="cierresHasta" style="width:135px">
-                            <button class="topbar-btn" onclick="loadCierresCajaContab()" style="height:32px;font-size:12px;padding:0 12px">
+                    <div class="cont-filterbar cont-filterbar-card">
+                        <div class="cont-filter-group">
+                            <span class="cont-filter-label">Historial de cierres</span>
+                            <input type="date" class="mini-date" id="cierresDesde" aria-label="Desde">
+                            <span class="cont-range-sep">a</span>
+                            <input type="date" class="mini-date" id="cierresHasta" aria-label="Hasta">
+                            <button class="topbar-btn cont-btn" onclick="loadCierresCajaContab()">
                                 Filtrar
                             </button>
                         </div>
                     </div>
                     <div class="table-card">
                         <div class="table-toolbar">
-                            <span style="font-weight:600;font-size:14px;">Arqueos y Cortes de Caja</span>
+                            <span class="cont-card-title">Arqueos y cortes de caja</span>
                         </div>
                         <div class="table-scroll">
-                            <table>
+                            <table class="cont-table-cierres">
                                 <thead>
                                     <tr>
                                         <th>Cajero</th>
-                                        <th>Sucursal</th>
-                                        <th>Apertura</th>
-                                        <th>Cierre</th>
-                                        <th>Fondo Inicial</th>
-                                        <th class="cell-num">Ventas Efectivo</th>
-                                        <th class="cell-num">Total Esperado</th>
-                                        <th class="cell-num">Efectivo Contado</th>
+                                        <th>Turno</th>
+                                        <th class="cell-num">Fondo inicial</th>
+                                        <th class="cell-num">Ventas efectivo</th>
+                                        <th class="cell-num">Total esperado</th>
+                                        <th class="cell-num">Efectivo contado</th>
                                         <th class="cell-num">Diferencia</th>
                                         <th>Estado</th>
                                         <th></th>
                                     </tr>
                                 </thead>
                                 <tbody id="cierresCajaTbody">
-                                    <tr><td colspan="11" class="empty-cell">Cargando cierres de caja…</td></tr>
+                                    <tr><td colspan="9" class="empty-cell">Cargando cierres de caja…</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -2600,32 +2602,32 @@ body.bn-more-open .az-ai-fab { display: none !important; }
 
                 <!-- ── Sub-tab: Ventas por Sucursal ── -->
                 <div class="cont-panel" id="contPanel-ventas-sucursal">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                            <span style="font-weight:600;font-size:13px;color:var(--text-primary)">Período:</span>
-                            <input type="date" class="mini-select" id="ventasSucDesde" style="width:135px">
-                            <span style="font-size:12px;color:var(--text-muted)">a</span>
-                            <input type="date" class="mini-select" id="ventasSucHasta" style="width:135px">
-                            <button class="topbar-btn" onclick="loadVentasPorSucursal()" style="height:32px;font-size:12px;padding:0 12px">
+                    <div class="cont-filterbar cont-filterbar-card">
+                        <div class="cont-filter-group">
+                            <span class="cont-filter-label">Período</span>
+                            <input type="date" class="mini-date" id="ventasSucDesde" aria-label="Desde">
+                            <span class="cont-range-sep">a</span>
+                            <input type="date" class="mini-date" id="ventasSucHasta" aria-label="Hasta">
+                            <button class="topbar-btn cont-btn" onclick="loadVentasPorSucursal()">
                                 Actualizar
                             </button>
                         </div>
                     </div>
-                    <div class="kpi-grid" style="margin-bottom:20px;" id="ventasSucKpi">
+                    <div class="kpi-grid cont-kpi-grid cont-kpi-grid-2" id="ventasSucKpi">
                         <div class="kpi-card">
-                            <div class="kpi-label">Total Ventas (Todas las Sucursales)</div>
+                            <div class="kpi-label">Total ventas (todas las sucursales)</div>
                             <div class="kpi-value" id="ventasSucTotal">Q 0.00</div>
                             <div class="kpi-delta up">Ingreso consolidado</div>
                         </div>
                         <div class="kpi-card">
-                            <div class="kpi-label">Sucursales Activas</div>
+                            <div class="kpi-label">Sucursales activas</div>
                             <div class="kpi-value" id="ventasSucCount">0</div>
-                            <div class="kpi-delta up">Con ventas en período</div>
+                            <div class="kpi-delta neu">Con ventas en el período</div>
                         </div>
                     </div>
                     <div class="table-card">
                         <div class="table-toolbar">
-                            <span style="font-weight:600;font-size:14px;">Desglose por Sucursal</span>
+                            <span class="cont-card-title">Desglose por sucursal</span>
                         </div>
                         <div class="table-scroll">
                             <table>
@@ -2639,7 +2641,7 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                                         <th class="cell-num">Transferencia</th>
                                         <th class="cell-num">Otros</th>
                                         <th class="cell-num">Total Ventas</th>
-                                        <th style="width:180px">Participación</th>
+                                        <th style="width:200px">Participación</th>
                                     </tr>
                                 </thead>
                                 <tbody id="ventasSucTbody">
@@ -3269,9 +3271,9 @@ body.bn-more-open .az-ai-fab { display: none !important; }
             <div class="bank-drawer-body">
                 <!-- Saldo destacado -->
                 <div class="bank-saldo-box">
-                    <div style="font-size:12px;color:rgba(255,255,255,.65);margin-bottom:4px">Saldo disponible</div>
+                    <div class="bank-saldo-label">Saldo disponible</div>
                     <div class="bank-saldo-num" id="drawerSaldo">Q 0.00</div>
-                    <div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:4px" id="drawerCuentaContable">—</div>
+                    <div class="bank-saldo-sub" id="drawerCuentaContable">—</div>
                 </div>
         
                 <!-- Acciones rápidas -->
@@ -3315,15 +3317,15 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                 </div>
         
                 <!-- Historial de transacciones de la cuenta -->
-                <div style="font-size:13px;font-weight:600;margin-bottom:10px">Historial de movimientos</div>
+                <div class="drawer-section-title">Historial de movimientos</div>
                 <div id="drawerTrxList" style="display:flex;flex-direction:column;gap:6px">
-                    <div style="text-align:center;padding:20px;color:var(--text-muted)">Sin movimientos aún</div>
+                    <div class="az-empty">Sin movimientos aún</div>
                 </div>
             </div>
         
             <!-- Footer del drawer: editar/eliminar -->
             <div class="bank-drawer-footer" id="bankDrawerFooter">
-                <button class="section-action" onclick="editCuentaBancaria(_drawerCuentaId)">Editar cuenta</button>
+                <button class="btn-ghost" onclick="editCuentaBancaria(_drawerCuentaId)">Editar cuenta</button>
                 <button class="btn-danger-sm" id="drawerDeleteBtn" onclick="confirmDeleteCuentaBancaria(_drawerCuentaId, document.getElementById('drawerBankName').textContent)">Eliminar</button>
             </div>
         </div>
@@ -5366,12 +5368,12 @@ function _aplicarDashboardInit(r) {
         if (cont.transacciones)     { _transacciones = cont.transacciones; renderTransacciones(_filtroTrxActual); }
         if (cont.resumenContable) {
             const rc = cont.resumenContable;
-            const fQ = function(n) { return 'Q ' + Number(n || 0).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2}); };
+            const fQ = window.fmtQ;
             const s = document.getElementById('cont-saldo');     if (s) s.textContent = fQ(rc.saldoTotal);
             const sd = document.getElementById('cont-saldo-d');  if (sd) sd.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg> ' + rc.cuentasActivas + ' de ' + rc.totalCuentas + ' activas';
             const im = document.getElementById('cont-ing-mes');  if (im) im.textContent = fQ(rc.ingresosMes);
             const em = document.getElementById('cont-egr-mes');  if (em) em.textContent = fQ(rc.egresosMes);
-            const um = document.getElementById('cont-util-mes'); if (um) um.textContent = fQ(rc.utilidadMes);
+            const um = document.getElementById('cont-util-mes'); if (um) { um.textContent = fQ(rc.utilidadMes); um.classList.toggle('is-neg', rc.utilidadMes < 0); }
             const ud = document.getElementById('cont-util-d');
             if (ud) {
                 if (rc.utilidadMes >= 0) {
