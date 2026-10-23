@@ -453,6 +453,12 @@ function _htmlFormCliente(c = {}) {
     <div class="form-hint">Tarifa que se aplicará automáticamente en Cotizaciones y ventas del Punto de Venta (POS).</div>
   </div>
 
+  <div class="form-field">
+    <label class="form-label">FECHA DE NACIMIENTO / ANIVERSARIO (opcional)</label>
+    <input class="form-input" id="mFechaNac" type="date" value="${escAttr(c.fecha_nacimiento || '')}"/>
+    <div class="form-hint">Se usa en Seguimiento de clientes para recordar cumpleaños.</div>
+  </div>
+
   <div class="crm-form-note">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     El <strong>valor del cliente</strong> se calcula automáticamente desde cotizaciones aprobadas
@@ -662,6 +668,7 @@ function _clientePayloadFromForm(saveBtn) {
         nit:       v('mNit'),
         segmento:  v('mSegmento'),
         lista_precio: v('mListaPrecio') || 'Publico',
+        fecha_nacimiento: v('mFechaNac') || null,
         correo,
         telefono,
         sitioWeb:  v('mSitioWeb'),

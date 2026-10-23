@@ -184,6 +184,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 creadoPor:u,
                 organization_id:org
             };
+            if (p.fecha_nacimiento) r.fecha_nacimiento = p.fecha_nacimiento;
             const{error}=await _sb.from('Clientes').insert(r);
             if(error)return{ok:false,error:error.message};
             await _sb.from('Actividad').insert({id:_uuid(),tipo:'cliente',usuario:u,descripcion:'Nuevo cliente: '+p.nombre,fecha:new Date().toISOString(),organization_id:org});
@@ -197,6 +198,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if (p.pais !== undefined) up.pais = p.pais;
             if (p.fuente !== undefined) up.fuente = p.fuente;
             if (p.lista_precio !== undefined) up.lista_precio = p.lista_precio;
+            if (p.fecha_nacimiento !== undefined) up.fecha_nacimiento = p.fecha_nacimiento || null;
             let q = _sb.from('Clientes').update(up).eq('id',id);
             if (org) q = q.eq('organization_id', org);
             const{error}=await q;
@@ -326,10 +328,15 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 tipo_producto_id:p.tipo_producto_id||null
             };
             if (p.imagen_url !== undefined) r.imagen_url = p.imagen_url || '';
+            // [Lote 6] stock mínimo, costo promedio inicial y código de barras
+            if (p.stock_minimo !== undefined && p.stock_minimo !== '') r.stock_minimo = Math.max(0, Number(p.stock_minimo) || 0);
+            if (p.costo_unit !== undefined && p.costo_unit !== '') r.costo_unit = Math.max(0, Number(p.costo_unit) || 0);
+            if (p.codigo_barras !== undefined) r.codigo_barras = String(p.codigo_barras || '').trim() || null;
             let {error} = await _sb.from('Inventario').insert(r);
             if (error && (error.message.includes('column') || error.code === '42703')) {
                 // Respaldo seguro si faltan columnas nuevas en Supabase
                 delete r.imagen_url;
+                delete r.stock_minimo; delete r.costo_unit; delete r.codigo_barras;
                 delete r.precioPlata;
                 delete r.precioOro;
                 ({error} = await _sb.from('Inventario').insert(r));
@@ -345,7 +352,10 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if(!ex)return{ok:false,error:'Ítem no encontrado.'};
             if(p.sku !== undefined && !String(p.sku).trim()) return {ok:false, error:'El código / SKU es obligatorio.'};
             const t=p.tipo!==undefined?(p.tipo==='Servicio'?'Servicio':'Producto'):(ex.tipo==='Servicio'?'Servicio':'Producto');
-            const un=t==='Servicio'?0:Number(p.unidades!==undefined?p.unidades:ex.unidades)||0;
+            // [Lote 6] Las existencias solo se tocan si el usuario las cambió en el formulario: antes se reescribía el valor
+            // cargado al abrir el modal y una venta hecha mientras tanto se perdía en silencio.
+            const unCambio = p.unidades !== undefined && (p.unidadesOriginal === undefined || Number(p.unidadesOriginal) !== Number(p.unidades));
+            const un=t==='Servicio'?0:(unCambio?(Number(p.unidades)||0):(Number(ex.unidades)||0));
             const m=t==='Servicio'?0:Number(p.stockMax!==undefined?p.stockMax:ex.stockMax)||1;
             const pU=Number(p.precioUnit!==undefined?p.precioUnit:ex.precioUnit)||0;
             const up={
@@ -369,6 +379,10 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 tipo_producto_id:p.tipo_producto_id!==undefined?(p.tipo_producto_id||null):ex.tipo_producto_id
             };
             if (p.imagen_url !== undefined) up.imagen_url = p.imagen_url || '';
+            if (!unCambio) delete up.unidades;
+            if (p.stock_minimo !== undefined && p.stock_minimo !== '') up.stock_minimo = Math.max(0, Number(p.stock_minimo) || 0);
+            if (p.costo_unit !== undefined && p.costo_unit !== '') up.costo_unit = Math.max(0, Number(p.costo_unit) || 0);
+            if (p.codigo_barras !== undefined) up.codigo_barras = String(p.codigo_barras || '').trim() || null;
             let q = _sb.from('Inventario').update(up).eq('id',id);
             if (org) q = q.eq('organization_id', org);
             let {error} = await q;
@@ -1342,6 +1356,47 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
 
         async function _posMisPermisos() { return await _posRpc('pos_mis_permisos'); }
 
+        /* ─── API NEGOCIO (Lote 6): reportes, compras, kardex, conteo, seguimiento ─── */
+        // Reglas y permisos viven en el servidor (supabase/migrations/20261023_08_negocio.sql).
+        async function _posHistorialCliente(p) { return await _posRpc('pos_historial_cliente', {p_cliente: p && p.clienteId, p_limite: (p && p.limite) || 100}); }
+        async function _posReporteVentas(p) { return await _posRpc('pos_reporte_ventas', {p_desde: p.desde, p_hasta: p.hasta, p_sucursal: p.sucursal || null}); }
+        async function _posReporteCierres(p) { return await _posRpc('pos_reporte_cierres', {p_desde: p.desde, p_hasta: p.hasta, p_sucursal: p.sucursal || null}); }
+        async function _posReporteComisiones(p) { return await _posRpc('pos_reporte_comisiones', {p_desde: p.desde, p_hasta: p.hasta}); }
+        async function _posListarAuditoria(p) {
+            p = p || {};
+            return await _posRpc('pos_listar_auditoria', {p_desde: p.desde || null, p_hasta: p.hasta || null, p_accion: p.accion || null, p_limite: p.limite || 200});
+        }
+        async function _seguimientoClientes(p) { return await _posRpc('seguimiento_clientes', {p_dias_sin_compra: (p && p.diasSinCompra) || 60, p_dias_cumple: (p && p.diasCumple) || 14}); }
+        async function _proveedorGuardar(p) { return await _posRpc('proveedor_guardar', {p: p}); }
+        async function _compraRegistrar(p) { return await _posRpc('compra_registrar', {p: p}); }
+        async function _compraPagar(p) { return await _posRpc('compra_pagar', {p_id: p.compraId, p_cuenta: p.cuentaBancariaId || null, p_ref: p.referencia || null}); }
+        async function _compraAnular(p) { return await _posRpc('compra_anular', {p_id: p.compraId, p_motivo: p.motivo}); }
+        async function _invAjustar(p) { return await _posRpc('inv_ajustar', {p_producto: p.productoId, p_nuevo: Number(p.nuevo), p_motivo: p.motivo}); }
+        async function _invConteoCrear(p) { return await _posRpc('inv_conteo_crear', {p_nombre: p.nombre, p_categoria: p.categoria || null}); }
+        async function _invConteoGuardar(p) { return await _posRpc('inv_conteo_guardar', {p_id: p.conteoId, p_items: p.items || []}); }
+        async function _invConteoAplicar(p) { return await _posRpc('inv_conteo_aplicar', {p_id: p.conteoId, p_motivo: p.motivo || 'Conteo físico'}); }
+        async function _invReposicion() { return await _posRpc('inv_reposicion'); }
+
+        // Lecturas (RLS: solo la organización del usuario)
+        async function _negLeer(q) {
+            try {
+                const {data, error} = await q;
+                if (error) return _posRpcErr(error);
+                return {ok: true, data: data || []};
+            } catch (e) { return {ok: false, error: 'Sin conexión: ' + ((e && e.message) || e), incierto: true}; }
+        }
+        async function _getProveedores() { return await _negLeer(_sb.from('proveedores').select('*').order('nombre')); }
+        async function _getCompras(p) {
+            let q = _sb.from('compras').select('*, proveedor:proveedores(nombre)').order('created_at', {ascending: false}).limit(Math.min(Number(p && p.limite) || 100, 300));
+            if (p && p.desde) q = q.gte('fecha', p.desde);
+            if (p && p.hasta) q = q.lte('fecha', p.hasta);
+            return await _negLeer(q);
+        }
+        async function _getCompraItems(p) { return await _negLeer(_sb.from('compra_items').select('*').eq('compra_id', p.compraId).order('orden')); }
+        async function _getKardex(p) { return await _negLeer(_sb.from('inv_movimientos').select('*').eq('producto_id', p.productoId).order('id', {ascending: false}).limit(Math.min(Number(p.limite) || 100, 500))); }
+        async function _getConteos() { return await _negLeer(_sb.from('inv_conteos').select('*').order('created_at', {ascending: false}).limit(50)); }
+        async function _getConteoItems(p) { return await _negLeer(_sb.from('inv_conteo_items').select('*').eq('conteo_id', p.conteoId).order('descripcion')); }
+
         /* ─── API CONSULTA LEGAL NIT SAT / CRM ─────────────────────────── */
         /* ─── API CONSULTA LEGAL NIT SAT / CRM ─────────────────────────── */
         async function _consultarNitSat(nit, u) {
@@ -2101,6 +2156,27 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 case 'posMisPermisos':return await _posMisPermisos();
                 case 'posCajaMovimiento':return await _posCajaMovimiento(args[0]);
                 case 'posReabrirCaja':return await _posReabrirCaja(args[0]);
+                case 'posHistorialCliente':return await _posHistorialCliente(args[0]);
+                case 'posReporteVentas':return await _posReporteVentas(args[0]);
+                case 'posReporteCierres':return await _posReporteCierres(args[0]);
+                case 'posReporteComisiones':return await _posReporteComisiones(args[0]);
+                case 'posListarAuditoria':return await _posListarAuditoria(args[0]);
+                case 'seguimientoClientes':return await _seguimientoClientes(args[0]);
+                case 'proveedorGuardar':return await _proveedorGuardar(args[0]);
+                case 'compraRegistrar':return await _compraRegistrar(args[0]);
+                case 'compraPagar':return await _compraPagar(args[0]);
+                case 'compraAnular':return await _compraAnular(args[0]);
+                case 'invAjustar':return await _invAjustar(args[0]);
+                case 'invConteoCrear':return await _invConteoCrear(args[0]);
+                case 'invConteoGuardar':return await _invConteoGuardar(args[0]);
+                case 'invConteoAplicar':return await _invConteoAplicar(args[0]);
+                case 'invReposicion':return await _invReposicion();
+                case 'getProveedores':return await _getProveedores();
+                case 'getCompras':return await _getCompras(args[0]);
+                case 'getCompraItems':return await _getCompraItems(args[0]);
+                case 'getKardex':return await _getKardex(args[0]);
+                case 'getConteos':return await _getConteos();
+                case 'getConteoItems':return await _getConteoItems(args[0]);
                 case 'getLibroDiario':return await _getLibroDiario(args[0]);
                 case 'getEstadoResultados':return await _getEstadoResultados(args[0]);
                 case 'getFicha':return await _getFicha(args[0],_currentUserRole||'AGENTE');
@@ -2146,7 +2222,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 withSuccessHandler:fn=>api(fn,onFailure),
                 withFailureHandler:fn=>api(onSuccess,fn)
             };
-            const METHODS=['logout','getResumen','getActividad','getClientes','addCliente','updateCliente','deleteCliente','getProspectos','addProspecto','updateProspecto','deleteProspecto','convertirProspecto','getInventario','addInventario','updateInventario','deleteInventario','getCategorias','addCategoria','updateCategoria','deleteCategoria','getEncuestas','addEncuesta','updateEncuesta','deleteEncuesta','getUsuarios','addUsuario','updateUsuario','deleteUsuario','getCuentasBancarias','addCuentaBancaria','updateCuentaBancaria','deleteCuentaBancaria','getPlanCuentas','addCuentaContable','updateCuentaContable','deleteCuentaContable','getTransacciones','addTransaccion','deleteTransaccion','getResumenContable','getCotizaciones','getCotizacion','getCotizacionHtml','addCotizacion','updateCotizacion','updateEstadoCotizacion','deleteCotizacion','duplicarCotizacion','convertirCotizacionAVenta','enviarCotizacion','getResumenCotizaciones','getPosInit','registrarVentaPos','posObtenerVenta','posDevolverVenta','posBuscarVentas','posMisPermisos','posCajaMovimiento','posReabrirCaja','getLibroDiario','getEstadoResultados','getFicha','addContacto','updateContacto','deleteContacto','addNotaCRM','deleteNotaCRM','addActividadCRM','deleteActividadCRM','getPerfil','updatePerfil','updatePreferencias','changePasswordPropio','uploadFotoPerfil','deleteFotoPerfil','getDashboardInit','getOrgConfig','saveOrgConfig','uploadLogoOrg','deleteLogoOrg','consultarNitSat','getCajaStatus','abrirCajaPOS','cerrarCajaPOS','getVentasTurnoCaja','uploadFotoProducto','probarConexionFel','getCierresCaja','getSucursales','addSucursal','updateSucursal','deleteSucursal','enviarTicketCorreo','getReporteVentasSucursal'];
+            const METHODS=['logout','getResumen','getActividad','getClientes','addCliente','updateCliente','deleteCliente','getProspectos','addProspecto','updateProspecto','deleteProspecto','convertirProspecto','getInventario','addInventario','updateInventario','deleteInventario','getCategorias','addCategoria','updateCategoria','deleteCategoria','getEncuestas','addEncuesta','updateEncuesta','deleteEncuesta','getUsuarios','addUsuario','updateUsuario','deleteUsuario','getCuentasBancarias','addCuentaBancaria','updateCuentaBancaria','deleteCuentaBancaria','getPlanCuentas','addCuentaContable','updateCuentaContable','deleteCuentaContable','getTransacciones','addTransaccion','deleteTransaccion','getResumenContable','getCotizaciones','getCotizacion','getCotizacionHtml','addCotizacion','updateCotizacion','updateEstadoCotizacion','deleteCotizacion','duplicarCotizacion','convertirCotizacionAVenta','enviarCotizacion','getResumenCotizaciones','getPosInit','registrarVentaPos','posObtenerVenta','posDevolverVenta','posBuscarVentas','posMisPermisos','posCajaMovimiento','posReabrirCaja','posHistorialCliente','posReporteVentas','posReporteCierres','posReporteComisiones','posListarAuditoria','seguimientoClientes','proveedorGuardar','compraRegistrar','compraPagar','compraAnular','invAjustar','invConteoCrear','invConteoGuardar','invConteoAplicar','invReposicion','getProveedores','getCompras','getCompraItems','getKardex','getConteos','getConteoItems','getLibroDiario','getEstadoResultados','getFicha','addContacto','updateContacto','deleteContacto','addNotaCRM','deleteNotaCRM','addActividadCRM','deleteActividadCRM','getPerfil','updatePerfil','updatePreferencias','changePasswordPropio','uploadFotoPerfil','deleteFotoPerfil','getDashboardInit','getOrgConfig','saveOrgConfig','uploadLogoOrg','deleteLogoOrg','consultarNitSat','getCajaStatus','abrirCajaPOS','cerrarCajaPOS','getVentasTurnoCaja','uploadFotoProducto','probarConexionFel','getCierresCaja','getSucursales','addSucursal','updateSucursal','deleteSucursal','enviarTicketCorreo','getReporteVentasSucursal'];
             METHODS.forEach(name=>{
                 runner[name]=function(){
                     const args=Array.from(arguments);

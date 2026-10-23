@@ -312,10 +312,19 @@ function _actualizarSelectsFiltrosCatalogo() {
     </div>
     <div id="mStockWrap" style="${esServicio ? 'display:none' : ''}">
       <div class="form-field"><label class="form-label">UNIDADES EN STOCK</label>
-        <input class="form-input" id="mUnid" type="number" min="0" value="${i.unidades !== undefined ? i.unidades : 0}"/></div>
+        <input class="form-input" id="mUnid" type="number" min="0" value="${i.unidades !== undefined ? i.unidades : 0}" data-orig="${i.unidades !== undefined ? i.unidades : 0}"/>
+        <div class="cell-sub" style="margin-top:3px">Para entradas de mercadería use Compras (calcula el costo promedio); los cambios manuales quedan en el kardex.</div></div>
+      <div class="form-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-field"><label class="form-label">STOCK MÍNIMO (ALERTA)</label>
+          <input class="form-input" id="mStockMin" type="number" min="0" step="any" value="${i.stock_minimo !== undefined && i.stock_minimo !== null ? i.stock_minimo : 0}"/></div>
+        <div class="form-field"><label class="form-label">COSTO UNITARIO (Q)</label>
+          <input class="form-input" id="mCosto" type="number" min="0" step="0.0001" value="${i.costo_unit !== undefined && i.costo_unit !== null ? i.costo_unit : 0}"/></div>
+      </div>
       <div class="form-field"><label class="form-label">STOCK MÁXIMO</label>
         <input class="form-input" id="mStockMax" type="number" min="1" value="${i.stockMax || 50}"/></div>
     </div>
+    <div class="form-field"><label class="form-label">CÓDIGO DE BARRAS (opcional, único)</label>
+      <input class="form-input" id="mCodBarras" value="${escAttr(i.codigo_barras || '')}" placeholder="Escanee o escriba el código" autocomplete="off"/></div>
     <div class="cat-section-title" style="margin-top:14px;font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);font-weight:600">Listas de Precios (Q)</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
       <div class="form-field"><label class="form-label">PRECIO PÚBLICO *</label>

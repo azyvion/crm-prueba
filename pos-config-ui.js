@@ -25,6 +25,7 @@
             { k: 'vender_sin_stock', t: 'sel', label: 'Vender sin existencias', desc: 'Qué hacer cuando el inventario no alcanza', opts: [['no', 'No permitir'], ['permiso', 'Solo usuarios con permiso «sin_stock»'], ['si', 'Permitir a todos']] },
             { k: 'stock_bajo_umbral', t: 'num', min: 0, max: 100000, step: 1, label: 'Aviso de stock bajo (unidades)', desc: 'Avisa al cajero cuando al vender quedan N o menos. 0 = sin aviso' },
             { k: 'nit_obligatorio_desde', t: 'num', min: 0, max: 100000000, step: 0.01, label: 'NIT obligatorio desde (Q)', desc: 'Ventas de este monto o más no pueden ir a Consumidor Final. 0 = nunca' },
+            { k: 'comision_pct_default', t: 'num', min: 0, max: 100, step: 0.1, label: 'Comisión por defecto (%)', desc: 'Sobre ventas netas sin IVA, para el reporte de comisiones. Cada usuario puede tener la suya en Usuarios' },
             { k: 'propina_habilitada', t: 'bool', label: 'Permitir propina', desc: 'Línea opcional al cobrar (no es parte del total gravado). La propina queda registrada en la venta' },
             { k: 'propina_sugeridas', t: 'nums', label: 'Porcentajes de propina sugeridos', desc: 'Separados por coma. Ej. 10, 15' }
         ]],
@@ -45,6 +46,13 @@
             { k: 'motivos_devolucion', t: 'list', label: 'Motivos de devolución (uno por línea)', desc: 'El cajero elige de esta lista. Vacío = texto libre' },
             { k: 'motivos_sin_reingreso', t: 'list', label: 'Motivos que NO reingresan al inventario', desc: 'Para estos motivos el reingreso viene desmarcado (el cajero puede cambiarlo)' }
         ]],
+        ['Mensajes y WhatsApp', [
+            { k: 'encuesta_url', t: 'text', label: 'Enlace de la encuesta de satisfacción', desc: 'Pegue el enlace público de su encuesta (Encuestas → Copiar enlace). Vacío = sin botón de encuesta' },
+            { k: 'mensaje_comprobante', t: 'area', label: 'Mensaje para enviar el comprobante', desc: 'Variables: {nombre} {empresa} {numero} {total}' },
+            { k: 'mensaje_encuesta', t: 'area', label: 'Mensaje de la encuesta', desc: 'Variables: {nombre} {empresa} {enlace}' },
+            { k: 'mensaje_recompra', t: 'area', label: 'Mensaje de recompra (clientes que no vuelven)', desc: 'Variables: {nombre} {empresa}' },
+            { k: 'mensaje_cumple', t: 'area', label: 'Mensaje de cumpleaños', desc: 'Variables: {nombre} {empresa}' }
+        ]],
         ['Comprobante', [
             { k: 'ancho_papel', t: 'sel', label: 'Ancho de papel', desc: 'Impresora térmica', opts: [['80', '80 mm'], ['58', '58 mm']] },
             { k: 'ticket_encabezado', t: 'area', label: 'Encabezado adicional', desc: 'Texto bajo los datos de la empresa (horario, sucursal, leyenda). El pie ya se configura arriba («Pie de ticket POS»)' },
@@ -64,6 +72,7 @@
         if (f.t === 'bool') return `<div class="ajustes-row ajustes-row-toggle">${lbl}<label class="switch ${v ? 'on' : ''}"><input type="checkbox" id="${id}" ${v ? 'checked' : ''} onchange="this.closest('label').classList.toggle('on', this.checked)"/><span class="knob"></span></label></div>`;
         if (f.t === 'num') return `<div class="ajustes-row">${lbl}<div class="ajustes-row-control" style="max-width:160px"><input class="form-input" id="${id}" type="number" min="${f.min}" max="${f.max}" step="${f.step}" value="${esc(v)}"/></div></div>`;
         if (f.t === 'sel') return `<div class="ajustes-row">${lbl}<div class="ajustes-row-control" style="max-width:280px"><select class="form-select" id="${id}">${f.opts.map(o => `<option value="${esc(o[0])}" ${String(v) === o[0] ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select></div></div>`;
+        if (f.t === 'text') return `<div class="ajustes-row">${lbl}<div class="ajustes-row-control"><input class="form-input" id="${id}" maxlength="300" value="${esc(v)}" placeholder="https://…"/></div></div>`;
         if (f.t === 'area') return `<div class="ajustes-row" style="align-items:flex-start">${lbl}<div class="ajustes-row-control"><textarea class="form-input" id="${id}" rows="2" maxlength="300" style="resize:vertical">${esc(v)}</textarea></div></div>`;
         if (f.t === 'list') return `<div class="ajustes-row" style="align-items:flex-start">${lbl}<div class="ajustes-row-control"><textarea class="form-input" id="${id}" rows="4" style="resize:vertical">${esc((v || []).join('\n'))}</textarea></div></div>`;
         if (f.t === 'nums') return `<div class="ajustes-row">${lbl}<div class="ajustes-row-control" style="max-width:220px"><input class="form-input" id="${id}" value="${esc((v || []).join(', '))}" placeholder="10, 15"/></div></div>`;

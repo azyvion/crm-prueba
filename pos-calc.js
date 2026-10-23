@@ -61,7 +61,12 @@
         mostrar_redes: true, mostrar_qr: false, ticket_autoimprimir: false, ticket_copias: 1, plazo_devolucion_dias: 0,
         motivos_devolucion: ['Producto defectuoso', 'Error de precio o cobro', 'El cliente se arrepintió', 'Cambio de producto', 'Otro'],
         motivos_sin_reingreso: ['Producto defectuoso'], nit_obligatorio_desde: 0, propina_habilitada: false, propina_sugeridas: [10, 15],
-        metodos_habilitados: ['Efectivo', 'Tarjeta', 'Transferencia'], etiquetas_metodos: {}, stock_bajo_umbral: 5
+        metodos_habilitados: ['Efectivo', 'Tarjeta', 'Transferencia'], etiquetas_metodos: {}, stock_bajo_umbral: 5,
+        comision_pct_default: 0, encuesta_url: '',
+        mensaje_comprobante: 'Hola {nombre}, gracias por tu compra en {empresa}. Tu comprobante {numero} por {total}.',
+        mensaje_encuesta: 'Hola {nombre}, nos ayudaría mucho tu opinión sobre tu compra en {empresa}: {enlace}',
+        mensaje_recompra: 'Hola {nombre}, hace tiempo no te vemos en {empresa}. ¡Te esperamos con novedades!',
+        mensaje_cumple: '¡Feliz cumpleaños {nombre}! De parte de todos en {empresa}.'
     };
     function cfgEfectiva(c) { return Object.assign({}, CFG_DEFAULTS, c || {}); }
     function etiquetaMetodo(cfg, m) {

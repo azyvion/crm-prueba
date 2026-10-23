@@ -975,6 +975,8 @@ function posMostrarExito(t, yaExistia) {
             <div class="pos-exito-btns">
                 <button type="button" class="pos-btn" onclick="posImprimirTicket()">🖨 Imprimir <span class="pos-kbd">P</span></button>
                 <button type="button" class="pos-btn" onclick="posMostrarTicketTermico(window._ultimoTicket)">Ver comprobante</button>
+                <button type="button" class="pos-btn" onclick="posEnviarWhatsApp('comprobante')">WhatsApp</button>
+                ${_posCfg.encuesta_url ? `<button type="button" class="pos-btn" onclick="posEnviarWhatsApp('encuesta')">Pedir opinión</button>` : ''}
                 <button type="button" class="pos-btn ok big" data-autofocus onclick="posDlgCerrar();posFocoBuscar()">Nueva venta <span class="pos-kbd">Enter</span></button>
             </div>
         </div>`);
@@ -1106,6 +1108,7 @@ function posMostrarTicketTermico(t, opts) {
         <div id="posTicketCorreoStatus" class="pos-muted" style="display:none"></div>
         <div class="pos-exito-btns">
             <button type="button" class="pos-btn primary" data-autofocus onclick="posImprimirTicket()">🖨 Imprimir <span class="pos-kbd">P</span></button>
+            <button type="button" class="pos-btn" onclick="posEnviarWhatsApp('comprobante')">WhatsApp</button>
             <button type="button" class="pos-btn" onclick="posDlgCerrar()">Cerrar</button>
         </div>`);
 }
@@ -1134,6 +1137,31 @@ function posImprimirTicket() {
     const base = window._ultimoTicketOpts || {};
     const html = Array.from({ length: n }, (_, i) => `<div style="page-break-after:${i < n - 1 ? 'always' : 'auto'}">${posTicketHtml(t, Object.assign({}, base, n > 1 ? { copia: rot[i] } : {}))}</div>`).join('');
     _posImprimirHtml(html, 'Comprobante ' + t.numero);
+}
+
+/* ── WhatsApp: abre el mensaje listo para enviar (sin API; el envío lo confirma la persona) ── */
+function _posAplicarPlantilla(tpl, vars) {
+    return String(tpl || '').replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? vars[k] : m));
+}
+function posEnviarWhatsApp(tipo) {
+    const t = window._ultimoTicket; if (!t) return;
+    const cli = _posClientes.find(x => String(x.id) === String(t.clienteId));
+    let tel = String((cli && cli.telefono) || '').replace(/\D/g, '');
+    if (tel.length < 8) tel = String(prompt('Número de WhatsApp del cliente (con código de país si no es de Guatemala):', '') || '').replace(/\D/g, '');
+    if (tel.length === 8) tel = '502' + tel;
+    if (tel.length < 10) { showToast('Número de WhatsApp inválido', '#FF9F0A'); return; }
+    const emp = (t.empresa && t.empresa.nombre) || (typeof EMPRESA !== 'undefined' && EMPRESA.nombre) || 'nuestra tienda';
+    const plantilla = tipo === 'encuesta' ? _posCfg.mensaje_encuesta : _posCfg.mensaje_comprobante;
+    const texto = _posAplicarPlantilla(plantilla, { nombre: t.cliente || '', empresa: emp, numero: t.numero, total: fQ(t.total), enlace: _posCfg.encuesta_url || '' });
+    window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(texto), '_blank', 'noopener');
+}
+
+/** Abre el comprobante de una venta registrada (p. ej. desde la ficha del cliente). */
+function posAbrirTicketVenta(ventaId) {
+    window.api.withSuccessHandler(r => {
+        if (r && r.ok && r.ticket) posMostrarTicketTermico(r.ticket);
+        else showToast((r && r.error) || 'No se encontró la venta', '#FF453A');
+    }).withFailureHandler(e => showToast('Sin conexión: ' + ((e && e.message) || e), '#FF453A')).posObtenerVenta({ ventaId: ventaId });
 }
 
 function posEnviarTicketPorCorreo() {

@@ -859,6 +859,24 @@ body.bn-more-open .az-ai-fab { display: none !important; }
             </svg>
             <span>Punto de Venta (POS)</span>
         </div>
+        <!-- Negocio: reportes, compras, seguimiento y auditoría (se muestran según permisos; lo decide negocio.js) -->
+        <div class="nav-section" id="nav-section-negocio" style="display:none">Negocio</div>
+        <div class="nav-item" id="nav-reportes" onclick="showPage('reportes',this)" style="display:none;">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>Reportes</span>
+        </div>
+        <div class="nav-item" id="nav-compras" onclick="showPage('compras',this)" style="display:none;">
+            <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            <span>Compras e inventario</span>
+        </div>
+        <div class="nav-item" id="nav-seguimiento" onclick="showPage('seguimiento',this)" style="display:none;">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Seguimiento de clientes</span>
+        </div>
+        <div class="nav-item" id="nav-auditoria" onclick="showPage('auditoria',this)" style="display:none;">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Auditoría POS</span>
+        </div>
         <!-- Grupo Inventario -->
         <div class="nav-item" id="nav-inventario" onclick="toggleNavGroup('invGroup',this,'inventario')">
             <svg viewBox="0 0 24 24">
@@ -2211,6 +2229,12 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                     <span>🛒 <span id="posMobCount">0</span> artículo(s)</span><b id="posMobTotal">Q 0.00</b><span>Ver orden ›</span>
                 </button>
             </div>
+
+            <!-- ── NEGOCIO (las renderiza negocio.js) ── -->
+            <div class="page" id="page-reportes"></div>
+            <div class="page" id="page-compras"></div>
+            <div class="page" id="page-seguimiento"></div>
+            <div class="page" id="page-auditoria"></div>
 
             <!-- ── ENCUESTAS ── -->
             <div class="page" id="page-encuestas">
@@ -3694,7 +3718,8 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                     if (!fuente) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast('La fuente / origen es obligatoria', '#FF9F0A'); return;}
                     const data = {nombre, empresa: razonSocial, nit: nit, segmento: v('mSegmento'), correo: v('mCorreo'),
                                   telefono: telefono, direccion: direccion, ciudad: ciudad, pais: pais, fuente: fuente,
-                                  estado: v('mEstado'), valorTotal: v('mValor'), lista_precio: v('mListaPrecio')};
+                                  estado: v('mEstado'), valorTotal: v('mValor'), lista_precio: v('mListaPrecio'),
+                                  fecha_nacimiento: (document.getElementById('mFechaNac') ? (v('mFechaNac') || null) : undefined)};
                     const fn = m.action === 'add'
                         ? (cb => window.api.withSuccessHandler(cb).addCliente(data))
                         : (cb => window.api.withSuccessHandler(cb).updateCliente(m.id, data));
@@ -3778,6 +3803,10 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                         imagen_url: (document.getElementById('mProdImgUrl') || {}).value || '',
                         activo: chkAct ? (chkAct.checked ? 'true' : 'false') : 'true',
                         unidades: esServ ? 0 : (v('mUnid') || 0),
+                        unidadesOriginal: (document.getElementById('mUnid') || {}).dataset ? (document.getElementById('mUnid').dataset.orig) : undefined,
+                        stock_minimo: esServ ? 0 : v('mStockMin'),
+                        costo_unit: esServ ? 0 : v('mCosto'),
+                        codigo_barras: (v('mCodBarras') || '').trim(),
                         stockMax: esServ ? 0 : (v('mStockMax') || 1),
                         precioUnit: v('mPrecio') || 0,
                         precioPlata: v('mPrecioPlata') ? Number(v('mPrecioPlata')) : null,
@@ -3808,6 +3837,8 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                     permisos.pos = Array.from(document.querySelectorAll('#uPermisosPos input[type="checkbox"]:checked')).map(cb => cb.value);
                     const _dm = Number(v('uPosDescMax'));
                     if (permisos.pos.includes('descuento') && isFinite(_dm)) permisos.pos_descuento_max = Math.min(100, Math.max(0, _dm));
+                    const _cm = (document.getElementById('uPosComision') || {}).value;
+                    if (_cm !== undefined && _cm !== '' && isFinite(Number(_cm))) permisos.pos_comision_pct = Math.min(100, Math.max(0, Number(_cm)));
 
                     if (m.action === 'add') {
                         const usu = v('uUsuario').trim(), nom = v('uNombre').trim(), pwd = v('uPassword'), rol = v('uRol'), correo = v('uCorreo').trim();
@@ -3911,6 +3942,7 @@ body.bn-more-open .az-ai-fab { display: none !important; }
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
             if (navEl) navEl.classList.add('active');
+            if (window.Negocio && ['reportes', 'compras', 'seguimiento', 'auditoria'].indexOf(id) >= 0) Negocio.onShow(id);
 
             // Sub-items de inventario y módulos
             if (id === 'pos') {
@@ -4238,7 +4270,11 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                 { id: 'devolver', label: 'Registrar devoluciones', desc: 'Totales o parciales, con reingreso a inventario' },
                 { id: 'anular', label: 'Anular ventas', desc: 'Anulación completa con reintegro' },
                 { id: 'caja_mov', label: 'Entradas / salidas de efectivo', desc: 'Retiros y aportes de caja' },
-                { id: 'reimprimir', label: 'Reimprimir comprobantes', desc: 'Ventas anteriores (queda auditado)' }
+                { id: 'reimprimir', label: 'Reimprimir comprobantes', desc: 'Ventas anteriores (queda auditado)' },
+                { id: 'sin_stock', label: 'Vender sin existencias', desc: 'Si la empresa lo configura «con permiso»' },
+                { id: 'reportes', label: 'Ver reportes y seguimiento', desc: 'Ventas, margen, cierres, comisiones' },
+                { id: 'compras', label: 'Compras y proveedores', desc: 'Registrar, pagar y anular compras' },
+                { id: 'inventario_ajuste', label: 'Ajustes y conteos de inventario', desc: 'Mermas, conteo físico' }
             ];
             const p = permisosExistentes || {};
             const marcados = new Set(Array.isArray(p.pos) ? p.pos : []);
@@ -4254,11 +4290,36 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                             <div><div style="font-weight:600;color:var(--text-primary)">${m.label}</div><div style="font-size:10.5px;color:var(--text-muted)">${m.desc}</div></div>
                         </label>`).join('')}
                 </div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px">
+                <div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;flex-wrap:wrap">
                     <label for="uPosDescMax" style="font-weight:600">Descuento máximo permitido (%)</label>
                     <input class="form-input" id="uPosDescMax" type="number" min="0" max="100" step="1" value="${max}" style="width:80px"/>
+                    <label for="uPosComision" style="font-weight:600;margin-left:10px">Comisión (%)</label>
+                    <input class="form-input" id="uPosComision" type="number" min="0" max="100" step="0.1" value="${(p.pos_comision_pct !== undefined && p.pos_comision_pct !== null) ? Number(p.pos_comision_pct) : ''}" placeholder="por defecto" style="width:100px"/>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;flex-wrap:wrap">
+                    <label for="uPerfilRol" style="font-weight:600">Aplicar un perfil de ejemplo</label>
+                    <select class="form-select" id="uPerfilRol" onchange="aplicarPerfilRol(this.value);this.value=''" style="max-width:220px">
+                        <option value="">Elegir…</option><option>Cajero</option><option>Vendedor</option><option>Supervisor</option><option>Bodeguero</option><option>Contador</option>
+                    </select>
+                    <span style="color:var(--text-muted);font-size:11px">Marca los accesos y permisos típicos; puede ajustarlos antes de guardar.</span>
                 </div>
             </div>`;
+        }
+
+        // Perfiles de ejemplo: solo marcan casillas del formulario; el servidor valida cada operación de todos modos.
+        const _PERFILES_ROL = {
+            'Cajero':     { submenus: ['pos', 'clientes', 'perfil'], pos: ['descuento'], max: 5 },
+            'Vendedor':   { submenus: ['pos', 'clientes', 'prospectos', 'cotizaciones', 'perfil'], pos: [], max: 0 },
+            'Supervisor': { submenus: ['pos', 'clientes', 'cotizaciones', 'inventario', 'reportes', 'seguimiento', 'perfil'], pos: ['descuento', 'editar_precio', 'devolver', 'anular', 'caja_mov', 'reimprimir', 'reportes'], max: 20 },
+            'Bodeguero':  { submenus: ['inventario', 'crear-producto', 'compras', 'perfil'], pos: ['compras', 'inventario_ajuste'], max: 0 },
+            'Contador':   { submenus: ['contabilidad', 'reportes', 'perfil'], pos: ['reportes'], max: 0 }
+        };
+        function aplicarPerfilRol(nombre) {
+            const p = _PERFILES_ROL[nombre]; if (!p) return;
+            document.querySelectorAll('#uPermisosSubmenus input[type="checkbox"]').forEach(cb => { cb.checked = p.submenus.indexOf(cb.value) >= 0; });
+            document.querySelectorAll('#uPermisosPos input[type="checkbox"]').forEach(cb => { cb.checked = p.pos.indexOf(cb.value) >= 0; });
+            const m = document.getElementById('uPosDescMax'); if (m) m.value = p.max;
+            showToast('Perfil «' + nombre + '» aplicado: revise y pulse Guardar', '#30D158');
         }
 
         function _htmlPermisosSubmenus(permisosExistentes) {
@@ -4275,6 +4336,10 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                 { id: 'crear-producto', label: '🏷️ Gestión de Productos', desc: 'Catálogos y altas' },
                 { id: 'encuestas', label: '📋 Encuestas', desc: 'Formularios y respuestas' },
                 { id: 'contabilidad', label: '📊 Contabilidad', desc: 'Bancos, libro diario y P&L' },
+                { id: 'reportes', label: '📈 Reportes', desc: 'Ventas, cierres y comisiones' },
+                { id: 'compras', label: '🧾 Compras e inventario', desc: 'Compras, conteos y reposición' },
+                { id: 'seguimiento', label: '📞 Seguimiento', desc: 'Recompra y cumpleaños' },
+                { id: 'auditoria', label: '🛡️ Auditoría POS', desc: 'Solo administradores' },
                 { id: 'perfil', label: '⚙️ Ajustes / Perfil', desc: 'Preferencias y datos' }
             ];
             const permitidos = new Set(Array.isArray(permisosExistentes && permisosExistentes.submenus) 
@@ -4441,6 +4506,7 @@ body.bn-more-open .az-ai-fab { display: none !important; }
     <script src="pos-calc.js"></script>
     <script src="pos-config-ui.js"></script>
     <script src="pos.js"></script>
+    <script src="negocio.js"></script>
     <script>
         /* ══════════════════════════════════════════════════════════
            MÓDULO FICHA DE CLIENTE / PROSPECTO — JavaScript

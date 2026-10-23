@@ -723,6 +723,7 @@
         ];
         if (!esProsp) {
             TABS_PRO.push({ id: 'cotizaciones', label: 'Cotizaciones', count: (f.cotizaciones || []).length || null });
+            TABS_PRO.push({ id: 'compras', label: 'Compras', count: f.compras ? (f.compras.resumen.compras || null) : null });
         }
         TABS_PRO.push(
             { id: 'prospectos', label: 'Prospectos', count: (f.prospectos || []).length || null },
@@ -772,6 +773,7 @@
             contactos:    _fichaContactosPro,
             actividad:    _fichaActividadPro,
             cotizaciones: _fichaCotizacionesPro,
+            compras:      _fichaComprasPro,
             prospectos:   _fichaProspectosPro,
             notas:        _fichaNotasPro,
             historial:    _fichaHistorialPro,
@@ -833,6 +835,37 @@
         return nueva + `<div class="card ficha-card"><div class="ficha-card-body">${lista}</div></div>`;
     }
 
+    /* ── Tab: Compras (historial de ventas del POS del cliente) ─ */
+    function _loadCompras(clienteId) {
+        if (!window.api || !window.api.posHistorialCliente || !clienteId) return Promise.resolve(null);
+        return new Promise(resolve => {
+            window.api.withSuccessHandler(r => resolve(r && r.ok ? r : { error: (r && r.error) || 'No se pudo cargar el historial.' }))
+                .withFailureHandler(e => resolve({ error: (e && e.message) || String(e) }))
+                .posHistorialCliente({ clienteId: clienteId, limite: 100 });
+        });
+    }
+    function _fichaComprasPro() {
+        const f = window._ficha, c = f && f.compras;
+        if (!c) return '<div class="ficha-vacio" style="padding:40px">Cargando compras…</div>';
+        if (c.error) return `<div class="ficha-vacio" style="padding:40px">${escHtml(c.error)}</div>`;
+        const r = c.resumen || {};
+        const q = n => 'Q ' + Number(n || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const fecha = iso => iso ? new Date(iso).toLocaleDateString('es-GT') : '—';
+        const kpi = (l, v) => `<div class="card ficha-card" style="flex:1;min-width:120px"><div class="ficha-card-body"><div class="cell-sub">${l}</div><div style="font-size:18px;font-weight:800">${v}</div></div></div>`;
+        const kpis = `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+            ${kpi('Compras', r.compras || 0)}${kpi('Total comprado', q(r.total_comprado))}${kpi('Ticket promedio', q(r.ticket_promedio))}${kpi('Última compra', fecha(r.ultima_compra))}</div>`;
+        const top = (c.top_productos || []).length ? `<div class="cell-sub" style="margin:4px 0 12px"><b>Lo que más compra:</b> ${c.top_productos.map(p => escHtml(p.producto) + ' (' + Number(p.unidades) + ')').join(' · ')}</div>` : '';
+        if (!(c.ventas || []).length) return kpis + '<div class="ficha-vacio" style="padding:30px">Este cliente aún no tiene compras en el Punto de Venta.</div>';
+        const filas = c.ventas.map(v => `<tr>
+            <td><div class="cell-main">${escHtml(v.numero)}</div><div class="cell-sub">${fecha(v.fecha)} · ${escHtml(v.cajero || '')}</div></td>
+            <td class="cell-sub">${escHtml(v.resumen || '')}</td>
+            <td class="cell-num">${q(v.total)}${Number(v.reembolsado) > 0 ? `<div class="cell-sub">devuelto ${q(v.reembolsado)}</div>` : ''}</td>
+            <td>${escHtml(v.estado)}</td>
+            <td><button class="section-action" onclick="if(window.posAbrirTicketVenta)posAbrirTicketVenta('${v.id}')">Ver ticket</button></td></tr>`).join('');
+        return kpis + top + `<div class="table-card"><div class="table-scroll"><table>
+            <thead><tr><th>Venta</th><th>Artículos</th><th class="cell-num">Total</th><th>Estado</th><th></th></tr></thead><tbody>${filas}</tbody></table></div></div>`;
+    }
+
     /* ── Cargar historial desde AuditoriaClientes ──────────── */
     async function _loadHistorial(clienteId) {
         const sb = _sb();
@@ -865,6 +898,11 @@
             else {
                 const b = document.querySelector('#fichaTabs .ficha-tab[data-tab="' + tab + '"]');
                 if (b) b.classList.add('active');
+            }
+            if (tab === 'compras' && window._ficha && !window._ficha.compras) {
+                _renderFichaBodyPro();
+                _loadCompras(window._ficha.entidad.id).then(c => { if (window._ficha) { window._ficha.compras = c || { error: 'Sin datos.' }; _renderFichaBodyPro(); } });
+                return;
             }
             // Si es historial y no está cargado, cargar
             if (tab === 'historial' && window._ficha && !window._ficha.historial) {
