@@ -120,9 +120,9 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             const cli=cR.data||[],pro=pR.data||[],inv=iR.data||[],enc=eR.data||[];
             inv.forEach(i=>{i.tipo=String(i.tipo||'')==='Servicio'?'Servicio':'Producto';i.estado=_estadoItem(i.tipo,i.unidades,i.stockMax);});
             const invP=inv.filter(i=>i.tipo==='Producto'),invS=inv.filter(i=>i.tipo==='Servicio');
-            const proAct=pro.filter(p=>p.etapa!=='Perdido'),proC=pro.filter(p=>['Calificado','Propuesta','Negociación'].includes(p.etapa));
+            const proAct=pro.filter(p=>p.etapa!=='Perdido'&&p.etapa!=='Ganado'),proC=pro.filter(p=>['Calificado','Propuesta','Negociación'].includes(p.etapa));
             const vP=proAct.reduce((s,p)=>s+Number(p.valorEstimado||0),0),vPon=proAct.reduce((s,p)=>s+Number(p.valorEstimado||0)*(Number(p.probabilidad||0)/100),0);
-            const etapas=['Nuevo','Contactado','Calificado','Propuesta','Negociación','Perdido'].reduce((o,e)=>{o[e]={count:0,valor:0};return o;},{});
+            const etapas=['Nuevo','Contactado','Calificado','Propuesta','Negociación','Ganado','Perdido'].reduce((o,e)=>{o[e]={count:0,valor:0};return o;},{});
             pro.forEach(p=>{if(etapas[p.etapa]){etapas[p.etapa].count++;etapas[p.etapa].valor+=Number(p.valorEstimado||0);}});
             const cA=cli.filter(c=>c.estado==='Activo').length,cP=cli.filter(c=>c.estado==='Pendiente').length,cV=cli.reduce((s,c)=>s+Number(c.valorTotal||0),0);
             const tE=enc.reduce((s,e)=>s+Number(e.totalEnviadas||0),0),tR=enc.reduce((s,e)=>s+Number(e.respuestas||0),0);
@@ -236,20 +236,22 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if(!p.origen)return{ok:false,error:'El origen es requerido.'};
             const org = _getEffectiveOrgId() || _currentOrgId;
             const C=['#0A84FF','#30D158','#FF9F0A','#BF5AF2','#FF453A','#5e5ce6','#8E8E93','#32ADE6'];
-            const r={id:_uuid(),nombre:p.nombre,empresa:p.empresa||'',segmento:p.segmento||'Estándar',correo:p.correo||'',telefono:p.telefono||'',direccion:p.direccion||'',origen:p.origen||'Referido',etapa:p.etapa||'Nuevo',valorEstimado:Number(p.valorEstimado)||0,probabilidad:Number(p.probabilidad)||50,notas:p.notas||'',color:C[Math.floor(Math.random()*C.length)],fechaReg:new Date().toISOString(),organization_id:org};
+            const r={id:_uuid(),nombre:p.nombre,empresa:p.empresa||'',segmento:p.segmento||'Estándar',correo:p.correo||'',telefono:p.telefono||'',direccion:p.direccion||'',origen:p.origen||'Referido',etapa:p.etapa||'Nuevo',valorEstimado:Number(p.valorEstimado)||0,probabilidad:_probProspecto(p),notas:p.notas||'',fecha_cierre_estimada:p.fecha_cierre_estimada||null,motivo_perdida:p.motivo_perdida||null,motivo_perdida_detalle:p.motivo_perdida_detalle||null,color:C[Math.floor(Math.random()*C.length)],fechaReg:new Date().toISOString(),organization_id:org};
             const{error}=await _sb.from('Prospectos').insert(r);
-            if(error)return{ok:false,error:error.message};
+            if(error)return{ok:false,error:_errProspecto(error)};
             return{ok:true,id:r.id};
         }
         async function _updateProspecto(id,p,u){
             const org = _getEffectiveOrgId();
             const up={};['nombre','empresa','segmento','correo','telefono','direccion','origen','etapa','notas'].forEach(k=>{if(p[k]!==undefined)up[k]=p[k];});
             if(p.valorEstimado!==undefined)up.valorEstimado=Number(p.valorEstimado)||0;
-            if(p.probabilidad!==undefined)up.probabilidad=Number(p.probabilidad)||0;
+            if(p.probabilidad!==undefined)up.probabilidad=_probProspecto(p);
+            // [Lote 8] '' en una columna date falla: se envía null
+            ['fecha_cierre_estimada','motivo_perdida','motivo_perdida_detalle'].forEach(k=>{if(p[k]!==undefined)up[k]=p[k]||null;});
             let q = _sb.from('Prospectos').update(up).eq('id',id);
             if (org) q = q.eq('organization_id', org);
             const{error}=await q;
-            if(error)return{ok:false,error:error.message};
+            if(error)return{ok:false,error:_errProspecto(error)};
             return{ok:true};
         }
         async function _deleteProspecto(id,u){
@@ -260,18 +262,17 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if(error)return{ok:false,error:error.message};
             return{ok:true};
         }
+        /* [Lote 8] Probabilidad 0 es válida (antes «||50» la convertía en 50). */
+        function _probProspecto(p){const v=Number(p.probabilidad);return p.probabilidad===''||p.probabilidad===undefined||p.probabilidad===null||!isFinite(v)?50:Math.max(0,Math.min(100,v));}
+        function _errProspecto(e){const m=String(e&&e.message||e||'');if(/motivo/i.test(m))return 'Indique el motivo de pérdida.';if(/prospectos_etapa_chk/.test(m))return 'Etapa inválida.';if(/prospectos_probabilidad_chk/.test(m))return 'La probabilidad debe estar entre 0 y 100.';if(/prospectos_valor_chk/.test(m))return 'El valor estimado no puede ser negativo.';return m;}
+        /* [Lote 8] Antes se borraba el prospecto y se insertaba el cliente en paralelo sin revisar
+           errores. Ahora una sola función en el servidor crea el cliente y deja el prospecto como
+           «Ganado» (se conserva para el embudo y la tasa de cierre). */
         async function _convertirProspecto(id,p,u){
-            const org = _getEffectiveOrgId();
-            let q = _sb.from('Prospectos').select('*').eq('id',id);
-            if (org) q = q.eq('organization_id', org);
-            const{data:pr}=await q.single();
-            if(!pr)return{ok:false,error:'Prospecto no encontrado.'};
-            const C=['#0A84FF','#30D158','#FF9F0A','#BF5AF2','#FF453A','#5e5ce6','#8E8E93','#32ADE6'];
-            const nc={id:_uuid(),nombre:pr.nombre,empresa:pr.empresa,segmento:p.segmento||pr.segmento||'Estándar',lista_precio:'Publico',correo:pr.correo,telefono:pr.telefono,direccion:pr.direccion,estado:p.estado||'Activo',valorTotal:Number(p.valorTotal)||Number(pr.valorEstimado)||0,color:C[Math.floor(Math.random()*C.length)],fechaReg:new Date().toISOString(),organization_id:org};
-            let delQ = _sb.from('Prospectos').delete().eq('id',id);
-            if (org) delQ = delQ.eq('organization_id', org);
-            await Promise.all([_sb.from('Clientes').insert(nc),delQ]);
-            return{ok:true};
+            const v=p.valorTotal===''||p.valorTotal===undefined||p.valorTotal===null?null:Number(p.valorTotal);
+            const{data,error}=await _sb.rpc('crm_convertir_prospecto',{p_id:id,p_segmento:p.segmento||null,p_estado:p.estado||'Activo',p_valor:v});
+            if(error)return{ok:false,error:error.message};
+            return{ok:true,clienteId:data&&data.cliente_id};
         }
 
         async function _getInventario(){

@@ -48,7 +48,7 @@ function _azAiBuildContext() {
         var cliA = cli.filter(function(c){ return c.estado==='Activo'; }).length;
         var cliP = cli.filter(function(c){ return c.estado==='Pendiente'; }).length;
         var cliVal = cli.reduce(function(s,c){ return s+Number(c.valorTotal||0); }, 0);
-        var proVal = pro.filter(function(p){ return p.etapa!=='Perdido'; }).reduce(function(s,p){ return s+Number(p.valorEstimado||0); }, 0);
+        var proVal = pro.filter(function(p){ return p.etapa!=='Perdido' && p.etapa!=='Ganado'; }).reduce(function(s,p){ return s+Number(p.valorEstimado||0); }, 0);
         var cotAp = cot.filter(function(c){ return c.estado==='Aprobada'; });
         var cotMonto = cotAp.reduce(function(s,c){ return s+Number(c.total||0); }, 0);
         var invVal = inv.reduce(function(s,i){ return s+Number(i.unidades||0)*Number(i.precioUnit||0); }, 0);

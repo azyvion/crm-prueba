@@ -118,7 +118,7 @@ function renderChartPipeline(prospectos) {
             }
         }
     });
-    var total = prospectos.filter(function(p){ return p.etapa!=='Perdido'; }).length;
+    var total = prospectos.filter(function(p){ return p.etapa!=='Perdido' && p.etapa!=='Ganado'; }).length;
     var sub = document.getElementById('ov-pipeline-sub');
     if (sub) sub.textContent = total + ' oportunidades abiertas';
 }
@@ -257,7 +257,7 @@ function renderOvKpis() {
     var ovCliD = document.getElementById('ov-cli-d');
     if (ovCliD) ovCliD.textContent = cli.length + ' total registrados';
 
-    var proAct = pro.filter(function(p){ return p.etapa!=='Perdido'; });
+    var proAct = pro.filter(function(p){ return p.etapa!=='Perdido' && p.etapa!=='Ganado'; });
     document.getElementById('ov-pro').textContent = proAct.length;
     var pond = proAct.reduce(function(s,p){ return s+Number(p.valorEstimado||0)*(Number(p.probabilidad||0)/100); }, 0);
     var ovProD = document.getElementById('ov-pro-d');

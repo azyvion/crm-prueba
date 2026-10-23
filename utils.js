@@ -84,7 +84,7 @@ function tagEstado(e) {
 function tagEtapa(e) {
     const m = {
         'Nuevo': 'tag-nuevo', 'Contactado': 'tag-contactado', 'Calificado': 'tag-calificado',
-        'Propuesta': 'tag-propuesta', 'Negociación': 'tag-negociacion', 'Perdido': 'tag-perdido'
+        'Propuesta': 'tag-propuesta', 'Negociación': 'tag-negociacion', 'Ganado': 'tag-success', 'Perdido': 'tag-perdido'
     };
     return `<span class="tag ${m[e] || 'tag-gray'}">${escHtml(e) || '—'}</span>`;
 }

@@ -19,22 +19,102 @@
         /* ═══════════════════════════════════════════════════════
            RENDER – PROSPECTOS
         ═══════════════════════════════════════════════════════ */
+        const _fQ = n => 'Q ' + Math.round(Number(n) || 0).toLocaleString();
+
+        /* Embudo por etapa (cantidad, valor, probabilidad y ponderado), pronóstico mensual y motivos de pérdida.
+           Los cálculos están en embudo-calc.js (probados en tests/unit/embudo.test.js). */
         function renderFunnel() {
-            const abiertos = _prospectos.filter(p => p.etapa !== 'Perdido');
-            const max = Math.max.apply(null, ETAPAS.map(e =>
-                _prospectos.filter(p => p.etapa === e).length).concat([1]));
-            document.getElementById('funnelGrid').innerHTML = ETAPAS.map(e => {
-                const grupo = _prospectos.filter(p => p.etapa === e);
-                const valor = grupo.reduce((s, p) => s + Number(p.valorEstimado || 0), 0);
-                const pct = Math.round(grupo.length / max * 100);
-                return `<div class="bar-group">
-          <div class="bar-label">
-            <span>${e} · ${grupo.length} prospecto${grupo.length === 1 ? '' : 's'}</span>
-            <span>Q ${valor.toLocaleString()}</span>
+            const E = window.EmbudoCalc;
+            const filas = E.porEtapa(_prospectos);
+            const abiertas = filas.filter(f => E.ETAPAS_ABIERTAS.indexOf(f.etapa) >= 0);
+            const max = Math.max.apply(null, abiertas.map(f => f.valor).concat([1]));
+            const tot = abiertas.reduce((o, f) => { o.n += f.n; o.valor += f.valor; o.pond += f.ponderado; return o; }, {n: 0, valor: 0, pond: 0});
+            const fila = f => `<div class="emb-row" role="button" tabindex="0" title="Ver ${escAttr(f.etapa)}" onclick="filtrarProspectosEtapa('${escAttr(f.etapa)}')" onkeydown="if(event.key==='Enter')this.click()">
+          <div class="emb-row-head">
+            <span class="emb-dot" style="background:${ETAPA_COLOR[f.etapa] || '#8E8E93'}"></span>
+            <span class="emb-etapa">${escHtml(f.etapa)}</span>
+            <span class="emb-n">${f.n}</span>
+            <span class="emb-prob" title="Probabilidad promedio">${f.probPromedio}%</span>
+            <span class="emb-val">${_fQ(f.valor)}</span>
+            <span class="emb-pond" title="Valor ponderado por probabilidad">${_fQ(f.ponderado)}</span>
           </div>
-          <div class="bar-track"><div class="bar-fill" style="width:${Math.max(pct, 2)}%;background:${ETAPA_COLOR[e]}"></div></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${f.n ? Math.max(Math.round(f.valor / max * 100), 2) : 0}%;background:${ETAPA_COLOR[f.etapa]}"></div></div>
         </div>`;
-            }).join('') + `<div class="cell-sub" style="margin-top:4px">Embudo abierto: ${abiertos.length} oportunidades</div>`;
+            const ganado = filas.find(f => f.etapa === 'Ganado'), perdido = filas.find(f => f.etapa === 'Perdido');
+            document.getElementById('funnelGrid').innerHTML =
+                `<div class="emb-row emb-row-hdr" aria-hidden="true"><div class="emb-row-head"><span class="emb-dot"></span><span class="emb-etapa">Etapa</span><span class="emb-n">Cant.</span><span class="emb-prob">Prob.</span><span class="emb-val">Valor</span><span class="emb-pond">Ponderado</span></div></div>` +
+                abiertas.map(fila).join('') +
+                `<div class="emb-total"><span>Embudo abierto: <strong>${tot.n}</strong> oportunidades · <strong>${_fQ(tot.valor)}</strong></span><span>Ponderado: <strong>${_fQ(tot.pond)}</strong></span></div>
+        <div class="emb-cerrados">
+          <button class="emb-chip ok" onclick="filtrarProspectosEtapa('Ganado')">Ganados: <strong>${ganado.n}</strong> · ${_fQ(ganado.valor)}</button>
+          <button class="emb-chip bad" onclick="filtrarProspectosEtapa('Perdido')">Perdidos: <strong>${perdido.n}</strong> · ${_fQ(perdido.valor)}</button>
+        </div>`;
+            _renderPronostico();
+            _renderMotivos();
+        }
+
+        function _renderPronostico() {
+            const el = document.getElementById('embPronostico');
+            if (!el) return;
+            const E = window.EmbudoCalc, hoy = new Date();
+            const pr = E.pronostico(_prospectos, hoy, 6);
+            const tc = E.tasaCierre(_prospectos, hoy, 90);
+            document.getElementById('embTasa').textContent = tc.tasa === null
+                ? 'Tasa de cierre (90 días): sin cierres aún'
+                : `Tasa de cierre (90 días): ${tc.tasa}% · ${tc.ganados} ganados / ${tc.perdidos} perdidos`;
+            const max = Math.max.apply(null, pr.meses.map(m => Math.max(m.valor, m.ganado)).concat([1]));
+            const extra = (t, x, filtro, cls) => {
+                if (!x.n) return '';
+                const txt = `${t}: <strong>${x.n}</strong> · ${_fQ(x.valor)} (pond. ${_fQ(x.ponderado)})`;
+                return filtro ? `<button class="emb-chip ${cls}" onclick="filtrarProspectosEtapa('${filtro}')">${txt}</button>` : `<span class="emb-chip ${cls}">${txt}</span>`;
+            };
+            el.innerHTML = `<div class="emb-fc">
+          <div class="emb-fc-row emb-fc-hdr" aria-hidden="true"><span>Mes</span><span></span><span class="r">Ponderado</span><span class="r">Total</span><span class="r">Ganado</span></div>
+          ${pr.meses.map((m, i) => `<div class="emb-fc-row${i === 0 ? ' actual' : ''}">
+            <span class="emb-fc-mes">${m.etiqueta}${i === 0 ? ' <small>(este mes)</small>' : ''}</span>
+            <span class="emb-fc-bars" title="${m.n} oportunidad${m.n === 1 ? '' : 'es'} con cierre estimado este mes">
+              <span class="emb-fc-bar total" style="width:${m.valor / max * 100}%"></span>
+              <span class="emb-fc-bar pond" style="width:${m.ponderado / max * 100}%"></span>
+              ${m.ganado ? `<span class="emb-fc-bar ganado" style="width:${m.ganado / max * 100}%"></span>` : ''}
+            </span>
+            <span class="r strong">${_fQ(m.ponderado)}</span>
+            <span class="r">${_fQ(m.valor)}</span>
+            <span class="r ok">${m.ganado ? _fQ(m.ganado) : '—'}</span>
+          </div>`).join('')}
+        </div>
+        <div class="emb-leyenda"><span><i class="pond"></i>Ponderado (valor × probabilidad)</span><span><i class="total"></i>Valor total</span><span><i class="ganado"></i>Ya ganado</span></div>
+        <div class="emb-cerrados">${extra('Vencidos', pr.vencidos, 'Vencidos', 'bad')}${extra('Sin fecha de cierre', pr.sinFecha, '', 'warn')}${extra('Después de 6 meses', pr.posteriores, '', '')}</div>
+        ${pr.abiertos.n && pr.sinFecha.n === pr.abiertos.n ? '<div class="cell-sub emb-hint">Ninguna oportunidad tiene fecha de cierre estimada. Agréguela al editar un prospecto para ver el pronóstico por mes.</div>' : ''}`;
+        }
+
+        function _renderMotivos() {
+            const el = document.getElementById('embMotivos');
+            if (!el) return;
+            const mp = window.EmbudoCalc.motivosPerdida(_prospectos, new Date(), 90);
+            el.innerHTML = (mp.lista.length
+                ? mp.lista.map(x => `<div class="bar-group emb-motivo">
+          <div class="bar-label"><span>${escHtml(x.motivo)} · ${x.n}</span><span>${x.pct}% · ${_fQ(x.valor)}</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.max(x.pct, 2)}%;background:var(--az-danger, #FF453A)"></div></div>
+        </div>`).join('')
+                : '<div class="cell-sub emb-hint">Sin pérdidas con motivo en los últimos 90 días. Al marcar un prospecto como Perdido se pedirá el motivo.</div>')
+                + (mp.sinMotivo ? `<div class="cell-sub emb-hint">${mp.sinMotivo.toLocaleString()} perdido${mp.sinMotivo === 1 ? '' : 's'} anterior${mp.sinMotivo === 1 ? '' : 'es'} sin motivo registrado.</div>` : '');
+        }
+
+        /* Filtra la tabla por etapa desde el embudo y activa la pestaña correspondiente */
+        function filtrarProspectosEtapa(etapa) {
+            const tab = Array.from(document.querySelectorAll('#page-prospectos .filter-tab'))
+                .find(t => (t.getAttribute('onclick') || '').indexOf("'" + etapa + "'") >= 0);
+            if (tab) filtrarProspectos(etapa, tab); else renderProspectos(etapa);
+            _scrollToTable(document.querySelector('#page-prospectos .table-card:not(.funnel-card):not(.emb-card)'));
+        }
+
+        function _celdaCierre(p) {
+            if (p.etapa === 'Ganado' || p.etapa === 'Perdido') {
+                return p.cerrado_en ? `<span class="cell-sub" style="margin:0">Cerrado ${fechaCorta(p.cerrado_en)}</span>` : '<span class="cell-sub" style="margin:0">—</span>';
+            }
+            if (!p.fecha_cierre_estimada) return '<span class="cell-sub" style="margin:0">Sin fecha</span>';
+            const venc = EmbudoCalc.estaVencido(p, new Date());
+            return `<span class="cell-sub${venc ? ' emb-vencido' : ''}" style="margin:0"${venc ? ' title="La fecha estimada ya pasó: actualícela o cierre la oportunidad"' : ''}>${fechaCorta(p.fecha_cierre_estimada + 'T12:00:00')}${venc ? ' · vencido' : ''}</span>`;
         }
 
         /* Genera el HTML de una fila de prospecto (extraído para reutilizar en el render por lotes) */
@@ -57,17 +137,18 @@
         </td>
         <td><div class="cell-clip" title="${escAttr(p.direccion)}">${escHtml(p.direccion) || '—'}</div></td>
         <td><span class="cell-sub" style="margin:0">${escHtml(p.origen) || '—'}</span></td>
-        <td>${tagEtapa(p.etapa)}</td>
+        <td>${tagEtapa(p.etapa)}${p.etapa === 'Perdido' && p.motivo_perdida ? `<div class="cell-sub" title="${escAttr(p.motivo_perdida_detalle || '')}">${escHtml(p.motivo_perdida)}</div>` : ''}</td>
         <td>
           <div class="prob-wrap">
             <div class="prob-track"><div class="prob-fill ${cls}" style="width:${Math.max(prob, 2)}%"></div></div>
             <span class="prob-val">${prob}%</span>
           </div>
         </td>
+        <td>${_celdaCierre(p)}</td>
         <td class="cell-num">Q ${Number(p.valorEstimado || 0).toLocaleString()}</td>
         <td>
           <div class="row-actions">
-            <button class="btn-success-sm" onclick="confirmConvertir('${p.id}')">Convertir</button>
+            ${p.etapa === 'Ganado' ? '' : `<button class="btn-success-sm" onclick="confirmConvertir('${p.id}')">Convertir</button>`}
             <button class="section-action" onclick="editProspecto('${p.id}')">Editar</button>
             ${admin ? `<button class="btn-danger-sm" onclick="confirmDeleteProspecto('${p.id}','${escAttr(p.nombre)}')">Eliminar</button>` : ''}
           </div>
@@ -158,7 +239,7 @@
         function goProPage(page) {
             _proPage = page;
             _renderProPagedData();
-            _scrollToTable(document.querySelector('#page-prospectos .table-card'));
+            _scrollToTable(document.querySelector('#page-prospectos .table-card:not(.funnel-card):not(.emb-card)'));
         }
 
         function goCliPage(page) {
@@ -176,7 +257,7 @@
             var tbody = document.getElementById('prospectosTbody');
             tbody.innerHTML = slice.length
                 ? slice.map(function(p){ return _proRow(p, admin); }).join('')
-                : '<tr><td colspan="8" class="empty-cell">Sin prospectos con estos filtros</td></tr>';
+                : '<tr><td colspan="9" class="empty-cell">Sin prospectos con estos filtros</td></tr>';
             document.getElementById('proPagination').innerHTML = _buildPaginationHtml(_proPage, totalPages, 'goProPage');
         }
 
@@ -221,14 +302,17 @@
 
         function renderProspectos(filtro) {
             _filtroProActual = filtro;
-            let data = filtro === 'Todos' ? _prospectos.slice() : _prospectos.filter(p => p.etapa === filtro);
+            const hoy = new Date();
+            let data = filtro === 'Todos' ? _prospectos.slice()
+                : filtro === 'Vencidos' ? _prospectos.filter(p => EmbudoCalc.estaVencido(p, hoy))
+                : _prospectos.filter(p => p.etapa === filtro);
 
             const ori = valOf('proFiltroOrigen');
             if (ori) data = data.filter(p => p.origen === ori);
 
             const q = document.getElementById('searchInput').value.toLowerCase();
             if (q && _currentPage === 'prospectos') {
-                data = data.filter(p => [p.nombre, p.empresa, p.correo, p.telefono, p.direccion, p.notas]
+                data = data.filter(p => [p.nombre, p.empresa, p.correo, p.telefono, p.direccion, p.notas, p.motivo_perdida]
                     .some(f => String(f || '').toLowerCase().includes(q)));
             }
 
@@ -237,6 +321,7 @@
                 if (orden === 'prob') return Number(b.probabilidad || 0) - Number(a.probabilidad || 0);
                 if (orden === 'nombre') return String(a.nombre).localeCompare(String(b.nombre), 'es');
                 if (orden === 'reciente') return new Date(b.fechaReg || 0) - new Date(a.fechaReg || 0);
+                if (orden === 'cierre') return String(a.fecha_cierre_estimada || '9999').localeCompare(String(b.fecha_cierre_estimada || '9999'));
                 return Number(b.valorEstimado || 0) - Number(a.valorEstimado || 0);
             });
 
@@ -265,7 +350,8 @@
                 ID: p.id, Nombre: p.nombre, Empresa: p.empresa, Segmento: p.segmento,
                 Correo: p.correo, Telefono: p.telefono, Direccion: p.direccion,
                 Origen: p.origen, Etapa: p.etapa, ValorEstimado: p.valorEstimado,
-                Probabilidad: p.probabilidad, Notas: p.notas, FechaRegistro: fechaCorta(p.fechaReg)
+                Probabilidad: p.probabilidad, CierreEstimado: p.fecha_cierre_estimada || '', FechaCierre: p.cerrado_en ? fechaCorta(p.cerrado_en) : '',
+                MotivoPerdida: p.motivo_perdida || '', DetalleMotivo: p.motivo_perdida_detalle || '', Notas: p.notas, FechaRegistro: fechaCorta(p.fechaReg)
             }));
             descargarCSV(filas, 'prospectos');
         }
@@ -294,20 +380,43 @@
         <select class="form-select" id="pOrigen" required>${opt(ORIGENES, p.origen || 'Referido')}</select>
       </div>
       <div class="form-field"><label class="form-label">ETAPA</label>
-        <select class="form-select" id="pEtapa">${opt(ETAPAS, p.etapa || 'Nuevo')}</select>
+        <select class="form-select" id="pEtapa" onchange="_onEtapaProspecto()">${opt(ETAPAS, p.etapa || 'Nuevo')}</select>
       </div>
     </div>
     <div class="form-row">
       <div class="form-field"><label class="form-label">VALOR ESTIMADO (Q)</label><input class="form-input" id="pValor" type="number" min="0" value="${p.valorEstimado !== undefined ? p.valorEstimado : ''}" placeholder="0"/></div>
-      <div class="form-field"><label class="form-label">PROBABILIDAD (%)</label><input class="form-input" id="pProb" type="number" min="0" max="100" value="${p.probabilidad !== undefined ? p.probabilidad : 20}"/></div>
+      <div class="form-field"><label class="form-label">PROBABILIDAD (%)</label><input class="form-input" id="pProb" type="number" min="0" max="100" value="${p.probabilidad !== undefined ? p.probabilidad : EmbudoCalc.probSugerida(p.etapa || 'Nuevo')}"/></div>
+    </div>
+    <div class="form-field" id="pCierreWrap"><label class="form-label">FECHA DE CIERRE ESTIMADA</label><input class="form-input" id="pCierre" type="date" value="${escAttr(p.fecha_cierre_estimada || '')}"/>
+      <div class="cell-sub" style="margin-top:4px">Se usa para el pronóstico mensual del embudo.</div></div>
+    <div id="pMotivoWrap" ${p.etapa === 'Perdido' ? '' : 'hidden'}>
+      <div class="form-field"><label class="form-label">MOTIVO DE PÉRDIDA *</label>
+        <select class="form-select" id="pMotivo"><option value="">Seleccione…</option>${opt(EmbudoCalc.MOTIVOS_PERDIDA.concat(p.motivo_perdida && EmbudoCalc.MOTIVOS_PERDIDA.indexOf(p.motivo_perdida) < 0 ? [p.motivo_perdida] : []), p.motivo_perdida || '')}</select>
+      </div>
+      <div class="form-field"><label class="form-label">DETALLE</label><input class="form-input" id="pMotivoDet" maxlength="500" value="${escAttr(p.motivo_perdida_detalle || '')}" placeholder="Ej. eligió a otro proveedor 10% más barato"/></div>
     </div>
     <div class="form-field"><label class="form-label">NOTAS</label><textarea class="form-textarea" id="pNotas" placeholder="Contexto, próximos pasos, objeciones…">${escHtml(p.notas)}</textarea></div>
   `;
         }
 
+        /* Al cambiar de etapa: sugiere la probabilidad de esa etapa y muestra el motivo si es «Perdido».
+           En etapas cerradas la probabilidad la fija el servidor (100 / 0). */
+        function _onEtapaProspecto() {
+            const prob = EmbudoCalc.probSugerida(v('pEtapa'));
+            if (prob !== null) document.getElementById('pProb').value = prob;
+            _syncEtapaForm();
+        }
+        function _syncEtapaForm() {
+            const etapa = v('pEtapa'), cerrada = etapa === 'Ganado' || etapa === 'Perdido';
+            const prob = document.getElementById('pProb'); if (prob) prob.disabled = cerrada;
+            const w = document.getElementById('pCierreWrap'); if (w) w.hidden = cerrada;
+            const m = document.getElementById('pMotivoWrap'); if (m) m.hidden = etapa !== 'Perdido';
+        }
+
         function newProspecto() {
             _modalMode = {type: 'prospecto', action: 'add', id: null};
             openModal('Nuevo prospecto', _formProspecto({}));
+            _syncEtapaForm();
         }
 
         function editProspecto(id) {
@@ -315,6 +424,7 @@
             if (!p) return;
             _modalMode = {type: 'prospecto', action: 'edit', id};
             openModal('Editar prospecto', _formProspecto(p));
+            _syncEtapaForm();
         }
 
         function confirmDeleteProspecto(id, nombre) {
@@ -343,8 +453,8 @@
       </div>
     </div>
     <div class="notes-box" style="margin-bottom:16px">
-      El registro se moverá de la hoja <strong>Prospectos</strong> a la hoja <strong>Clientes</strong>.
-      Se conservan correo, teléfono y dirección; la fila desaparece de Prospectos.
+      Se creará el cliente con su correo, teléfono y dirección. El prospecto queda como
+      <strong>Ganado</strong> en el embudo (cuenta para el pronóstico y la tasa de cierre).
     </div>
     <div class="form-row">
       <div class="form-field"><label class="form-label">SEGMENTO</label>
@@ -354,7 +464,7 @@
         <select class="form-select" id="cvEstado">${opt(['Activo', 'Pendiente'], 'Activo')}</select>
       </div>
     </div>
-    <div class="form-field"><label class="form-label">VALOR TOTAL (Q)</label><input class="form-input" id="cvValor" type="number" min="0" value="${Number(p.valorEstimado || 0)}"/></div>
+    <div class="form-field"><label class="form-label">VALOR GANADO (Q)</label><input class="form-input" id="cvValor" type="number" min="0" value="${Number(p.valorEstimado || 0)}"/></div>
   `);
             document.getElementById('modalSaveBtn').textContent = 'Convertir';
             document.getElementById('modalSaveBtn').style.background = 'var(--success)';

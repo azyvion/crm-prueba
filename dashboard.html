@@ -713,6 +713,7 @@ body.bn-more-open .az-ai-fab { display: none !important; }
     <link rel="stylesheet" href="./azyvion-enterprise.css">
     <link rel="stylesheet" href="./pos.css">
     <link rel="stylesheet" href="./productividad.css">
+    <link rel="stylesheet" href="./embudo.css">
     <link rel="stylesheet" href="./sidebar-fix.css">
 </head>
 
@@ -1692,6 +1693,23 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                     <div class="funnel-grid" id="funnelGrid"></div>
                 </div>
 
+                <div class="emb-grid">
+                    <div class="table-card emb-card">
+                        <div class="section-header" style="margin:0">
+                            <div class="section-title">Pronóstico de cierre</div>
+                            <span class="cell-sub" style="margin:0" id="embTasa"></span>
+                        </div>
+                        <div id="embPronostico"></div>
+                    </div>
+                    <div class="table-card emb-card">
+                        <div class="section-header" style="margin:0">
+                            <div class="section-title">Motivos de pérdida</div>
+                            <span class="cell-sub" style="margin:0">Últimos 90 días</span>
+                        </div>
+                        <div id="embMotivos"></div>
+                    </div>
+                </div>
+
                 <div class="table-card">
                     <div class="table-toolbar">
                         <div class="filter-tabs">
@@ -1701,6 +1719,8 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                             <button class="filter-tab" onclick="filtrarProspectos('Calificado',this)">Calificados</button>
                             <button class="filter-tab" onclick="filtrarProspectos('Propuesta',this)">Propuesta</button>
                             <button class="filter-tab" onclick="filtrarProspectos('Negociación',this)">Negociación</button>
+                            <button class="filter-tab" onclick="filtrarProspectos('Vencidos',this)" title="Abiertos con la fecha de cierre estimada ya pasada">Vencidos</button>
+                            <button class="filter-tab" onclick="filtrarProspectos('Ganado',this)">Ganados</button>
                             <button class="filter-tab" onclick="filtrarProspectos('Perdido',this)">Perdidos</button>
                         </div>
                         <div class="toolbar-right">
@@ -1716,6 +1736,7 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                             <select class="mini-select" id="proOrden" onchange="renderProspectos(_filtroProActual)">
                                 <option value="valor">Ordenar: valor</option>
                                 <option value="prob">Ordenar: probabilidad</option>
+                                <option value="cierre">Ordenar: fecha de cierre</option>
                                 <option value="nombre">Ordenar: nombre</option>
                                 <option value="reciente">Ordenar: más reciente</option>
                             </select>
@@ -1735,6 +1756,7 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                                     <th>Origen</th>
                                     <th>Etapa</th>
                                     <th>Probabilidad</th>
+                                    <th>Cierre estimado</th>
                                     <th class="cell-num">Valor estimado</th>
                                     <th></th>
                                 </tr>
@@ -3572,12 +3594,12 @@ body.bn-more-open .az-ai-fab { display: none !important; }
         const PAGE_TITLES = {overview: 'Inicio', empleados: 'Empleados', pos: 'Punto de Venta (POS)', clientes: 'Clientes', prospectos: 'Prospectos', ficha: 'Ficha', cotizaciones: 'Cotizaciones', inventario: 'Inventario', 'crear-producto': 'Crear producto', categorias: 'Categorías', 'catalogo-marcas': 'Marcas', 'catalogo-lineas': 'Líneas', 'catalogo-familias': 'Familias', 'catalogo-unidades': 'Unidades de negocio', 'catalogo-tipos': 'Tipos de producto', encuestas: 'Encuestas', usuarios: 'Usuarios', contabilidad: 'Contabilidad', perfil: 'Ajustes', suscripciones: 'Suscripciones', organigrama: 'Organigrama', 'sub-empresas': 'Empresas', 'sub-planes': 'Planes', 'sub-pagos': 'Pagos', reportes: 'Reportes', compras: 'Compras e inventario', seguimiento: 'Seguimiento de clientes', auditoria: 'Auditoría', contactar: 'Contactar prospectos', tareas: 'Tareas', plantillas: 'Plantillas de mensajes', importar: 'Importar datos'};
         const CTA_LABELS = {overview: '', empleados: 'Nuevo empleado', pos: 'Guardar venta', clientes: 'Nuevo cliente', prospectos: 'Nuevo prospecto', cotizaciones: 'Nueva cotización', inventario: 'Nuevo ítem', 'crear-producto': 'Nuevo producto', categorias: 'Nueva categoría', 'catalogo-marcas': '', 'catalogo-lineas': '', 'catalogo-familias': '', 'catalogo-unidades': '', 'catalogo-tipos': '', encuestas: 'Nueva encuesta', usuarios: 'Nuevo usuario', contabilidad: 'Nueva cuenta bancaria', perfil: '', suscripciones: '', 'sub-empresas': 'Nueva empresa', 'sub-planes': 'Nuevo plan', 'sub-pagos': ''};
 
-        const ETAPAS = ['Nuevo', 'Contactado', 'Calificado', 'Propuesta', 'Negociación', 'Perdido'];
+        const ETAPAS = ['Nuevo', 'Contactado', 'Calificado', 'Propuesta', 'Negociación', 'Ganado', 'Perdido'];
         const ORIGENES = ['Referido', 'Sitio web', 'Llamada fría', 'Evento', 'Redes sociales', 'Otro'];
         const SEGMENTOS = ['Estándar', 'Premium', 'Corporativo'];
         const ETAPA_COLOR = {
             'Nuevo': '#8E8E93', 'Contactado': '#0A84FF', 'Calificado': '#14B8A6',
-            'Propuesta': '#BF5AF2', 'Negociación': '#FF9F0A', 'Perdido': '#FF453A'
+            'Propuesta': '#BF5AF2', 'Negociación': '#FF9F0A', 'Ganado': '#30D158', 'Perdido': '#FF453A'
         };
 
         /* INICIALIZACIÓN + esAdmin + loadAll + refreshCurrent → auth.js */
@@ -3697,6 +3719,7 @@ body.bn-more-open .az-ai-fab { display: none !important; }
     </script>
     <script src="clientes.js"></script>
     <script src="vendedor.js"></script>
+    <script src="embudo-calc.js"></script>
     <script src="prospectos.js"></script>
     <script src="inventario.js"></script>
     <script src="encuestas.js"></script>
@@ -3799,8 +3822,11 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                     const data = {
                         nombre, empresa: empresa, segmento: v('pSegmento'), correo: v('pCorreo'),
                         telefono: telefono, direccion: direccion, origen: origen,
-                        etapa: v('pEtapa'), valorEstimado: v('pValor'), probabilidad: v('pProb'), notas: v('pNotas')
+                        etapa: v('pEtapa'), valorEstimado: v('pValor'), probabilidad: v('pProb'), notas: v('pNotas'),
+                        fecha_cierre_estimada: v('pCierre'), motivo_perdida: v('pMotivo'), motivo_perdida_detalle: v('pMotivoDet')
                     };
+                    const errEmb = EmbudoCalc.validar(data);
+                    if (errEmb) {saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; showToast(errEmb, '#FF9F0A'); return;}
                     const cb = done(m.action === 'add' ? 'Prospecto creado' : 'Prospecto actualizado', '#30D158');
                     if (m.action === 'add') window.api.withSuccessHandler(cb).addProspecto(data);
                     else window.api.withSuccessHandler(cb).updateProspecto(m.id, data);

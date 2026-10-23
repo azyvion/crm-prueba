@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arnés de pruebas · Embudo</title>
+<!-- Página de Prospectos (Lote 8) con datos simulados. node tests/ui/serve.js → http://localhost:4173/tests/ui/embudo_harness.html
+     Toma el marcado real de #page-prospectos de dashboard.html; el modal es un sustituto mínimo. -->
+<link rel="stylesheet" href="../../dashboard.css"><link rel="stylesheet" href="../../azyvion-enterprise.css"><link rel="stylesheet" href="../../embudo.css">
+<style>body{margin:0;padding:16px;background:var(--az-bg);font-family:Inter,system-ui,sans-serif}.page{display:block!important}
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:50;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 12px}
+#modal.on{display:flex}#modalBox{background:var(--az-surface);border-radius:12px;padding:18px;width:min(560px,100%)}</style>
+</head>
+<body>
+<div class="content"><div id="host"></div></div>
+<div id="modal"><div id="modalBox"><div class="section-title" id="modalTitle"></div><div id="modalBody"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button class="btn-ghost" onclick="closeModal()">Cancelar</button><button class="section-action" id="modalSaveBtn">Guardar</button></div></div></div>
+<div class="toast" id="toast"></div>
+<input id="searchInput" type="hidden" value="">
+<script src="../../utils.js"></script><script src="../../embudo-calc.js"></script>
+<script>
+  var _currentPage = 'prospectos', _prospectos = [], _filtroProActual = 'Todos', _modalMode = null;
+  var ETAPAS = ['Nuevo', 'Contactado', 'Calificado', 'Propuesta', 'Negociación', 'Ganado', 'Perdido'];
+  var ORIGENES = ['Referido', 'Sitio web', 'Llamada fría', 'Evento', 'Redes sociales', 'Otro'], SEGMENTOS = ['Estándar', 'Premium', 'Corporativo'];
+  var ETAPA_COLOR = { 'Nuevo': '#8E8E93', 'Contactado': '#0A84FF', 'Calificado': '#14B8A6', 'Propuesta': '#BF5AF2', 'Negociación': '#FF9F0A', 'Ganado': '#30D158', 'Perdido': '#FF453A' };
+  function esAdmin() { return true; }
+  function fichaRowClick() {} function _onApiError(m, e) { console.error(m, e); }
+  function openModal(t, html) { document.getElementById('modalTitle').textContent = t; document.getElementById('modalBody').innerHTML = html; document.getElementById('modal').classList.add('on'); }
+  function closeModal() { document.getElementById('modal').classList.remove('on'); }
+  window.__toasts = []; var _st = window.showToast; window.showToast = function (m, c) { window.__toasts.push(m); if (_st) try { _st(m, c); } catch (e) {} };
+
+  // Datos sintéticos alrededor de hoy
+  var hoy = new Date(), dia = function (n) { var d = new Date(hoy); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  var iso = function (n) { var d = new Date(hoy); d.setDate(d.getDate() + n); return d.toISOString(); };
+  var DB = [], k = 0, add = function (o) { DB.push(Object.assign({ id: 'p' + (++k), nombre: 'Prospecto ' + k, empresa: 'Empresa ' + k, segmento: 'Estándar', origen: ORIGENES[k % 6], correo: '', telefono: '5555 00' + k, direccion: 'Zona ' + (k % 15), notas: '', fechaReg: iso(-k) }, o)); };
+  [['Nuevo', 4000, 10, 40], ['Nuevo', 2500, 10, null], ['Contactado', 8000, 20, 12], ['Contactado', 1200, 25, -3], ['Calificado', 15000, 40, 25],
+   ['Calificado', 6000, 45, 70], ['Propuesta', 22000, 60, 8], ['Propuesta', 9000, 55, 45], ['Negociación', 30000, 80, 4], ['Negociación', 12000, 85, -10],
+   ['Propuesta', 5000, 60, 220], ['Calificado', 3000, 40, null]].forEach(function (x) { add({ etapa: x[0], valorEstimado: x[1], probabilidad: x[2], fecha_cierre_estimada: x[3] === null ? null : dia(x[3]) }); });
+  [[18000, -2], [7000, -20], [4500, -60]].forEach(function (x) { add({ etapa: 'Ganado', valorEstimado: x[0], probabilidad: 100, cerrado_en: iso(x[1]), clienteId: 'c' + k }); });
+  [['Precio', 9000, -5], ['Precio', 4000, -30], ['Eligió a la competencia', 11000, -12], ['Sin respuesta', 2000, -40], ['Sin presupuesto', 6500, -15]].forEach(function (x) { add({ etapa: 'Perdido', valorEstimado: x[1], probabilidad: 0, motivo_perdida: x[0], motivo_perdida_detalle: 'detalle ' + x[0], cerrado_en: iso(x[2]) }); });
+  for (var i = 0; i < 3; i++) add({ etapa: 'Perdido', valorEstimado: 1000, probabilidad: 0 }); // anteriores, sin motivo
+  window.__llamadas = [];
+  var handlers = {
+    getProspectos: function () { return { ok: true, data: JSON.parse(JSON.stringify(DB)) }; },
+    updateProspecto: function (id, d) {
+      window.__llamadas.push(['updateProspecto', id, d]);
+      var p = DB.find(function (x) { return x.id === id; }); var antes = p.etapa;
+      if (d.etapa === 'Perdido' && antes !== 'Perdido' && !String(d.motivo_perdida || '').trim()) return { ok: false, error: 'Indique el motivo de pérdida.' };
+      Object.assign(p, d, { valorEstimado: Number(d.valorEstimado) || 0, probabilidad: Number(d.probabilidad) });
+      if (d.etapa === 'Ganado' || d.etapa === 'Perdido') { if (antes !== d.etapa) p.cerrado_en = new Date().toISOString(); p.probabilidad = d.etapa === 'Ganado' ? 100 : 0; }
+      else { p.cerrado_en = null; p.motivo_perdida = null; }
+      return { ok: true };
+    },
+    convertirProspecto: function (id, d) { window.__llamadas.push(['convertirProspecto', id, d]); var p = DB.find(function (x) { return x.id === id; }); p.etapa = 'Ganado'; p.probabilidad = 100; p.cerrado_en = new Date().toISOString(); p.valorEstimado = Number(d.valorTotal); return { ok: true, clienteId: 'cnew' }; }
+  };
+  function chain() { var ok = function () {}, ko = function () {}; var o = { withSuccessHandler: function (f) { ok = f; return o; }, withFailureHandler: function (f) { ko = f; return o; } };
+    Object.keys(handlers).forEach(function (m) { o[m] = function () { var a = arguments; setTimeout(function () { ok(handlers[m].apply(null, a)); }, 10); }; }); return o; }
+  window.api = { withSuccessHandler: function (f) { return chain().withSuccessHandler(f); } };
+  var t = new URLSearchParams(location.search).get('theme'); if (t) document.documentElement.setAttribute('data-theme', t);
+</script>
+<script src="../../prospectos.js"></script>
+<script>
+  // Guardado del modal: misma lógica de validación que dashboard.html (sección «prospecto»)
+  document.getElementById('modalSaveBtn').onclick = function () {
+    var m = _modalMode, done = function (r) { closeModal(); if (r.ok) loadProspectos(); else showToast('Error: ' + r.error, '#FF453A'); };
+    if (m.action === 'convert') return window.api.withSuccessHandler(done).convertirProspecto(m.id, { segmento: v('cvSegmento'), estado: v('cvEstado'), valorTotal: v('cvValor') });
+    var data = { nombre: v('pNombre'), empresa: v('pEmpresa'), etapa: v('pEtapa'), valorEstimado: v('pValor'), probabilidad: v('pProb'), notas: v('pNotas'),
+      fecha_cierre_estimada: v('pCierre'), motivo_perdida: v('pMotivo'), motivo_perdida_detalle: v('pMotivoDet') };
+    var e = EmbudoCalc.validar(data); if (e) { showToast(e, '#FF9F0A'); return; }
+    window.api.withSuccessHandler(done).updateProspecto(m.id, data);
+  };
+  fetch('../../dashboard.html').then(function (r) { return r.text(); }).then(function (html) {
+    var a = html.indexOf('<div class="page" id="page-prospectos">'), b = html.indexOf('<!-- ── INVENTARIO ── -->');
+    document.getElementById('host').innerHTML = html.slice(a, b);
+    loadProspectos();
+  });
+</script>
+</body>
+</html>

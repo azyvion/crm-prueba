@@ -1,0 +1,66 @@
+/* embudo.css — Embudo de ventas: etapas, pronóstico mensual y motivos de pérdida (Lote 8). Usa los tokens --az-* del tema. */
+
+/* Etapas */
+#funnelGrid.funnel-grid { gap: 4px; }
+.emb-row { padding: 7px 8px; border-radius: 8px; cursor: pointer; }
+.emb-row:hover, .emb-row:focus-visible { background: var(--az-surface-hover, var(--az-surface-2)); outline: none; }
+.emb-row-hdr { cursor: default; padding-bottom: 0; }
+.emb-row-hdr:hover { background: none; }
+.emb-row-hdr .emb-row-head { font-size: 11px; font-weight: 700; color: var(--az-text-3); text-transform: uppercase; letter-spacing: .03em; margin: 0; }
+.emb-row-head { display: grid; grid-template-columns: 10px minmax(90px, 1fr) 48px 48px minmax(90px, auto) minmax(90px, auto); align-items: center; gap: 10px; font-size: 13px; margin-bottom: 5px; }
+.emb-dot { width: 10px; height: 10px; border-radius: 50%; }
+.emb-etapa { font-weight: 600; color: var(--az-text); }
+.emb-n, .emb-prob, .emb-val, .emb-pond { text-align: right; font-variant-numeric: tabular-nums; color: var(--az-text-2); }
+.emb-pond { font-weight: 700; color: var(--az-text); }
+.emb-total { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--az-text-2); padding: 10px 8px 0; border-top: 1px solid var(--az-border); margin-top: 6px; }
+.emb-total strong { color: var(--az-text); }
+
+.emb-cerrados { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.emb-chip { font: inherit; font-size: 12.5px; border: 1px solid var(--az-border); background: var(--az-surface-2); color: var(--az-text-2); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+.emb-chip strong { color: var(--az-text); }
+span.emb-chip { cursor: default; }
+button.emb-chip:hover { border-color: var(--az-border-strong); }
+#funnelGrid .bar-track, #embMotivos .bar-track { background: var(--az-surface-2); }
+.emb-chip.ok { background: var(--az-success-soft); border-color: transparent; }
+.emb-chip.bad { background: var(--az-danger-soft); border-color: transparent; }
+.emb-chip.warn { background: var(--az-warning-soft); border-color: transparent; }
+
+/* Pronóstico y motivos */
+.emb-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 18px; margin-bottom: 18px; }
+.emb-card { padding: 18px 20px 20px; }
+.emb-card .section-header { flex-wrap: wrap; gap: 4px 12px; }
+.emb-fc { margin-top: 14px; }
+.emb-fc-row { display: grid; grid-template-columns: 112px minmax(60px, 1fr) 96px 96px 96px; align-items: center; gap: 10px; padding: 7px 4px; font-size: 13px; border-top: 1px solid var(--az-border); font-variant-numeric: tabular-nums; }
+.emb-fc-row.emb-fc-hdr { border-top: 0; font-size: 11px; font-weight: 700; color: var(--az-text-3); text-transform: uppercase; letter-spacing: .03em; padding-top: 0; }
+.emb-fc-row.actual { background: var(--az-primary-soft); border-radius: 6px; }
+.emb-fc-mes { font-weight: 600; color: var(--az-text); text-transform: capitalize; }
+.emb-fc-mes small { font-weight: 400; color: var(--az-text-3); text-transform: none; }
+.emb-fc-row .r { text-align: right; color: var(--az-text-2); }
+.emb-fc-row .r.strong { color: var(--az-text); font-weight: 700; }
+.emb-fc-row .r.ok { color: var(--az-success); }
+.emb-fc-bars { position: relative; height: 12px; background: var(--az-surface-2); border-radius: 6px; overflow: hidden; }
+.emb-fc-bar { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; }
+.emb-fc-bar.total { background: var(--az-primary-soft); box-shadow: inset 0 0 0 1px var(--az-primary); opacity: .55; }
+.emb-fc-bar.pond { background: var(--az-primary); }
+.emb-fc-bar.ganado { top: 8px; background: var(--az-success); }
+.emb-leyenda { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--az-text-2); margin-top: 10px; }
+.emb-leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.emb-leyenda i.pond { background: var(--az-primary); }
+.emb-leyenda i.total { background: var(--az-primary-soft); box-shadow: inset 0 0 0 1px var(--az-primary); }
+.emb-leyenda i.ganado { background: var(--az-success); }
+.emb-motivo:first-child { margin-top: 14px; }
+.emb-motivo { margin-bottom: 10px; }
+.emb-hint { margin-top: 12px; line-height: 1.45; }
+.emb-vencido { color: var(--az-danger) !important; font-weight: 600; }
+
+@media (max-width: 1100px) {
+    .emb-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+    .emb-row-head { grid-template-columns: 10px minmax(0, 1fr) 36px 40px minmax(72px, auto); gap: 8px; font-size: 12.5px; }
+    .emb-row-head .emb-val { display: none; }
+    .emb-fc-row { grid-template-columns: 70px repeat(3, minmax(0, 1fr)); gap: 6px; font-size: 12px; }
+    .emb-fc-row > :nth-child(2) { display: none; }
+    .emb-leyenda { display: none; }
+    .emb-fc-mes small { display: none; }
+}
