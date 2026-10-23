@@ -751,7 +751,9 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                         catalogoFotosHabilitado: data.catalogo_fotos_habilitado !== false,
                         webhookCorreoFacturas: data.webhook_correo_facturas || '',
                         diasVigenciaCotizacion: data.dias_vigencia_cotizacion !== undefined ? Number(data.dias_vigencia_cotizacion) : (extraLocal.dias_vigencia_cotizacion !== undefined ? Number(extraLocal.dias_vigencia_cotizacion) : 15),
-                        pieTicket: data.pie_ticket !== undefined ? (data.pie_ticket || '') : (extraLocal.pie_ticket || '')
+                        pieTicket: data.pie_ticket !== undefined ? (data.pie_ticket || '') : (extraLocal.pie_ticket || ''),
+                        redes: (data.redes_sociales && typeof data.redes_sociales === 'object') ? data.redes_sociales : {},
+                        posConfig: (data.pos_config && typeof data.pos_config === 'object') ? data.pos_config : {}
                     };
                 }
             } catch(e) { /* tabla aún no existe, usar defaults */ }
@@ -836,6 +838,9 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             if (p.webhook_correo_facturas !== undefined) up.webhook_correo_facturas = String(p.webhook_correo_facturas).trim();
             if (p.dias_vigencia_cotizacion !== undefined) up.dias_vigencia_cotizacion = Number(p.dias_vigencia_cotizacion) || 15;
             if (p.pie_ticket !== undefined) up.pie_ticket = String(p.pie_ticket).trim();
+            // [POS Lote 5] Redes sociales y configuración del POS: el servidor valida tipos y rangos (trigger).
+            if (p.redes_sociales !== undefined && p.redes_sociales && typeof p.redes_sociales === 'object') up.redes_sociales = p.redes_sociales;
+            if (p.pos_config !== undefined && p.pos_config && typeof p.pos_config === 'object') up.pos_config = p.pos_config;
             if (p.fel_habilitado !== undefined) up.fel_habilitado = !!p.fel_habilitado;
             if (p.fel_nit_emisor !== undefined) up.fel_nit_emisor = String(p.fel_nit_emisor).trim();
             if (p.fel_nombre_comercial !== undefined) up.fel_nombre_comercial = String(p.fel_nombre_comercial).trim();

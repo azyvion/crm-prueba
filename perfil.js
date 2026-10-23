@@ -285,6 +285,9 @@
         <div class="ajustes-row-label"><div class="ajustes-row-name">Sitio web</div><div class="ajustes-row-desc">Dirección de la página web</div></div>
         <div class="ajustes-row-control"><input class="form-input" id="orgSitio" placeholder="www.miempresa.com" oninput="actualizarMembretePreview()"/></div>
       </div>
+      <!-- Redes sociales (aparecen en el comprobante del POS) -->
+      <div class="ajustes-row" style="padding-bottom:0"><div class="ajustes-row-name" style="font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted)">Redes sociales (se imprimen en el comprobante)</div></div>
+      <div id="redesMount"></div>
       <div class="ajustes-row">
         <div class="ajustes-row-label"><div class="ajustes-row-name">Dirección</div><div class="ajustes-row-desc">Dirección física de la empresa</div></div>
         <div class="ajustes-row-control"><input class="form-input" id="orgDireccion" placeholder="Ej. 5a Av. 10-50, Zona 1" oninput="actualizarMembretePreview()"/></div>
@@ -366,6 +369,9 @@
         <div class="ajustes-row-label"><div class="ajustes-row-name">Pie de ticket POS</div><div class="ajustes-row-desc">Texto que aparece al final del ticket térmico (ej. mensaje de agradecimiento, política de cambios)</div></div>
         <div class="ajustes-row-control"><textarea class="form-input" id="orgPieTicket" rows="2" style="resize:vertical" placeholder="Gracias por su compra — No se aceptan cambios ni devoluciones" oninput="actualizarMembretePreview()"></textarea></div>
       </div>
+
+      <!-- Configuración del Punto de Venta (pos-config-ui.js) -->
+      <div id="posCfgMount"></div>
 
       <!-- Vista previa en tiempo real de membrete y ticket -->
       <div class="ajustes-row" style="align-items:flex-start;flex-direction:column;gap:12px;border-top:1px solid var(--border);padding-top:20px;margin-top:10px">
@@ -645,6 +651,7 @@
                     setVal('orgWebhookCorreo', d.webhook_correo_facturas || '');
                     setVal('orgDiasVigenciaCot', d.dias_vigencia_cotizacion !== undefined ? d.dias_vigencia_cotizacion : 15);
                     setVal('orgPieTicket', d.pie_ticket || '');
+                    if (window.PosCfgUI) window.PosCfgUI.fill(d);   // redes sociales + configuración del POS
                     const chkFotos = document.getElementById('orgCatalogoFotos');
                     if (chkFotos) {
                         chkFotos.checked = d.catalogo_fotos_habilitado !== false && String(d.catalogo_fotos_habilitado) !== 'false';
@@ -816,6 +823,7 @@
                 webhook_correo_facturas: (document.getElementById('orgWebhookCorreo') || {}).value || '',
                 dias_vigencia_cotizacion: Number((document.getElementById('orgDiasVigenciaCot') || {}).value) || 15,
                 pie_ticket: (document.getElementById('orgPieTicket') || {}).value || '',
+                ...(window.PosCfgUI ? window.PosCfgUI.read() : {}),
                 ...felLocal,
                 fel_usuario_certificador: felUser.trim(),
                 fel_api_key: felKey.trim()

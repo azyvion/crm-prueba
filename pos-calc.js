@@ -53,19 +53,47 @@
         return { subtotal, descuento, base, iva, total, ivaPct, ivaModalidad: sobre ? 'sobre' : 'incluido', descPct: pct };
     }
 
+    /** Valores por defecto de la configuración del POS (deben coincidir con pos_cfg_defaults() en SQL). */
+    const CFG_DEFAULTS = {
+        descuento_max_default: 10, vender_sin_stock: 'no', caja_obligatoria: 'auto', redondeo_efectivo: 0,
+        tolerancia_cuadre: 0, cuadre_max_sin_supervisor: 0, efectivo_max_caja: 0, turno_horas_max: 0, turno_bloquear: false,
+        ancho_papel: '80', ticket_encabezado: '', mostrar_sku: true, mostrar_cajero: true, mostrar_turno: true, mostrar_iva: true,
+        mostrar_redes: true, mostrar_qr: false, ticket_autoimprimir: false, ticket_copias: 1, plazo_devolucion_dias: 0,
+        motivos_devolucion: ['Producto defectuoso', 'Error de precio o cobro', 'El cliente se arrepintió', 'Cambio de producto', 'Otro'],
+        motivos_sin_reingreso: ['Producto defectuoso'], nit_obligatorio_desde: 0, propina_habilitada: false, propina_sugeridas: [10, 15],
+        metodos_habilitados: ['Efectivo', 'Tarjeta', 'Transferencia'], etiquetas_metodos: {}, stock_bajo_umbral: 5
+    };
+    function cfgEfectiva(c) { return Object.assign({}, CFG_DEFAULTS, c || {}); }
+    function etiquetaMetodo(cfg, m) {
+        const e = cfg && cfg.etiquetas_metodos && cfg.etiquetas_metodos[m];
+        return e && String(e).trim() ? String(e).trim() : m;
+    }
+    /** Redondeo del efectivo al múltiplo más cercano (como pos_registrar_venta); solo si el monto alcanza el paso. */
+    function redondearEfectivo(monto, paso) {
+        const p = Number(paso) || 0;
+        if (!(p > 0) || !(monto >= p)) return r2(monto);
+        return r2(Math.round(Number((monto / p).toFixed(6))) * p);
+    }
+
     /**
      * Valida y resume los pagos de una venta.
      * pagos: [{metodo:'Efectivo'|'Tarjeta'|'Transferencia', monto, referencia}]
      * (Efectivo.monto = efectivo ENTREGADO por el cliente; los demás = monto cobrado.)
+     * opts: { propina, redondeo (paso), metodos (habilitados) }  — misma lógica que el servidor.
      */
-    function validarPagos(total, pagos) {
-        const out = { ok: false, error: '', pagado: 0, falta: r2(total), cambio: 0, efectivoAplicado: 0, electronico: 0, efectivoRecibido: 0 };
-        const metodos = ['Efectivo', 'Tarjeta', 'Transferencia'];
+    function validarPagos(total, pagos, opts) {
+        opts = opts || {};
+        const propina = r2(Number(opts.propina) || 0);
+        const due = r2(total + propina);
+        const out = { ok: false, error: '', pagado: 0, falta: r2(due), cambio: 0, efectivoAplicado: 0, electronico: 0, efectivoRecibido: 0, redondeo: 0, due: due };
+        const metodos = opts.metodos && opts.metodos.length ? opts.metodos : ['Efectivo', 'Tarjeta', 'Transferencia'];
         if (!(total > 0)) { out.error = 'El total debe ser mayor a cero.'; return out; }
+        if (propina < 0 || propina > total) { out.error = 'Propina inválida.'; return out; }
         if (!pagos || !pagos.length) { out.error = 'Indique al menos un método de pago.'; return out; }
         let efectivo = 0, electronico = 0;
         for (const p of pagos) {
-            if (metodos.indexOf(p.metodo) < 0) { out.error = 'Método de pago no soportado.'; return out; }
+            if (['Efectivo', 'Tarjeta', 'Transferencia'].indexOf(p.metodo) < 0) { out.error = 'Método de pago no soportado.'; return out; }
+            if (metodos.indexOf(p.metodo) < 0) { out.error = 'El método ' + p.metodo + ' no está habilitado.'; return out; }
             const m = Number(p.monto);
             if (p.monto === '' || p.monto === null || p.monto === undefined || !isFinite(m) || m <= 0) {
                 out.error = 'Ingrese un monto válido en cada pago.'; return out;
@@ -82,9 +110,11 @@
         efectivo = r2(efectivo); electronico = r2(electronico);
         out.efectivoRecibido = efectivo; out.electronico = electronico;
         out.pagado = r2(efectivo + electronico);
-        if (electronico > total) { out.error = 'Los pagos electrónicos superan el total.'; return out; }
-        const aplicado = r2(total - electronico);
+        if (electronico > due) { out.error = 'Los pagos electrónicos superan el total.'; return out; }
+        const bruto = r2(due - electronico);
+        const aplicado = redondearEfectivo(bruto, opts.redondeo);
         out.efectivoAplicado = aplicado;
+        out.redondeo = r2(aplicado - bruto);
         if (efectivo < aplicado) { out.falta = r2(aplicado - efectivo); out.error = 'Pago insuficiente: faltan ' + fQ(out.falta) + '.'; return out; }
         if (aplicado === 0 && efectivo > 0) { out.error = 'El total ya está cubierto con pagos electrónicos; quite el efectivo.'; return out; }
         out.falta = 0;
@@ -158,7 +188,7 @@
         return num(venta.subtotal) > 0 ? num(venta.total) / num(venta.subtotal) : 1;
     }
 
-    const api = { r2, fQ, precioSegunLista, calcTotales, validarPagos, nuevaClave, huellaCarrito, filtrarProductos, buscarExacto, validarCantidad, factorReembolso };
+    const api = { CFG_DEFAULTS, cfgEfectiva, etiquetaMetodo, redondearEfectivo, r2, fQ, precioSegunLista, calcTotales, validarPagos, nuevaClave, huellaCarrito, filtrarProductos, buscarExacto, validarCantidad, factorReembolso };
     root.PosCalc = api;
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -34,7 +34,29 @@ let _posHistDetalle = null;
 let _posDevKey = null;
 let _posInitCargado = false;
 let _posPendienteVerificar = null; // payload cuya venta quedó con resultado incierto
+let _posCfg = window.PosCalc.cfgEfectiva();   // configuración de la empresa (servidor: Ajustes → Empresa)
+let _posVentaSinStock = false;  // la empresa permite vender sin existencias (y este usuario puede)
+let _posPropina = 0;
 
+const _POS_BASE = (document.currentScript && document.currentScript.src) ? document.currentScript.src.replace(/[^/]*$/, '') : '';
+let _posQrEstado = 'no';   // no | cargando | listo | error
+function posCargarQr() {
+    if (_posQrEstado !== 'no' || window.qrcode) { if (window.qrcode) _posQrEstado = 'listo'; return; }
+    _posQrEstado = 'cargando';
+    const sc = document.createElement('script');
+    sc.src = _POS_BASE + 'vendor/qrcode.min.js';
+    sc.onload = () => { _posQrEstado = 'listo'; };
+    sc.onerror = () => { _posQrEstado = 'error'; };
+    document.head.appendChild(sc);
+}
+/** QR (SVG) del número de venta; vacío si la librería no está disponible. */
+function posQrSvg(texto) {
+    try {
+        if (!window.qrcode) return '';
+        const q = window.qrcode(0, 'M'); q.addData(String(texto)); q.make();
+        return q.createSvgTag({ cellSize: 3, margin: 0, scalable: true });
+    } catch (e) { return ''; }
+}
 const _pq = () => window.PosCalc;
 const fQ = n => _pq().fQ(n);
 const _posEl = id => document.getElementById(id);
@@ -125,6 +147,9 @@ async function loadPos() {
             if (res.permisos && res.permisos.permisos) {
                 _posPerm = Object.assign({ descuentoMax: 0, privilegiado: false }, res.permisos.permisos,
                     { descuentoMax: Number(res.permisos.descuentoMax) || 0, privilegiado: !!res.permisos.privilegiado });
+                _posCfg = _pq().cfgEfectiva(res.permisos.config);
+                _posVentaSinStock = !!res.permisos.puedeVenderSinStock;
+                if (_posCfg.mostrar_qr) posCargarQr();
             }
             _posInitCargado = true;
             _initPosClientesSelect();
@@ -305,10 +330,10 @@ function renderPosCatalogo() {
         const iniciales = (p.producto || '??').substring(0, 2).toUpperCase();
         let stockCls, stockLabel;
         if (esServicio) { stockCls = 'svc'; stockLabel = 'Servicio'; }
-        else if (stock <= 0) { stockCls = 'out'; stockLabel = 'Agotado'; }
-        else if (stock <= 5) { stockCls = 'low'; stockLabel = 'Quedan ' + stock; }
+        else if (stock <= 0) { stockCls = 'out'; stockLabel = _posPuedeSinStock() ? 'Sin stock' : 'Agotado'; }
+        else if (stock <= (Number(_posCfg.stock_bajo_umbral) || 0)) { stockCls = 'low'; stockLabel = 'Quedan ' + stock; }
         else { stockCls = 'ok'; stockLabel = 'Stock ' + stock; }
-        const agotado = !esServicio && disp <= 0;
+        const agotado = !esServicio && disp <= 0 && !_posPuedeSinStock();
         const img = (!isCompact && mostrarFotos) ? `
             <div class="pos-item-img-wrap">
                 ${imgUrl ? `<img class="pos-item-img" src="${escAttr(imgUrl)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'pos-item-placeholder',textContent:'${escAttr(iniciales)}'}))" />`
@@ -390,7 +415,7 @@ function posAgregarItem(prodId, cantidad) {
     const stock = Number(prod.unidades || 0);
     const exist = _posCarrito.find(it => String(it.id) === String(prodId));
     const actual = exist ? exist.cantidad : 0;
-    if (!esServicio && actual + cant > stock) {
+    if (!esServicio && !_posPuedeSinStock() && actual + cant > stock) {
         showToast(stock <= 0 ? 'Producto agotado' : 'Existencia insuficiente: solo hay ' + stock, '#FF9F0A');
         return;
     }
@@ -401,6 +426,10 @@ function posAgregarItem(prodId, cantidad) {
         _posCarrito.push({ id: prod.id, producto: prod.producto, tipo: prod.tipo, sku: prod.sku || '', precioUnit: precioUnit, cantidad: cant, prodOriginal: prod, _norm: true });
     }
     _posSelLinea = String(prodId);
+    const umbral = Number(_posCfg.stock_bajo_umbral) || 0;
+    const restante = stock - (actual + cant);
+    if (!esServicio && umbral > 0 && restante <= umbral && !(restante < 0)) showToast('Stock bajo: quedan ' + restante + ' de «' + prod.producto + '»', '#FF9F0A');
+    if (!esServicio && restante < 0) showToast('Atención: se venderá sin existencias (' + restante + ')', '#FF9F0A');
     renderPosCarrito();
     renderPosCatalogo();
 }
@@ -417,7 +446,7 @@ function posSetCantidad(prodId, valor) {
     const it = _posCarrito.find(x => String(x.id) === String(prodId));
     if (!it) return;
     _posNormLinea(it);
-    const v = _pq().validarCantidad(valor, it.tipo === 'Servicio' ? null : it.stockMax);
+    const v = _pq().validarCantidad(valor, (it.tipo === 'Servicio' || _posPuedeSinStock()) ? null : it.stockMax);
     if (!v.ok) {
         showToast(v.error, '#FF9F0A');
     } else {
@@ -482,7 +511,7 @@ function renderPosCarrito() {
     } else {
         tbody.innerHTML = _posCarrito.map(it => {
             const sel = String(it.id) === String(_posSelLinea);
-            const exceso = it.tipo !== 'Servicio' && it.cantidad > it.stockMax;
+            const exceso = it.tipo !== 'Servicio' && !_posPuedeSinStock() && it.cantidad > it.stockMax;
             return `
             <div class="pos-line ${sel ? 'sel' : ''} ${exceso ? 'warn' : ''}" onclick="_posSelLinea='${escAttr(it.id)}';renderPosCarrito()">
                 <div class="pos-line-main">
@@ -622,21 +651,36 @@ function posEliminarPendiente(id) {
 /* ──────────────────────────────────────────────────────────────────
    COBRO
 ────────────────────────────────────────────────────────────────── */
+function _posRequiereCaja() {
+    const c = _posCfg.caja_obligatoria;
+    if (c === 'si') return true;
+    if (c === 'no') return false;
+    return !_posEsStarter();           // 'auto': los planes sin arqueo (Starter) venden sin turno
+}
+function _posPuedeSinStock() { return !!_posVentaSinStock; }
+function _posDue() { return _pq().r2(_posTotales().total + _posPropina); }
+function _posOptsPago() { return { propina: _posPropina, redondeo: _posCfg.redondeo_efectivo, metodos: _posCfg.metodos_habilitados }; }
+function _posLblMetodo(m) { return _pq().etiquetaMetodo(_posCfg, m); }
+
 function _posValidarAntesDeCobrar() {
     if (!_posCarrito.length) return 'Agrega productos a la orden antes de cobrar.';
     for (const it of _posCarrito) {
         _posNormLinea(it);
-        const v = _pq().validarCantidad(it.cantidad, it.tipo === 'Servicio' ? null : it.stockMax);
+        const v = _pq().validarCantidad(it.cantidad, (it.tipo === 'Servicio' || _posPuedeSinStock()) ? null : it.stockMax);
         if (!v.ok) return `"${it.producto}": ${v.error}`;
         if (!isFinite(Number(it.precioUnit)) || Number(it.precioUnit) < 0) return `"${it.producto}": precio inválido.`;
     }
     const t = _posTotales();
     if (t.total <= 0) return 'El total a cobrar debe ser mayor a cero.';
-    if (!_posEsStarter() && !_posCajaAbierta) {
+    const nitMin = Number(_posCfg.nit_obligatorio_desde) || 0;
+    const nit = String((_posClienteSel && _posClienteSel.nit) || 'C/F').toUpperCase();
+    if (nitMin > 0 && t.total >= nitMin && nit === 'C/F') return 'Para ventas desde ' + fQ(nitMin) + ' se requiere el NIT del cliente (no Consumidor Final).';
+    if (_posRequiereCaja() && !_posCajaAbierta) {
         return _posCajaEstado === 'error'
             ? 'No se pudo verificar el estado de la caja. Reintenta o recarga el POS.'
             : 'No hay una caja abierta. Abre la caja para poder cobrar.';
     }
+    if (_posCaja && _posCaja.excedeHoras && _posCfg.turno_bloquear) return 'El turno lleva demasiado tiempo abierto. Ciérralo y abre uno nuevo para seguir cobrando.';
     return '';
 }
 
@@ -645,52 +689,75 @@ function posAbrirModalCobro() {
     const err = _posValidarAntesDeCobrar();
     if (err) {
         showToast(err, '#FF9F0A');
-        if (!_posCajaAbierta && !_posEsStarter() && _posCarrito.length && _posCajaEstado === 'cerrada') posAbrirAperturaCaja();
+        if (!_posCajaAbierta && _posRequiereCaja() && _posCarrito.length && _posCajaEstado === 'cerrada') posAbrirAperturaCaja();
         return;
     }
     posToggleCarritoMovil(false);
     _posPendienteVerificar = null;
+    _posPropina = 0;
     if (!_posClienteSel) _posClienteSel = { id: null, nombre: 'Consumidor Final (C/F)', nit: 'C/F', direccion: 'Ciudad', lista_precio: 'Publico' };
-    const t = _posTotales();
+    _posAbrirCobroDlg();
+}
 
-    // La clave de idempotencia queda ligada a ESTA venta: un reintento o una recarga reutiliza la misma clave
-    const fp = _pq().huellaCarrito(_posCarrito, _posClienteSel, t.descPct, _posListaPrecioActual);
+/** (Re)abre el diálogo de cobro; la clave de idempotencia queda ligada a esta venta Y a su propina. */
+function _posAbrirCobroDlg() {
+    const t = _posTotales();
+    const fp = _pq().huellaCarrito(_posCarrito, _posClienteSel, t.descPct, _posListaPrecioActual) + '#tip' + _posPropina;
     let guardado = null;
     try { guardado = JSON.parse(sessionStorage.getItem('azyvion_pos_intento') || 'null'); } catch (e) { /* sin sessionStorage */ }
     if (guardado && guardado.fp === fp) _posIntento = guardado;
     else if (!_posIntento || _posIntento.fp !== fp) _posIntento = { key: _pq().nuevaClave(), fp: fp };
     try { sessionStorage.setItem('azyvion_pos_intento', JSON.stringify(_posIntento)); } catch (e) { /* ignorar */ }
 
-    _posPagos = [{ metodo: 'Efectivo', monto: t.total.toFixed(2), referencia: '', cuentaBancariaId: '' }];
+    const habil = _posCfg.metodos_habilitados;
+    const inicial = habil.indexOf('Efectivo') >= 0 ? 'Efectivo' : habil[0];
+    _posPagos = [{ metodo: inicial, monto: _posDue().toFixed(2), referencia: '', cuentaBancariaId: '' }];
+    const sug = _posCfg.propina_habilitada ? `
+        <div class="pos-propina">
+            <span class="pos-lbl">Propina</span>
+            <button type="button" class="pos-chip ${_posPropina === 0 ? 'active' : ''}" onclick="posSetPropina(0)">Sin propina</button>
+            ${(_posCfg.propina_sugeridas || []).map(p => `<button type="button" class="pos-chip ${_pq().r2(t.total * p / 100) === _posPropina ? 'active' : ''}" onclick="posSetPropina(${_pq().r2(t.total * p / 100)})">${p}% · ${fQ(_pq().r2(t.total * p / 100))}</button>`).join('')}
+            <input class="pos-in sm" type="number" step="0.01" min="0" inputmode="decimal" id="posPropinaOtro" placeholder="Otra" aria-label="Otra propina" onchange="posSetPropina(this.value)" />
+        </div>` : '';
     posDlg('Cobrar', `
         <div class="pos-cobro">
             <div class="pos-cobro-total">
-                <div class="pos-cobro-lbl">TOTAL A COBRAR</div>
-                <div class="pos-cobro-monto" id="posCobroTotal">${fQ(t.total)}</div>
-                <div class="pos-cobro-sub">${escHtml(_posClienteSel.nombre)} · ${_posCarrito.reduce((s, i) => s + Number(i.cantidad), 0)} artículo(s)${t.descuento > 0 ? ' · desc. ' + fQ(t.descuento) : ''}</div>
+                <div class="pos-cobro-lbl">${_posPropina > 0 ? 'TOTAL + PROPINA' : 'TOTAL A COBRAR'}</div>
+                <div class="pos-cobro-monto" id="posCobroTotal">${fQ(_posDue())}</div>
+                <div class="pos-cobro-sub">${escHtml(_posClienteSel.nombre)} · ${_posCarrito.reduce((s, i) => s + Number(i.cantidad), 0)} artículo(s)${t.descuento > 0 ? ' · desc. ' + fQ(t.descuento) : ''}${_posPropina > 0 ? ' · propina ' + fQ(_posPropina) : ''}</div>
             </div>
+            ${sug}
             <div id="posPagosWrap"></div>
-            <div class="pos-cobro-add"><button type="button" class="pos-btn ghost" onclick="posAgregarPago()">＋ Dividir pago con otro método</button></div>
+            ${habil.length > 1 ? '<div class="pos-cobro-add"><button type="button" class="pos-btn ghost" onclick="posAgregarPago()">＋ Dividir pago con otro método</button></div>' : ''}
             <div class="pos-cobro-res" id="posCobroRes"></div>
+            <div id="posCobroNota" class="pos-muted" style="text-align:center"></div>
             <div id="posCobroMsg" class="pos-alert" style="display:none" role="alert"></div>
             <div class="pos-cobro-foot">
                 <button type="button" class="pos-btn" id="posCobroCancel" onclick="posDlgCerrar()">Cancelar <span class="pos-kbd">Esc</span></button>
                 <button type="button" class="pos-btn ok big" id="posCobroConfirm" onclick="posConfirmarVenta()">Confirmar cobro <span class="pos-kbd">Enter</span></button>
             </div>
             <div class="pos-muted" style="text-align:center;margin-top:6px">Se emite un comprobante interno. No es una factura fiscal (DTE/FEL) de la SAT.</div>
-        </div>`, { onClose: () => { if (!_posCobrando) { /* conserva la clave del intento */ } } });
+        </div>`);
     posRenderPagos();
+}
+
+function posSetPropina(v) {
+    const n = Number(v);
+    const total = _posTotales().total;
+    if (!isFinite(n) || n < 0 || n > total || Math.abs(_pq().r2(n) - n) > 1e-9) { showToast('Propina inválida (0 a ' + fQ(total) + ', máximo 2 decimales)', '#FF9F0A'); return; }
+    _posPropina = _pq().r2(n);
+    _posAbrirCobroDlg();
 }
 
 function posRenderPagos() {
     const wrap = _posEl('posPagosWrap');
     if (!wrap) return;
-    const metodos = [['Efectivo', '💵 Efectivo'], ['Tarjeta', '💳 Tarjeta'], ['Transferencia', '🏦 Transferencia']];
+    const iconos = { Efectivo: '💵', Tarjeta: '💳', Transferencia: '🏦' };
+    const metodos = _posCfg.metodos_habilitados.map(m => [m, iconos[m] + ' ' + _posLblMetodo(m)]);
     wrap.innerHTML = _posPagos.map((p, i) => {
-        const seg = metodos.map(m => `<button type="button" class="pos-seg-b ${p.metodo === m[0] ? 'active' : ''}" onclick="posPagoMetodo(${i},'${m[0]}')">${m[1]}</button>`).join('');
+        const seg = metodos.map(m => `<button type="button" class="pos-seg-b ${p.metodo === m[0] ? 'active' : ''}" onclick="posPagoMetodo(${i},'${m[0]}')">${escHtml(m[1])}</button>`).join('');
         let extra = '';
         if (p.metodo === 'Efectivo') {
-            const t = _posTotales().total;
             extra = `<div class="pos-quick">
                 <button type="button" class="pos-chip" onclick="posPagoRapido(${i},'exacto')">Exacto</button>
                 ${[20, 50, 100, 200].map(b => `<button type="button" class="pos-chip" onclick="posPagoRapido(${i},${b})">Q${b}</button>`).join('')}
@@ -722,7 +789,7 @@ function posRenderPagos() {
 function posPagoMetodo(i, metodo) {
     const p = _posPagos[i]; if (!p) return;
     p.metodo = metodo; p.referencia = ''; p.cuentaBancariaId = '';
-    if (_posPagos.length === 1) p.monto = _posTotales().total.toFixed(2);
+    if (_posPagos.length === 1) p.monto = _posDue().toFixed(2);
     posRenderPagos();
 }
 function posPagoCampo(i, campo, valor) {
@@ -731,24 +798,26 @@ function posPagoCampo(i, campo, valor) {
     posPagoResumen();
 }
 function posAgregarPago() {
-    const t = _posTotales().total;
+    const t = _posDue();
+    const usados = _posPagos.map(p => p.metodo);
+    const otro = _posCfg.metodos_habilitados.find(m => usados.indexOf(m) < 0) || _posCfg.metodos_habilitados.find(m => m !== 'Efectivo') || _posCfg.metodos_habilitados[0];
     // Sugerencia: si hay un único pago en efectivo, la mitad queda en efectivo y el resto en el nuevo método
     if (_posPagos.length === 1 && _posPagos[0].metodo === 'Efectivo') _posPagos[0].monto = _pq().r2(t / 2).toFixed(2);
     const cubierto = _posPagos.reduce((s, p) => s + (Number(p.monto) || 0), 0);
     const resto = Math.max(0, _pq().r2(t - cubierto));
-    _posPagos.push({ metodo: 'Tarjeta', monto: resto > 0 ? resto.toFixed(2) : '', referencia: '', cuentaBancariaId: '' });
+    _posPagos.push({ metodo: otro, monto: resto > 0 ? resto.toFixed(2) : '', referencia: '', cuentaBancariaId: '' });
     posRenderPagos();
     const ult = _posEl('posPagoMonto' + (_posPagos.length - 1)); if (ult) { ult.focus(); ult.select(); }
 }
 function posQuitarPago(i) {
     _posPagos.splice(i, 1);
-    if (_posPagos.length === 1) _posPagos[0].monto = _posTotales().total.toFixed(2);
+    if (_posPagos.length === 1) _posPagos[0].monto = _posDue().toFixed(2);
     posRenderPagos();
 }
 function posPagoRapido(i, valor) {
-    const t = _posTotales().total;
+    const t = _posDue();
     const electronico = _posPagos.reduce((s, p) => p.metodo !== 'Efectivo' ? s + (Number(p.monto) || 0) : s, 0);
-    const aplicado = Math.max(0, _pq().r2(t - electronico));
+    const aplicado = _pq().redondearEfectivo(Math.max(0, _pq().r2(t - electronico)), _posCfg.redondeo_efectivo);
     let m;
     if (valor === 'exacto') m = aplicado;
     else if (valor === 'redondo') m = Math.ceil(aplicado / 10) * 10;
@@ -760,20 +829,24 @@ function posPagoRapido(i, valor) {
 
 function posPagoResumen() {
     const t = _posTotales().total;
+    const due = _posDue();
     const pagos = _posPagos.map(p => ({ metodo: p.metodo, monto: p.monto, referencia: p.referencia }));
-    const v = _pq().validarPagos(t, pagos);
+    const v = _pq().validarPagos(t, pagos, _posOptsPago());
     const res = _posEl('posCobroRes');
     const btn = _posEl('posCobroConfirm');
-    const pagadoTxt = _pq().r2(_posPagos.reduce((s, p) => s + (Number(p.monto) || 0), 0));
+    const suma = _pq().r2(_posPagos.reduce((s, p) => s + (Number(p.monto) || 0), 0));
     let linea3;
     if (v.ok) linea3 = `<div class="pos-res-c"><span>Vuelto</span><b class="vuelto">${fQ(v.cambio)}</b></div>`;
     else {
-        const falta = Math.max(0, _pq().r2(t - _posPagos.reduce((s, p) => s + (Number(p.monto) || 0), 0)));
+        const objetivo = (v.efectivoAplicado || v.electronico) ? _pq().r2(v.efectivoAplicado + v.electronico) : due;
+        const falta = Math.max(0, _pq().r2(objetivo - suma));
         linea3 = `<div class="pos-res-c"><span>${falta > 0 ? 'Falta' : 'Vuelto'}</span><b class="${falta > 0 ? 'falta' : 'vuelto'}">${fQ(falta > 0 ? falta : 0)}</b></div>`;
     }
     if (res) res.innerHTML = `
-        <div class="pos-res-c"><span>Total</span><b>${fQ(t)}</b></div>
-        <div class="pos-res-c"><span>Recibido</span><b>${fQ(pagadoTxt)}</b></div>${linea3}`;
+        <div class="pos-res-c"><span>${_posPropina > 0 ? 'Total + propina' : 'Total'}</span><b>${fQ(_pq().r2(due + v.redondeo))}</b></div>
+        <div class="pos-res-c"><span>Recibido</span><b>${fQ(suma)}</b></div>${linea3}`;
+    const nota = _posEl('posCobroNota');
+    if (nota) nota.textContent = v.redondeo ? 'Redondeo de efectivo: ' + (v.redondeo > 0 ? '+' : '−') + fQ(Math.abs(v.redondeo)) + ' (múltiplo de Q' + _posCfg.redondeo_efectivo.toFixed(2) + ')' : '';
     if (btn && !_posCobrando) btn.disabled = !v.ok;
     if (!_posCobrando) _posMsg('posCobroMsg', v.ok ? '' : v.error, v.ok ? 'ok' : 'warn');
     return v;
@@ -787,12 +860,13 @@ function _posArmarPayload() {
         items: _posCarrito.map(it => ({ id: it.id, cantidad: Number(it.cantidad), precioUnit: Number(it.precioUnit) })),
         descuentoPct: t.descPct,
         total: t.total,
+        propina: _posPropina,
         listaPrecio: _posListaPrecioActual,
         clienteId: c.id || null,
         clienteNombre: c.nombre || 'Consumidor Final (C/F)',
         nit: c.nit || 'C/F',
         direccion: c.direccion || 'Ciudad',
-        permitir_sin_caja: _posEsStarter(),
+        permitir_sin_caja: !_posRequiereCaja(),
         cotizacionId: window._posCotizacionOrigenId || null,
         pagos: _posPagos.map(p => ({
             metodo: p.metodo, monto: Number(p.monto),
@@ -881,6 +955,7 @@ function _posVentaRegistrada(ticket, yaExistia) {
     renderPosCarrito();
     window._ultimoTicket = ticket;
     posMostrarExito(ticket, yaExistia);
+    if (_posCfg.ticket_autoimprimir && !yaExistia) setTimeout(posImprimirTicket, 450);
     // Existencias y caja frescas desde el servidor
     loadPos();
     if (typeof loadInventario === 'function') loadInventario();
@@ -920,15 +995,22 @@ function posTicketHtml(t, opts) {
     const nItems = (t.items || []).reduce((s, i) => s + Number(i.cantidad), 0);
     const items = (t.items || []).map(it => `<tr>
             <td class="q">${Number(it.cantidad)}</td>
-            <td class="d">${escHtml(it.descripcion)}<div class="s">${q(it.precioUnit)} c/u${it.sku ? ' · ' + escHtml(it.sku) : ''}${Number(it.cantidadDevuelta) > 0 ? ' · devuelto ' + Number(it.cantidadDevuelta) : ''}</div></td>
+            <td class="d">${escHtml(it.descripcion)}<div class="s">${q(it.precioUnit)} c/u${(it.sku && _posCfg.mostrar_sku) ? ' · ' + escHtml(it.sku) : ''}${Number(it.cantidadDevuelta) > 0 ? ' · devuelto ' + Number(it.cantidadDevuelta) : ''}</div></td>
             <td class="r">${q(it.total)}</td></tr>`).join('');
-    const pagos = (t.pagos || []).map(p => `<div class="row"><span>${escHtml(p.metodo)}${p.referencia ? ' <i>#' + escHtml(p.referencia) + '</i>' : ''}</span><span>${q(p.monto)}</span></div>`).join('');
+    const pagos = (t.pagos || []).map(p => `<div class="row"><span>${escHtml(_posLblMetodo(p.metodo))}${p.referencia ? ' <i>#' + escHtml(p.referencia) + '</i>' : ''}</span><span>${q(p.monto)}</span></div>`).join('');
     const efectivo = (t.pagos || []).find(p => p.metodo === 'Efectivo');
     const ivaLinea = t.ivaModalidad === 'sobre' ? 'IVA ' + Number(t.ivaPct) + '%' : 'IVA incluido ' + Number(t.ivaPct) + '%';
     const pie = (em.pieTicket || '').trim();
     const contacto = [em.telefono ? 'Tel. ' + em.telefono : '', em.correo || '', em.sitio || ''].filter(Boolean).map(escHtml).join(' · ');
+    const cfg = _posCfg;
+    const propina = Number(t.propina) || 0, redondeo = Number(t.redondeo) || 0;
+    const cobrado = _pq().r2(Number(t.total) + propina + redondeo);
+    const NOMBRES = { facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok', whatsapp: 'WhatsApp', x: 'X', youtube: 'YouTube' };
+    const redes = (cfg.mostrar_redes && em.redes) ? Object.keys(NOMBRES).filter(k => em.redes[k]).map(k => `<div><b>${NOMBRES[k]}</b> ${escHtml(em.redes[k])}</div>`).join('') : '';
+    const qr = cfg.mostrar_qr ? posQrSvg(t.numero) : '';
     return `
-    <div class="tk">
+    <div class="tk w${cfg.ancho_papel === '58' ? '58' : '80'}">
+        ${opts.copia ? `<div class="copy">${escHtml(opts.copia)}</div>` : ''}
         ${opts.reimpresion ? '<div class="stamp">REIMPRESIÓN</div>' : ''}
         ${anulada ? '<div class="stamp bad">VENTA ANULADA</div>' : (devuelta ? `<div class="stamp bad">${escHtml(t.estado.toUpperCase())}</div>` : '')}
         <div class="head">
@@ -937,30 +1019,35 @@ function posTicketHtml(t, opts) {
             ${em.eslogan ? `<div class="s">${escHtml(em.eslogan)}</div>` : ''}
             <div class="s">NIT ${escHtml(em.nit || 'C/F')}${em.direccion ? ' · ' + escHtml(em.direccion) : ''}</div>
             ${contacto ? `<div class="s">${contacto}</div>` : ''}
+            ${(cfg.ticket_encabezado || '').trim() ? `<div class="enc">${escHtml(cfg.ticket_encabezado).split(String.fromCharCode(10)).join('<br>')}</div>` : ''}
         </div>
         <div class="title">COMPROBANTE DE VENTA</div>
         <div class="num">${escHtml(t.numero)}</div>
         <div class="meta">
             <div><span>Fecha</span><b>${fecha} ${hora}</b></div>
-            <div><span>Cajero</span><b>${escHtml(t.cajero || '')}</b></div>
+            ${cfg.mostrar_cajero ? `<div><span>Cajero</span><b>${escHtml(t.cajero || '')}</b></div>` : ''}
             <div class="wide"><span>Cliente</span><b>${escHtml(t.cliente || 'Consumidor Final (C/F)')}</b></div>
             <div><span>NIT</span><b>${escHtml(t.nit || 'C/F')}</b></div>
-            ${t.cajaTurnoId ? `<div><span>Turno</span><b>${escHtml(t.cajaTurnoId)}</b></div>` : ''}
+            ${(t.cajaTurnoId && cfg.mostrar_turno) ? `<div><span>Turno</span><b>${escHtml(t.cajaTurnoId)}</b></div>` : ''}
         </div>
         <table><thead><tr><th class="q">Cant</th><th class="d">Descripción</th><th class="r">Importe</th></tr></thead><tbody>${items}</tbody></table>
         <div class="cnt">${nItems} artículo(s)</div>
         <div class="sums">
             <div class="row"><span>Subtotal</span><span>${q(t.subtotal)}</span></div>
             ${Number(t.descuento) > 0 ? `<div class="row"><span>Descuento${Number(t.descuentoPct) ? ' ' + Number(t.descuentoPct) + '%' : ''}</span><span>− ${q(t.descuento)}</span></div>` : ''}
-            <div class="row"><span>${ivaLinea}</span><span>${q(t.iva)}</span></div>
+            ${cfg.mostrar_iva ? `<div class="row"><span>${ivaLinea}</span><span>${q(t.iva)}</span></div>` : ''}
+            ${propina > 0 ? `<div class="row"><span>Propina</span><span>${q(propina)}</span></div>` : ''}
+            ${redondeo !== 0 ? `<div class="row"><span>Redondeo</span><span>${redondeo > 0 ? '+' : '−'} ${q(Math.abs(redondeo))}</span></div>` : ''}
         </div>
-        <div class="total"><span>TOTAL</span><span>${q(t.total)}</span></div>
+        <div class="total"><span>${(propina > 0 || redondeo !== 0) ? 'TOTAL A PAGAR' : 'TOTAL'}</span><span>${q(cobrado)}</span></div>
         <div class="pay">
             <div class="cap">FORMA DE PAGO</div>
             ${pagos}
             ${efectivo && Number(t.cambio) > 0 ? `<div class="row"><span>Efectivo recibido</span><span>${q(efectivo.recibido)}</span></div><div class="row b"><span>Su vuelto</span><span>${q(t.cambio)}</span></div>` : ''}
             ${Number(t.reembolsado) > 0 ? `<div class="row b"><span>Reembolsado</span><span>${q(t.reembolsado)}</span></div>` : ''}
         </div>
+        ${redes ? `<div class="redes">${redes}</div>` : ''}
+        ${qr ? `<div class="qr">${qr}<div class="s">${escHtml(t.numero)}</div></div>` : ''}
         <div class="thx">${pie ? escHtml(pie).replace(/\n/g, '<br>') : '¡Gracias por su compra!'}</div>
         <div class="legal">Comprobante interno sin validez fiscal.${t.felNoCertificado ? ' No es una factura electrónica (DTE/FEL).' : ''}</div>
     </div>`;
@@ -995,6 +1082,12 @@ const _POS_TICKET_CSS = `
  .tk .legal{text-align:center;font-size:9px;color:#777;border-top:1px dashed #999;padding-top:6px;margin-top:6px}
  .tk .stamp{text-align:center;font-weight:800;letter-spacing:3px;font-size:12px;border:2px solid #111;padding:3px;margin-bottom:8px}
  .tk .stamp.bad{border-color:#b00020;color:#b00020}
+ .tk .total span:last-child{white-space:nowrap}.tk.w58 .total span:first-child{font-size:9.5px;letter-spacing:.3px}
+ .tk.w58{max-width:210px;font-size:11px}.tk.w58 .nm{font-size:15px}.tk.w58 .num{font-size:16px}.tk.w58 .total{font-size:16px}
+ .tk .enc{font-size:10.5px;margin-top:4px;color:#333}
+ .tk .redes{text-align:center;font-size:10.5px;margin-top:8px;line-height:1.5}.tk .redes b{font-weight:700}
+ .tk .qr{text-align:center;margin-top:8px}.tk .qr svg{width:96px;height:96px}
+ .tk .copy{text-align:center;font-size:10px;letter-spacing:1.5px;font-weight:700;color:#555;margin-bottom:6px}
  .tk .c{text-align:center}.tk .b{font-weight:700}.tk .sep{border-top:1px dashed #999;margin:7px 0}
  .tk .row.tot{font-size:15px;font-weight:800;border-top:1px solid #111;margin-top:4px;padding-top:4px}`;
 
@@ -1025,7 +1118,7 @@ function _posImprimirHtml(html, titulo) {
     const d = f.contentWindow.document;
     d.open();
     d.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escHtml(titulo)}</title>
-        <style>@page{margin:0;size:80mm auto}html,body{margin:0;padding:0;background:#fff}${_POS_TICKET_CSS}</style></head><body>${html}</body></html>`);
+        <style>@page{margin:0;size:${_posCfg.ancho_papel === '58' ? '58' : '80'}mm auto}html,body{margin:0;padding:0;background:#fff}${_POS_TICKET_CSS}</style></head><body>${html}</body></html>`);
     d.close();
     setTimeout(() => {
         try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { showToast('No se pudo abrir la impresión', '#FF453A'); }
@@ -1036,7 +1129,11 @@ function _posImprimirHtml(html, titulo) {
 function posImprimirTicket() {
     const t = window._ultimoTicket;
     if (!t) return;
-    _posImprimirHtml(posTicketHtml(t, window._ultimoTicketOpts || {}), 'Comprobante ' + t.numero);
+    const n = Math.min(3, Math.max(1, Number(_posCfg.ticket_copias) || 1));
+    const rot = ['ORIGINAL · CLIENTE', 'COPIA · CAJA', 'COPIA ADICIONAL'];
+    const base = window._ultimoTicketOpts || {};
+    const html = Array.from({ length: n }, (_, i) => `<div style="page-break-after:${i < n - 1 ? 'always' : 'auto'}">${posTicketHtml(t, Object.assign({}, base, n > 1 ? { copia: rot[i] } : {}))}</div>`).join('');
+    _posImprimirHtml(html, 'Comprobante ' + t.numero);
 }
 
 function posEnviarTicketPorCorreo() {
@@ -1106,6 +1203,8 @@ function _renderCajaBar(errMsg) {
                 <span class="pos-caja-kpi"><span>Fondo</span><b>${fQ(_posCaja.montoInicial)}</b></span>
                 <span class="pos-caja-kpi"><span>Ventas</span><b>${fQ(rs.totalVentas)}</b></span>
                 <span class="pos-caja-kpi"><span>Efectivo esperado</span><b>${fQ(rs.esperado)}</b></span>
+                ${_posCaja.alertaEfectivo ? '<span class="pos-chip-st warn" title="El efectivo en caja superó el máximo configurado">⚠ Efectivo alto: haga un retiro</span>' : ''}
+                ${_posCaja.excedeHoras ? '<span class="pos-chip-st warn">⚠ Turno abierto hace ' + Number(_posCaja.horasAbierta).toFixed(1) + ' h: ciérrelo</span>' : ''}
             </div>
             <div class="pos-caja-act">
                 ${_posPerm.caja_mov ? '<button type="button" class="pos-btn sm" onclick="posAbrirMovimiento()">Entrada / Salida</button>' : ''}
@@ -1116,7 +1215,7 @@ function _renderCajaBar(errMsg) {
         estado = `
             <div class="pos-caja-info">
                 <span class="pos-chip-st off">○ Caja cerrada</span>
-                <span class="pos-muted">${_posEsStarter() ? 'Plan Starter: las ventas se registran sin turno de caja.' : 'Abre la caja para poder cobrar.'}</span>
+                <span class="pos-muted">${!_posRequiereCaja() ? 'Las ventas se registran sin turno de caja.' : 'Abre la caja para poder cobrar.'}</span>
             </div>
             <div class="pos-caja-act">
                 <button type="button" class="pos-btn sm ok" onclick="posAbrirAperturaCaja()">Abrir caja</button>
@@ -1245,6 +1344,9 @@ function posAbrirCierreCaja() {
         .getCajaStatus();
 }
 
+function _posExigeExplicar(dif) { return Math.abs(dif) > (Number(_posCfg.tolerancia_cuadre) || 0); }
+function _posExigeSupervisor(dif) { const m = Number(_posCfg.cuadre_max_sin_supervisor) || 0; return m > 0 && Math.abs(dif) > m && !_posPerm.privilegiado; }
+
 function posCierreCuadrar() {
     const raw = _posEl('cierreEfectivoContado')?.value;
     const box = _posEl('cierreDif');
@@ -1253,8 +1355,8 @@ function posCierreCuadrar() {
     const dif = _pq().r2(Number(raw) - window._posCierreEsperado);
     const cls = dif === 0 ? 'ok' : (dif > 0 ? 'warn' : 'err');
     const txt = dif === 0 ? 'El efectivo cuadra con lo esperado.' : (dif > 0 ? 'Sobrante: hay más efectivo del esperado.' : 'Faltante: hay menos efectivo del esperado.');
-    box.innerHTML = `${_posFilaResumen('Diferencia', (dif > 0 ? '+' : '') + fQ(dif), 'dif ' + cls)}<div class="pos-muted">${txt}${dif !== 0 ? ' Debes explicarlo en las observaciones.' : ''}</div>`;
-    const lbl = _posEl('cierreObsLbl'); if (lbl) lbl.textContent = dif !== 0 ? 'Explicación de la diferencia *' : 'Observaciones del cierre';
+    box.innerHTML = `${_posFilaResumen('Diferencia', (dif > 0 ? '+' : '') + fQ(dif), 'dif ' + cls)}<div class="pos-muted">${txt}${_posExigeExplicar(dif) ? ' Debes explicarlo en las observaciones.' : (dif !== 0 ? ' Dentro de la tolerancia: no requiere explicación.' : '')}${_posExigeSupervisor(dif) ? ' <b>La diferencia supera el límite: debe cerrar un supervisor o administrador.</b>' : ''}</div>`;
+    const lbl = _posEl('cierreObsLbl'); if (lbl) lbl.textContent = _posExigeExplicar(dif) ? 'Explicación de la diferencia *' : 'Observaciones del cierre';
 }
 
 function posConfirmarCierreCaja() {
@@ -1263,7 +1365,8 @@ function posConfirmarCierreCaja() {
     const obs = (_posEl('cierreObservaciones')?.value || '').trim();
     if (raw === '' || !isFinite(contado) || contado < 0 || Math.abs(_pq().r2(contado) - contado) > 1e-9) { _posMsg('cierreMsg', 'Ingresa el efectivo contado (0 o más, máximo 2 decimales).'); return; }
     const dif = _pq().r2(contado - window._posCierreEsperado);
-    if (dif !== 0 && obs.length < 3) { _posMsg('cierreMsg', 'Hay una diferencia de ' + fQ(dif) + ': explícala en las observaciones.'); return; }
+    if (_posExigeSupervisor(dif)) { _posMsg('cierreMsg', 'La diferencia de ' + fQ(dif) + ' supera el límite de ' + fQ(_posCfg.cuadre_max_sin_supervisor) + ': debe cerrar la caja un supervisor o administrador.'); return; }
+    if (_posExigeExplicar(dif) && obs.length < 3) { _posMsg('cierreMsg', 'Hay una diferencia de ' + fQ(dif) + ': explícala en las observaciones.'); return; }
     const btn = _posEl('cierreBtnOk');
     if (!window._posCierreConfirmando) {      // segunda confirmación explícita: el cierre es definitivo
         window._posCierreConfirmando = true;
@@ -1421,6 +1524,13 @@ function _posRenderDetalleVenta() {
                 : '—'}</td></tr>`).join('');
     const pagos = (t.pagos || []).map(p => `${escHtml(p.metodo)} ${fQ(p.monto)}`).join(' + ');
     const tieneEfectivo = (t.pagos || []).some(p => p.metodo === 'Efectivo');
+    const habil = _posCfg.metodos_habilitados;
+    const metodoInicial = (tieneEfectivo && habil.indexOf('Efectivo') >= 0) ? 'Efectivo' : (habil.find(m => m !== 'Efectivo') || habil[0]);
+    const motivos = _posCfg.motivos_devolucion || [];
+    const plazo = Number(_posCfg.plazo_devolucion_dias) || 0;
+    const dias = Math.floor((Date.now() - new Date(t.fecha).getTime()) / 86400000);
+    const plazoVencido = plazo > 0 && dias > plazo && !_posPerm.privilegiado;
+    const plazoTxt = plazo > 0 ? (plazoVencido ? `Pasó el plazo de ${plazo} días para devoluciones (la venta tiene ${dias}). Solo un administrador puede autorizarla.` : `Plazo de devolución: ${plazo} días (esta venta tiene ${dias}).`) : '';
     det.innerHTML = `
         <div class="pos-det-head"><div><b>${escHtml(t.numero)}</b> ${_posBadgeEstado(t.estado)}</div><b>${fQ(t.total)}</b></div>
         <div class="pos-muted">${new Date(t.fecha).toLocaleString('es-GT')} · ${escHtml(t.cliente)} · NIT ${escHtml(t.nit)} · Cajero ${escHtml(t.cajero)}</div>
@@ -1428,12 +1538,15 @@ function _posRenderDetalleVenta() {
         <div class="pos-table-wrap"><table class="pos-table"><thead><tr><th>Artículo</th><th class="num">Vend.</th><th class="num">Dev.</th><th class="num">Devolver</th></tr></thead><tbody>${filas}</tbody></table></div>
         ${activa ? `
         <div class="pos-dev-form">
-            <div class="form-field"><label class="pos-lbl" for="devMotivo">Motivo * (mínimo 5 caracteres)</label>
+            ${plazoTxt ? `<div class="pos-alert ${plazoVencido ? 'err' : 'warn'}" style="display:block">${plazoTxt}</div>` : ''}
+            ${motivos.length ? `<div class="form-field"><label class="pos-lbl" for="devMotivoTipo">Motivo *</label>
+                <select class="pos-in" id="devMotivoTipo" onchange="posHistMotivoTipo()"><option value="">Seleccione…</option>${motivos.map(m => `<option>${escHtml(m)}</option>`).join('')}</select></div>` : ''}
+            <div class="form-field"><label class="pos-lbl" for="devMotivo">${motivos.length ? 'Detalle (obligatorio si el motivo es «Otro»)' : 'Motivo * (mínimo 5 caracteres)'}</label>
                 <input class="pos-in" id="devMotivo" placeholder="Ej. Producto defectuoso" ${(_posPerm.devolver || _posPerm.anular) ? '' : 'disabled'} /></div>
             <div class="pos-grid2">
                 <div class="form-field"><label class="pos-lbl" for="devMetodo">Reembolsar por</label>
                     <select class="pos-in" id="devMetodo" onchange="posHistMetodo()">
-                        <option value="Efectivo" ${tieneEfectivo ? 'selected' : ''}>Efectivo (sale de la caja)</option><option value="Tarjeta">Tarjeta (reversa en su terminal)</option><option value="Transferencia" ${!tieneEfectivo ? 'selected' : ''}>Transferencia</option></select></div>
+                        ${habil.map(m => `<option value="${m}" ${m === metodoInicial ? 'selected' : ''}>${escHtml(_posLblMetodo(m))}${m === 'Efectivo' ? ' (sale de la caja)' : (m === 'Tarjeta' ? ' (reversa en su terminal)' : '')}</option>`).join('')}</select></div>
                 <div class="form-field" id="devRefWrap" style="display:none"><label class="pos-lbl" for="devRef">Referencia del reembolso *</label><input class="pos-in" id="devRef" /></div>
             </div>
             <div class="form-field" id="devCtaWrap" style="display:none"><label class="pos-lbl" for="devCta">Cuenta bancaria</label>
@@ -1448,6 +1561,13 @@ function _posRenderDetalleVenta() {
             <button type="button" class="pos-btn" onclick="posHistReimprimir()" ${_posPerm.reimprimir ? '' : 'disabled title="No tiene permiso para reimprimir"'}>Reimprimir comprobante</button>
         </div>`;
     posHistMetodo();
+}
+
+/** El reingreso al inventario se desmarca por defecto para los motivos configurados (p. ej. «Producto defectuoso»). */
+function posHistMotivoTipo() {
+    const tipo = _posEl('devMotivoTipo')?.value || '';
+    const chk = _posEl('devStock');
+    if (chk) chk.checked = (_posCfg.motivos_sin_reingreso || []).indexOf(tipo) < 0;
 }
 
 function posHistMetodo() {
@@ -1468,8 +1588,14 @@ function posHistEstimar() {
 
 function posHistDevolver(anular) {
     const t = _posHistDetalle; if (!t) return;
-    const motivo = (_posEl('devMotivo')?.value || '').trim();
-    if (motivo.length < 5) { _posMsg('devMsg', 'Indica el motivo (mínimo 5 caracteres).'); return; }
+    const detalle = (_posEl('devMotivo')?.value || '').trim();
+    const motivoTipo = _posEl('devMotivoTipo') ? _posEl('devMotivoTipo').value : '';
+    let motivo = detalle;
+    if (_posEl('devMotivoTipo')) {
+        if (!motivoTipo) { _posMsg('devMsg', 'Seleccione el motivo de la devolución.'); return; }
+        if (motivoTipo === 'Otro' && detalle.length < 5) { _posMsg('devMsg', 'Con el motivo «Otro» describa el detalle (mínimo 5 caracteres).'); return; }
+        motivo = detalle ? motivoTipo + ' — ' + detalle : motivoTipo;
+    } else if (detalle.length < 5) { _posMsg('devMsg', 'Indica el motivo (mínimo 5 caracteres).'); return; }
     const metodo = _posEl('devMetodo')?.value || 'Efectivo';
     const ref = (_posEl('devRef')?.value || '').trim();
     if (metodo !== 'Efectivo' && ref.length < 3) { _posMsg('devMsg', 'Ingresa la referencia del reembolso electrónico.'); return; }
@@ -1507,7 +1633,7 @@ function posHistDevolver(anular) {
             _posMsg('devMsg', 'Sin conexión: ' + ((e && e.message) || e) + '. Consulta la venta antes de reintentar; al reintentar se usa la misma clave y no se duplica.'); reabrir();
         })
         .posDevolverVenta({
-            ventaId: t.ventaId, items: items, anular: !!anular, motivo: motivo, metodoReembolso: metodo,
+            ventaId: t.ventaId, items: items, anular: !!anular, motivo: motivo, motivoTipo: motivoTipo || undefined, metodoReembolso: metodo,
             referencia: ref || undefined, cuentaBancariaId: _posEl('devCta')?.value || undefined,
             reingresarStock: !!_posEl('devStock')?.checked, idempotency_key: _posDevKey
         });
