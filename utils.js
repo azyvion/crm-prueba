@@ -53,8 +53,12 @@ function descargarCSV(filas, nombreBase) {
     if (!filas.length) {showToast('No hay datos para exportar', '#FF9F0A'); return;}
     const cols = Object.keys(filas[0]);
     const esc = val => {
-        const s = val === null || val === undefined ? '' : String(val);
-        return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        let s = val === null || val === undefined ? '' : String(val);
+        // Anti-inyección de fórmulas (CSV injection): una celda que empieza por = + - @ o
+        // tab/retorno es ejecutada como fórmula por Excel/Sheets. Se antepone un apóstrofo,
+        // que esos programas tratan como "texto" y no muestran.
+        if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+        return /[",;\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     };
     const csv = [cols.join(',')]
         .concat(filas.map(f => cols.map(c => esc(f[c])).join(',')))

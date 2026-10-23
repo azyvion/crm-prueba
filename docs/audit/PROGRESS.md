@@ -146,3 +146,9 @@ Detalle completo en `docs/audit/LOTE7-PRODUCTIVIDAD.md`.
 - **Pruebas:** SQL 19/19 (solo 09 sobre el estado real) + suites previas sin regresiones; unitarias 71/71; arnés de interfaz OK.
 - **Siguiente acción exacta:** aprobación para aplicar `20261023_09_crm_productividad.sql` y publicar los 8 archivos listados en el documento del lote.
 - **Aplicación (aprobada por el propietario):** `20261023_09_crm_productividad.sql` aplicada en producción en una sola transacción y registrada en el historial (`20261023200000`). `productividad.sql` sobre producción: **19/19 PASS**. Advisors: solo hallazgos esperados (tablas deny-all de auditoría y metas, funciones SECURITY DEFINER con verificación interna) y SEC-10 sigue abierto. Pendiente: publicar los 8 archivos del frontend.
+
+## Auditoría de seguridad — 2026-10-23 (detección + intrusión + corrección)
+Detalle en `docs/audit/SECURITY-REVIEW-2026-10-23.md`.
+- **Red-team** (`tests/rls/redteam_productividad.sql`): atacante de otra empresa + agente + anon contra `org_azyvion_001`. **17/17 ataques bloqueados** (cross-tenant, IDOR FEL, escalada, suplantación, auditoría inmutable, sin fuga de contraseñas). Sin rastro en producción.
+- **SEC-18 (Media) corregido:** inyección de fórmulas en CSV (`descargarCSV`). Prueba `tests/unit/security.test.js`. Unitarias 73/73.
+- **Abierto:** SEC-10 (contraseñas filtradas, Auth — propietario), SEC-16/17 (bajas, aceptadas).
