@@ -68,8 +68,26 @@
                 <div class="pos-tabs" role="tablist">
                     ${[['lista', 'Pendientes'], ['calendario', 'Calendario'], ['completadas', 'Completadas']].map(t => `<button type="button" role="tab" class="pos-tab ${TAR.vista === t[0] ? 'active' : ''}" onclick="Prod.tarVista('${t[0]}')">${t[1]}</button>`).join('')}
                 </div>
+                <div id="tarMeta"></div>
                 <div id="tarBody">${loading()}</div></div>`;
             tarCargar();
+            miMeta();
+        });
+    }
+    /** Tarjeta «Mi meta del mes» (solo si el usuario tiene alguna meta asignada). */
+    function miMeta() {
+        call('crmMetasProgreso', {}).then(r => {
+            const el = $('tarMeta'); if (!el || !r.ok) return;
+            const m = (r.filas || []).find(x => x.usuario === yo());
+            if (!m || !(Number(m.meta_ventas) || Number(m.meta_cotizaciones) || Number(m.meta_actividades))) { el.innerHTML = ''; return; }
+            const Q = n => (root.PosCalc && root.PosCalc.fQ) ? root.PosCalc.fQ(n) : 'Q ' + Number(n || 0).toFixed(2);
+            const barra = (lbl, real, meta, fmt) => {
+                if (!Number(meta)) return '';
+                const pct = Number(real) / Number(meta) * 100;
+                return `<div style="flex:1;min-width:160px"><div class="pos-muted">${lbl}: <b>${fmt(real)}</b> / ${fmt(meta)} (${Math.round(pct)}%)</div><div class="prod-barra ${pct >= 100 ? 'ok' : ''}"><span style="width:${Math.min(pct, 100)}%"></span></div></div>`;
+            };
+            el.innerHTML = `<div class="neg-card" style="margin-bottom:12px"><div class="neg-card-t">Mi meta del mes</div><div style="display:flex;gap:16px;flex-wrap:wrap">
+                ${barra('Ventas', m.ventas, m.meta_ventas, Q)}${barra('Cotizaciones aprobadas', m.cotizaciones, m.meta_cotizaciones, Q)}${barra('Actividades', m.actividades, m.meta_actividades, v => String(v))}</div></div>`;
         });
     }
     function tarVista(v) { TAR.vista = v; renderTareas(); }
@@ -240,6 +258,7 @@
         TAR.hoy = r.hoy || hoy;
         const filas = r.filas || [];
         const n = actualizarBadge(filas);
+        if (typeof root.renderOvAlertas === 'function') { try { root.renderOvAlertas(); } catch (e) { /* el inicio aún no está montado */ } }
         const vencidas = filas.filter(t => t.fechaSeguimiento < TAR.hoy).length;
         if (primeraRevision && n && !yaAvisado('resumen_' + TAR.hoy)) {
             toast(`Tienes ${n} tarea(s) para hoy${vencidas ? ' (' + vencidas + ' vencida(s))' : ''}. Revísalas en Tareas.`, vencidas ? AMBAR : '#0A84FF');

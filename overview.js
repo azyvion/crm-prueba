@@ -198,6 +198,20 @@ function renderOvAlertas() {
     if (!el) return;
     var alertas = [];
     var inv = (_inventario||[]);
+    /* [Lote 7] Bajo el stock mínimo definido por producto (el mismo que usa Reposición). */
+    var bajoMin = inv.filter(function(i){ return i.tipo !== 'Servicio' && i.activo !== false && Number(i.stock_minimo) > 0 && Number(i.unidades) <= Number(i.stock_minimo); })
+        .sort(function(a, b){ return (Number(a.unidades) - Number(a.stock_minimo)) - (Number(b.unidades) - Number(b.stock_minimo)); });
+    if (bajoMin.length) {
+        var nombres = bajoMin.slice(0, 3).map(function(i){ return escHtml(i.producto) + ' (' + Number(i.unidades) + '/' + Number(i.stock_minimo) + ')'; }).join(', ');
+        var irRepo = document.getElementById('nav-compras') && getComputedStyle(document.getElementById('nav-compras')).display !== 'none'
+            ? "showPage('compras',document.getElementById('nav-compras'))" : "showPage('inventario',document.getElementById('nav-inventario'))";
+        alertas.push({ color:'#EF4444', bg:'var(--danger-bg)', txt: bajoMin.length + ' producto(s) en o bajo su stock mínimo: ' + nombres + (bajoMin.length > 3 ? '…' : ''), btn: 'Reponer', action: irRepo });
+    }
+    var badgeT = document.getElementById('navTareasBadge');
+    var nTareas = badgeT && badgeT.style.display !== 'none' ? parseInt(badgeT.textContent, 10) || 0 : 0;
+    if (nTareas) {
+        alertas.push({ color:'#3B6EF5', bg:'var(--accent-bg)', txt: nTareas + ' tarea(s) tuyas para hoy o vencidas', btn: 'Ver tareas', action: "showPage('tareas',document.getElementById('nav-tareas'))" });
+    }
     var criticos = inv.filter(function(i){ return i.estado==='Crítico'; });
     if (criticos.length) {
         alertas.push({ color:'#EF4444', bg:'var(--danger-bg)', txt: criticos.length + ' producto(s) con stock crítico', btn: 'Ver inventario', action: "showPage('inventario',document.getElementById('nav-inventario'))" });
@@ -222,7 +236,7 @@ function renderOvAlertas() {
         el.innerHTML = '<div class="ov-alert" style="background:var(--success-bg)"><div class="ov-alert-dot" style="background:#22C55E"></div><div class="ov-alert-txt" style="color:#1a8a3a">✅ Todo en orden, sin alertas activas.</div></div>';
         return;
     }
-    el.innerHTML = alertas.slice(0,4).map(function(a){
+    el.innerHTML = alertas.slice(0,5).map(function(a){
         return '<div class="ov-alert" style="background:'+a.bg+'">' +
             '<div class="ov-alert-dot" style="background:'+a.color+'"></div>' +
             '<div class="ov-alert-txt">'+a.txt+'</div>' +

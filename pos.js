@@ -564,7 +564,10 @@ function posToggleCarritoMovil(abrir) {
 }
 
 /* ──────────────────────────────────────────────────────────────────
-   VENTAS PENDIENTES (guardadas en este navegador; no son ventas ni mueven stock)
+   VENTAS PENDIENTES — [Lote 7] guardadas en el servidor (pos_ventas_pendientes): se pueden
+   retomar desde cualquier equipo de la empresa. No son ventas: no mueven stock ni dinero.
+   Al retomarla se elimina primero en el servidor (la «reclama»), así dos cajeros no cobran
+   la misma. Sin conexión se guarda en este navegador y se sube sola al volver la conexión.
 ────────────────────────────────────────────────────────────────── */
 function _posPendKey() {
     const s = _posSesion();
@@ -576,44 +579,89 @@ function _posLeerPendientes() {
 function _posGuardarPendientes(arr) {
     try { localStorage.setItem(_posPendKey(), JSON.stringify(arr)); return true; } catch (e) { showToast('No se pudo guardar la venta pendiente en este navegador', '#FF453A'); return false; }
 }
-function _posActualizarBadgePendientes() {
-    const n = _posLeerPendientes().length;
+/** Promesa con la respuesta de window.api (nunca rechaza). */
+function _posApi(nombre, arg) {
+    return new Promise(resolve => {
+        try {
+            window.api.withSuccessHandler(r => resolve(r || { ok: false, error: 'Sin respuesta del servidor.' }))
+                .withFailureHandler(e => resolve({ ok: false, error: (e && e.message) || String(e), incierto: true }))[nombre](arg);
+        } catch (e) { resolve({ ok: false, error: e.message, incierto: true }); }
+    });
+}
+let _posPendServidor = [];      // última lista leída del servidor
+let _posPendSubiendo = false;
+/** Sube al servidor las pendientes que quedaron solo en este navegador (versiones anteriores o sin conexión). */
+async function _posSubirPendientesLocales() {
+    if (_posPendSubiendo) return;
+    const locales = _posLeerPendientes(); if (!locales.length) return;
+    _posPendSubiendo = true;
+    const quedan = [];
+    for (const p of locales) {
+        const r = await _posApi('posPendienteGuardar', { nota: p.nota, datos: p, sucursalId: _posSesion().sucursal_id || null });
+        if (!r.ok) quedan.push(p);
+    }
+    _posGuardarPendientes(quedan);
+    _posPendSubiendo = false;
+}
+async function _posActualizarBadgePendientes() {
+    await _posSubirPendientesLocales();
+    const r = await _posApi('posPendientes');
+    if (r.ok) _posPendServidor = r.data || [];
+    const n = (r.ok ? _posPendServidor.length : 0) + _posLeerPendientes().length;
     const b = _posEl('posPendBadge');
     if (b) { b.textContent = n; b.style.display = n ? '' : 'none'; }
 }
-function posGuardarPendiente() {
+async function posGuardarPendiente() {
     if (!_posCarrito.length) { showToast('No hay productos en la orden', '#FF9F0A'); return; }
     const nota = (prompt('Nombre o nota para identificar esta venta pendiente (opcional):', (_posClienteSel && _posClienteSel.id) ? _posClienteSel.nombre : '') || '').trim();
-    const arr = _posLeerPendientes();
-    arr.push({
+    const pend = {
         id: _pq().nuevaClave(), ts: Date.now(), nota: nota,
         cliente: _posClienteSel, lista: _posListaPrecioActual, descPct: _posPct(),
         items: _posCarrito.map(i => ({ id: i.id, cantidad: i.cantidad, precioUnit: i.precioUnit, precioManual: !!i.precioManual, producto: i.producto }))
-    });
-    if (!_posGuardarPendientes(arr)) return;
+    };
+    const r = await _posApi('posPendienteGuardar', { nota: nota, datos: pend, sucursalId: _posSesion().sucursal_id || null });
+    if (!r.ok) {
+        if (!r.incierto && !/fetch|network|conexi/i.test(String(r.error))) { showToast('No se pudo guardar la venta pendiente: ' + r.error, '#FF453A'); return; }
+        const arr = _posLeerPendientes(); arr.push(pend);            // sin conexión: queda en este navegador
+        if (!_posGuardarPendientes(arr)) return;
+        showToast('Sin conexión: la venta pendiente quedó en este equipo y se subirá al reconectar', '#FF9F0A');
+    } else showToast('Venta guardada como pendiente ✓ (disponible en todos los equipos)', '#30D158');
     _posCarrito = []; _posSelLinea = null; _posIntento = null;
     const d = _posEl('posDescuentoPct'); if (d) d.value = 0;
     renderPosCarrito(); renderPosCatalogo(); _posActualizarBadgePendientes();
-    showToast('Venta guardada como pendiente ✓', '#30D158');
 }
-function posAbrirPendientes() {
-    const arr = _posLeerPendientes();
-    const filas = arr.length ? arr.map(p => {
-        const tot = (p.items || []).reduce((s, i) => s + Number(i.cantidad) * Number(i.precioUnit), 0);
+async function posAbrirPendientes() {
+    posDlg('Ventas pendientes', '<div class="pos-empty">Cargando…</div>');
+    await _posActualizarBadgePendientes();
+    const yo = _posSesion().usuario || _posSesion().nombre || '';
+    const lista = _posPendServidor.map(x => ({ id: x.id, srv: true, usuario: x.usuario, nota: x.nota || (x.datos && x.datos.nota), ts: x.created_at, items: (x.datos && x.datos.items) || [] }))
+        .concat(_posLeerPendientes().map(x => ({ id: x.id, srv: false, usuario: yo, nota: x.nota, ts: x.ts, items: x.items || [] })));
+    const filas = lista.length ? lista.map(p => {
+        const tot = p.items.reduce((s, i) => s + Number(i.cantidad) * Number(i.precioUnit), 0);
         return `<div class="pos-hist-row">
-            <div><b>${escHtml(p.nota || 'Sin nombre')}</b><div class="pos-muted">${new Date(p.ts).toLocaleString('es-GT')} · ${(p.items || []).length} línea(s) · ~${fQ(tot)}</div></div>
+            <div><b>${escHtml(p.nota || 'Sin nombre')}</b><div class="pos-muted">${new Date(p.ts).toLocaleString('es-GT')} · ${p.items.length} línea(s) · ~${fQ(tot)}${p.usuario && p.usuario !== yo ? ' · guardada por ' + escHtml(p.usuario) : ''}${p.srv ? '' : ' · <b>solo en este equipo</b>'}</div></div>
             <div class="pos-row-actions">
-                <button type="button" class="pos-btn primary" onclick="posRetomarPendiente('${escAttr(p.id)}')">Retomar</button>
-                <button type="button" class="pos-btn danger-o" onclick="posEliminarPendiente('${escAttr(p.id)}')">Descartar</button>
+                <button type="button" class="pos-btn primary" onclick="posRetomarPendiente('${escAttr(p.id)}', ${p.srv})">Retomar</button>
+                <button type="button" class="pos-btn danger-o" onclick="posEliminarPendiente('${escAttr(p.id)}', ${p.srv})">Descartar</button>
             </div></div>`;
     }).join('') : '<div class="pos-empty">No hay ventas pendientes.</div>';
-    posDlg('Ventas pendientes', `<div class="pos-muted" style="margin-bottom:8px">Se guardan solo en este navegador. Los precios y existencias se vuelven a validar al retomarlas.</div>${filas}`);
+    posDlg('Ventas pendientes', `<div class="pos-muted" style="margin-bottom:8px">Se comparten entre los equipos de la empresa. Los precios y existencias se vuelven a validar al retomarlas.</div>${filas}`);
 }
-function posRetomarPendiente(id) {
+async function posRetomarPendiente(id, srv) {
     if (_posCarrito.length && !confirm('La orden actual se reemplazará. ¿Continuar?')) return;
-    const arr = _posLeerPendientes();
-    const p = arr.find(x => x.id === id);
-    if (!p) return;
+    let p;
+    if (srv) {
+        const fila = _posPendServidor.find(x => x.id === id);
+        if (!fila) { showToast('Esa venta pendiente ya no está disponible', '#FF9F0A'); posAbrirPendientes(); return; }
+        const r = await _posApi('posPendienteEliminar', { id: id });       // reclamarla antes de cargarla
+        if (!r.ok) { showToast(r.error, r.yaTomada ? '#FF9F0A' : '#FF453A'); posAbrirPendientes(); return; }
+        p = fila.datos || {};
+    } else {
+        const arr = _posLeerPendientes();
+        p = arr.find(x => x.id === id);
+        if (!p) return;
+        _posGuardarPendientes(arr.filter(x => x.id !== id));
+    }
     _posCarrito = []; let omitidos = 0;
     (p.items || []).forEach(i => {
         const prod = _posProductos.find(x => String(x.id) === String(i.id));
@@ -634,16 +682,17 @@ function posRetomarPendiente(id) {
     _posListaPrecioActual = p.lista || 'Publico';
     document.querySelectorAll('.pos-lp-btn').forEach(b => b.classList.toggle('active', b.dataset.lp === _posListaPrecioActual));
     const d = _posEl('posDescuentoPct'); if (d) d.value = _posPerm.descuento ? (p.descPct || 0) : 0;
-    _posGuardarPendientes(arr.filter(x => x.id !== id));
     _posIntento = null;
     posDlgCerrar();
     renderPosCarrito(); renderPosCatalogo(); _posActualizarBadgePendientes();
     if (omitidos) showToast(omitidos + ' línea(s) se omitieron o ajustaron por existencia/catálogo', '#FF9F0A');
 }
-function posEliminarPendiente(id) {
+async function posEliminarPendiente(id, srv) {
     if (!confirm('¿Descartar esta venta pendiente?')) return;
-    _posGuardarPendientes(_posLeerPendientes().filter(x => x.id !== id));
-    _posActualizarBadgePendientes();
+    if (srv) {
+        const r = await _posApi('posPendienteEliminar', { id: id });
+        if (!r.ok && !r.yaTomada) { showToast(r.error, '#FF453A'); return; }
+    } else _posGuardarPendientes(_posLeerPendientes().filter(x => x.id !== id));
     posAbrirPendientes();
 }
 

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   negocio.js — Reportes, Compras e inventario, Seguimiento y Auditoría · Azyvion CRM (Lote 6)
+   negocio.js — Reportes (incl. metas), Compras e inventario, Seguimiento y Auditoría (POS y CRM) · Azyvion CRM (Lotes 6–7)
    Páginas dinámicas (#page-reportes, #page-compras, #page-seguimiento, #page-auditoria).
    Toda la lógica y los permisos viven en el servidor (20261023_08_negocio.sql); aquí solo se
    capturan datos y se muestran resultados reales. Usa los diálogos de pos.js (posDlg).
@@ -92,7 +92,7 @@
                 <button type="button" class="pos-btn" onclick="Negocio.repImprimir()">Imprimir / PDF</button>
             </div>
             <div class="pos-tabs" role="tablist">
-                ${[['ventas', 'Ventas'], ['cierres', 'Cierres de caja'], ['comisiones', 'Comisiones']].map(t => `<button type="button" class="pos-tab ${REP.tab === t[0] ? 'active' : ''}" onclick="Negocio.repTab('${t[0]}')">${t[1]}</button>`).join('')}
+                ${[['ventas', 'Ventas'], ['cierres', 'Cierres de caja'], ['comisiones', 'Comisiones'], ['metas', 'Metas']].map(t => `<button type="button" class="pos-tab ${REP.tab === t[0] ? 'active' : ''}" onclick="Negocio.repTab('${t[0]}')">${t[1]}</button>`).join('')}
             </div>
             <div id="repBody">${loading()}</div></div>`;
         sucursalesSelect('repSuc', REP.sucursal);
@@ -105,6 +105,11 @@
         const body = $('repBody'); if (!body) return;
         body.innerHTML = loading('Calculando…');
         const arg = { desde: REP.desde, hasta: REP.hasta, sucursal: REP.sucursal };
+        if (REP.tab === 'metas') {
+            const rm = await call('crmMetasProgreso', { periodo: REP.desde.slice(0, 7) + '-01' });
+            if (!rm.ok) { body.innerHTML = errBox(rm); return; }
+            REP.data = rm; body.innerHTML = vistaMetas(rm); return;
+        }
         const r = await call(REP.tab === 'ventas' ? 'posReporteVentas' : (REP.tab === 'cierres' ? 'posReporteCierres' : 'posReporteComisiones'), arg);
         if (!r.ok) { body.innerHTML = errBox(r); return; }
         REP.data = r;
@@ -165,6 +170,43 @@
         return `<div class="neg-kpis">${kpi('Total de comisiones', Q(r.total_comisiones), '')}</div><div class="pos-muted" style="margin-bottom:8px">${E(r.nota)}</div>` +
             `<div class="neg-card">${tabla([{ t: 'Cajero / vendedor', f: x => E(x.cajero) }, { t: 'Tickets', num: 1, f: x => N(x.tickets) }, { t: 'Ventas netas', num: 1, f: x => Q(x.ventas_netas) }, { t: 'Base sin IVA', num: 1, f: x => Q(x.base) },
                 { t: '%', num: 1, f: x => N(x.pct, 2) }, { t: 'Comisión', num: 1, f: x => `<b>${Q(x.comision)}</b>` }], r.filas || [], 'Sin ventas en el período.')}</div>`;
+    }
+    /** Avance contra la meta: barra + «real / meta». Sin meta asignada muestra solo el real. */
+    function avance(real, meta, fmt) {
+        real = Number(real || 0); meta = Number(meta || 0);
+        if (!meta) return `${fmt(real)} <div class="pos-muted">sin meta</div>`;
+        const pct = real / meta * 100;
+        return `<div><b>${fmt(real)}</b> / ${fmt(meta)} · <b>${N(pct, 0)}%</b></div><div class="prod-barra ${pct >= 100 ? 'ok' : ''}" role="progressbar" aria-valuenow="${Math.round(pct)}" aria-valuemin="0" aria-valuemax="100"><span style="width:${Math.min(pct, 100)}%"></span></div>`;
+    }
+    function vistaMetas(r) {
+        const filas = r.filas || [];
+        REP.tabla = filas.map(x => ({ Usuario: x.usuario, Nombre: x.nombre, MetaVentas: x.meta_ventas, VentasSinIVA: x.ventas, MetaCotizaciones: x.meta_cotizaciones, CotizacionesAprobadas: x.cotizaciones, MetaActividades: x.meta_actividades, Actividades: x.actividades }));
+        REP.metas = filas;
+        const mes = new Date(r.periodo + 'T12:00:00').toLocaleDateString('es-GT', { month: 'long', year: 'numeric' });
+        const conMeta = filas.filter(x => Number(x.meta_ventas) > 0);
+        const cumplen = conMeta.filter(x => Number(x.ventas) >= Number(x.meta_ventas)).length;
+        return `<div class="neg-kpis">${kpi('Período', E(mes), 'Según la fecha «desde»')}${kpi('Vendedores con meta', N(conMeta.length), '')}${kpi('Cumplen meta de ventas', N(cumplen), conMeta.length ? N(cumplen / conMeta.length * 100, 0) + '%' : '')}</div>
+            <div class="pos-muted" style="margin-bottom:8px">Ventas = ventas del POS netas de devoluciones y sin IVA, como cajero. Cotizaciones = total de cotizaciones <b>Aprobadas</b> creadas por el usuario con fecha en el mes. Actividades = llamadas, visitas, notas de seguimiento, etc. registradas en el mes.${r.todos ? '' : ' Usted ve solo su propio avance.'}</div>
+            <div class="neg-card">${tabla([{ t: 'Vendedor', f: x => E(x.nombre || x.usuario) + `<div class="pos-muted">${E(x.usuario)}</div>` },
+                { t: 'Ventas', f: x => avance(x.ventas, x.meta_ventas, Q) }, { t: 'Cotizaciones aprobadas', f: x => avance(x.cotizaciones, x.meta_cotizaciones, Q) },
+                { t: 'Actividades', f: x => avance(x.actividades, x.meta_actividades, v => N(v)) },
+                { t: '', f: x => r.puedeEditar ? `<button type="button" class="pos-btn sm" onclick="Negocio.metaForm('${A(x.usuario)}')">Asignar meta</button>` : '' }], filas, 'No hay usuarios activos.')}</div>`;
+    }
+    function metaForm(usuario) {
+        const x = (REP.metas || []).find(m => m.usuario === usuario); if (!x) return;
+        const per = REP.data && REP.data.periodo;
+        const f = (k, l, v) => `<div class="form-field"><label class="pos-lbl" for="mt_${k}">${l}</label><input class="pos-in" id="mt_${k}" type="number" min="0" step="any" value="${A(v)}" /></div>`;
+        posDlg('Meta de ' + (x.nombre || x.usuario), `<div class="pos-muted" style="margin-bottom:8px">Mes: ${E(new Date(per + 'T12:00:00').toLocaleDateString('es-GT', { month: 'long', year: 'numeric' }))}. Use 0 para no medir un indicador.</div>
+            <div class="pos-grid2">${f('v', 'Ventas sin IVA (Q)', x.meta_ventas)}${f('c', 'Cotizaciones aprobadas (Q)', x.meta_cotizaciones)}${f('a', 'Actividades (cantidad)', x.meta_actividades)}</div>
+            <div id="mtMsg" class="pos-alert" style="display:none"></div>
+            <div class="pos-cobro-foot"><button type="button" class="pos-btn" onclick="posDlgCerrar()">Cancelar</button><button type="button" class="pos-btn ok big" id="mtOk" onclick="Negocio.metaGuardar('${A(usuario)}')">Guardar</button></div>`);
+    }
+    async function metaGuardar(usuario) {
+        const b = $('mtOk'); if (b.disabled) return; b.disabled = true;
+        const v = k => ($('mt_' + k) || {}).value;
+        const r = await call('crmMetaGuardar', { usuario: usuario, periodo: REP.data && REP.data.periodo, meta_ventas: v('v') || 0, meta_cotizaciones: v('c') || 0, meta_actividades: v('a') || 0 });
+        if (!r.ok) { _posMsg('mtMsg', r.error); b.disabled = false; return; }
+        posDlgCerrar(); showToast('Meta guardada ✓', '#30D158'); repCargar();
     }
     function repCsv() {
         if (!REP.tabla.length) { showToast('No hay datos para exportar en esta vista', '#FF9F0A'); return; }
@@ -579,25 +621,57 @@
     function ctCsv() { const f = ctEnlaces().map(x => ({ Prospecto: x.p.nombre, Empresa: x.p.empresa || '', Telefono: x.p.telefono || '', Etapa: x.p.etapa || '', Enlace_WhatsApp: x.l })); if (f.length) descargarCSV(f, 'prospectos_whatsapp'); else showToast('No hay enlaces para exportar', '#FF9F0A'); }
 
     /* ═════════════════════ AUDITORÍA ═════════════════════ */
-    const AUD = { data: [] };
+    const AUD = { data: [], tab: 'pos' };
+    const TABLAS_AUD = [['Clientes', 'Clientes'], ['Prospectos', 'Prospectos'], ['Cotizaciones', 'Cotizaciones'], ['Inventario', 'Productos'], ['Usuarios', 'Usuarios'], ['Transacciones', 'Transacciones contables'], ['crm_plantillas', 'Plantillas'], ['crm_metas', 'Metas']];
+    function audTab(t) { AUD.tab = t; renderAuditoria(); }
     function renderAuditoria() {
         const page = $('page-auditoria'); if (!page) return;
         const h = new Date();
-        page.innerHTML = `<div class="neg-wrap"><div class="neg-head"><h2>Auditoría del Punto de Venta</h2><div class="pos-muted">Quién hizo qué: ventas, devoluciones, anulaciones, cajas, compras y ajustes de inventario. Solo administradores.</div></div>
+        const tabs = `<div class="pos-tabs" role="tablist">${[['pos', 'Punto de venta'], ['crm', 'Cambios en el CRM']].map(t => `<button type="button" role="tab" class="pos-tab ${AUD.tab === t[0] ? 'active' : ''}" onclick="Negocio.audTab('${t[0]}')">${t[1]}</button>`).join('')}</div>`;
+        if (AUD.tab === 'crm') {
+            page.innerHTML = `<div class="neg-wrap"><div class="neg-head"><h2>Auditoría</h2><div class="pos-muted">Altas, cambios y eliminaciones de clientes, prospectos, cotizaciones, productos, usuarios y transacciones: quién, cuándo y qué cambió (antes → después). Las existencias tienen su propio kardex. Nunca se registran contraseñas. Solo administradores.</div></div>${tabs}
+                <div class="neg-filtros"><input class="pos-in sm2" type="date" id="auDesde" value="${ymd(sumDias(h, -7))}" aria-label="Desde" /><input class="pos-in sm2" type="date" id="auHasta" value="${ymd(h)}" aria-label="Hasta" />
+                <select class="pos-in sm2" id="auTabla" aria-label="Módulo"><option value="">Todos los módulos</option>${TABLAS_AUD.map(t => `<option value="${A(t[0])}">${t[1]}</option>`).join('')}</select>
+                <input class="pos-in sm2" id="auTexto" placeholder="Usuario, ID o texto" aria-label="Buscar" />
+                <button type="button" class="pos-btn primary" onclick="Negocio.audCargar()">Buscar</button><button type="button" class="pos-btn" onclick="Negocio.audCsv()">Exportar CSV</button></div><div id="auBody">${loading()}</div></div>`;
+            audCargar(); return;
+        }
+        page.innerHTML = `<div class="neg-wrap"><div class="neg-head"><h2>Auditoría</h2><div class="pos-muted">Quién hizo qué: ventas, devoluciones, anulaciones, cajas, compras y ajustes de inventario. Solo administradores.</div></div>${tabs}
             <div class="neg-filtros"><input class="pos-in sm2" type="date" id="auDesde" value="${ymd(sumDias(h, -7))}" /><input class="pos-in sm2" type="date" id="auHasta" value="${ymd(h)}" />
             <select class="pos-in sm2" id="auAccion"><option value="">Todas las acciones</option>${[['venta.', 'Ventas'], ['venta.anular', 'Anulaciones'], ['venta.devolver', 'Devoluciones'], ['venta.reimprimir', 'Reimpresiones'], ['caja.', 'Cajas'], ['compra.', 'Compras'], ['inventario.', 'Ajustes de inventario'], ['conteo.', 'Conteos'], ['proveedor.', 'Proveedores']].map(a => `<option value="${A(a[0])}">${a[1]}</option>`).join('')}</select>
             <button type="button" class="pos-btn primary" onclick="Negocio.audCargar()">Buscar</button><button type="button" class="pos-btn" onclick="Negocio.audCsv()">Exportar CSV</button></div><div id="auBody">${loading()}</div></div>`;
         audCargar();
     }
+    const NOMBRE_TABLA = Object.fromEntries(TABLAS_AUD);
+    const ACCION_AUD = { INSERT: 'Alta', UPDATE: 'Cambio', DELETE: 'Eliminación' };
+    const valAud = v => v === null || v === undefined || v === '' ? '∅' : (typeof v === 'object' ? JSON.stringify(v) : String(v));
+    function resumenCambios(a) {
+        const c = a.cambios || {};
+        if (a.accion === 'UPDATE') return Object.keys(c).map(k => `<div><b>${E(k)}</b>: <span class="pos-muted">${E(valAud(c[k].antes).slice(0, 80))}</span> → ${E(valAud(c[k].despues).slice(0, 80))}</div>`).join('');
+        const nombre = c.nombre || c.producto || c.numero || c.concepto || c.usuario || '';
+        return `<span class="pos-muted">${E(String(nombre).slice(0, 120))}</span>`;
+    }
     async function audCargar() {
         const b = $('auBody'); b.innerHTML = loading();
+        if (AUD.tab === 'crm') {
+            const rc = await call('crmListarAuditoria', { desde: ($('auDesde') || {}).value, hasta: ($('auHasta') || {}).value, tabla: ($('auTabla') || {}).value, texto: ($('auTexto') || {}).value.trim(), limite: 500 });
+            if (!rc.ok) { b.innerHTML = errBox(rc); return; }
+            AUD.data = rc.filas || [];
+            b.innerHTML = tabla([{ t: 'Fecha', f: a => fechaHora(a.fecha) }, { t: 'Usuario', f: a => E(a.usuario || '') }, { t: 'Acción', f: a => `<b>${E(ACCION_AUD[a.accion] || a.accion)}</b>` },
+                { t: 'Módulo', f: a => E(NOMBRE_TABLA[a.tabla] || a.tabla) }, { t: 'Detalle', f: resumenCambios }], AUD.data, 'Sin cambios registrados en el período.');
+            return;
+        }
         const r = await call('posListarAuditoria', { desde: ($('auDesde') || {}).value, hasta: ($('auHasta') || {}).value, accion: ($('auAccion') || {}).value, limite: 500 });
         if (!r.ok) { b.innerHTML = errBox(r); return; }
         AUD.data = r.filas || [];
         b.innerHTML = tabla([{ t: 'Fecha', f: a => fechaHora(a.fecha) }, { t: 'Usuario', f: a => E(a.usuario || '') }, { t: 'Acción', f: a => `<b>${E(a.accion)}</b>` }, { t: 'Entidad', f: a => E(a.entidad) },
             { t: 'Detalle', f: a => `<span class="pos-muted">${E(JSON.stringify(a.detalle || {}).slice(0, 220))}</span>` }], AUD.data, 'Sin registros en el período.');
     }
-    function audCsv() { if (AUD.data.length) descargarCSV(AUD.data.map(a => ({ Fecha: a.fecha, Usuario: a.usuario, Accion: a.accion, Entidad: a.entidad, Id: a.entidad_id, Detalle: JSON.stringify(a.detalle || {}) })), 'auditoria_pos'); }
+    function audCsv() {
+        if (!AUD.data.length) return;
+        if (AUD.tab === 'crm') { descargarCSV(AUD.data.map(a => ({ Fecha: a.fecha, Usuario: a.usuario, Accion: ACCION_AUD[a.accion] || a.accion, Modulo: NOMBRE_TABLA[a.tabla] || a.tabla, Id: a.registro_id, Cambios: JSON.stringify(a.cambios || {}) })), 'auditoria_crm'); return; }
+        descargarCSV(AUD.data.map(a => ({ Fecha: a.fecha, Usuario: a.usuario, Accion: a.accion, Entidad: a.entidad, Id: a.entidad_id, Detalle: JSON.stringify(a.detalle || {}) })), 'auditoria_pos');
+    }
 
     /* ── Enganche con showPage ────────────────────────────────────── */
     const PAGES = { reportes: renderReportes, compras: renderCompras, seguimiento: renderSeguimiento, auditoria: renderAuditoria, contactar: renderContactar };
@@ -616,6 +690,6 @@
         provForm: provForm, provGuardar: provGuardar, repCsv2: repCsv2, repCompra: repCompra,
         conteoNuevo: conteoNuevo, conteoCrear: conteoCrear, conteoAbrir: conteoAbrir, conteoCalc: conteoCalc, conteoFiltrar: conteoFiltrar, conteoGuardar: conteoGuardar, conteoAplicar: conteoAplicar,
         kardexVer: kardexVer, ajusteForm: ajusteForm, ajusteOk: ajusteOk, etFiltrar: etFiltrar, etImprimir: etImprimir,
-        ctFiltrar: ctFiltrar, ctGuardarMsg: ctGuardarMsg, ctMarcar: ctMarcar, ctCopiar: ctCopiar, ctCsv: ctCsv, segCargar: segCargar, segCsv: segCsv, audCargar: audCargar, audCsv: audCsv, telWa: telWa, waLink: waLink, aplicar: aplicar
+        ctFiltrar: ctFiltrar, ctGuardarMsg: ctGuardarMsg, ctMarcar: ctMarcar, ctCopiar: ctCopiar, ctCsv: ctCsv, segCargar: segCargar, segCsv: segCsv, audCargar: audCargar, audCsv: audCsv, audTab: audTab, metaForm: metaForm, metaGuardar: metaGuardar, telWa: telWa, waLink: waLink, aplicar: aplicar
     };
 })(window);

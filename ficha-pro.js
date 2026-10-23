@@ -326,6 +326,12 @@
             ${puede ? `<button class="btn-ghost" onclick="fichaNuevaActividad()">
                 ${_icon('clock')} Registrar actividad
             </button>` : ''}
+            ${window.Prod ? `<button class="btn-ghost" onclick="_fichaProTarea()">
+                ${_icon('clock')} Nueva tarea
+            </button>
+            <button class="btn-ghost" onclick="_fichaProMensaje()">
+                ${_icon('user')} Enviar mensaje
+            </button>` : ''}
             ${!esProsp && puede ? `<button class="btn-ghost" onclick="_fichaProNuevaCotizacion()">
                 ${_icon('file')} Nueva cotización
             </button>` : ''}
@@ -590,12 +596,41 @@
                     <span class="tag tag-gray" style="font-size:10.5px">${escHtml(a.categoria)}</span>
                 </div>
                 ${a.descripcion ? `<div class="cell-sub" style="margin-top:3px;white-space:pre-line">${escHtml(a.descripcion)}</div>` : ''}
-                <div class="cell-sub" style="margin-top:3px">${escHtml(a.fecha || '')}${a.usuario ? ' · ' + escHtml(a.usuario) : ''}${a.fechaSeguimiento ? ` · <span style="color:var(--accent)">Seguimiento: ${escHtml(a.fechaSeguimiento)}</span>` : ''}</div>
+                <div class="cell-sub" style="margin-top:3px">${escHtml(a.fecha || '')}${a.usuario ? ' · ' + escHtml(a.usuario) : ''}${a.fechaSeguimiento ? (a.completada
+                    ? ` · <span style="color:var(--success,#30D158)">✓ Hecha${a.completada_por ? ' por ' + escHtml(a.completada_por) : ''}</span>`
+                    : ` · <span style="color:var(--accent)">Seguimiento: ${escHtml(a.fechaSeguimiento)}${a.hora_seguimiento ? ' ' + escHtml(String(a.hora_seguimiento).slice(0, 5)) : ''}${a.responsable && a.responsable !== a.usuario ? ' · ' + escHtml(a.responsable) : ''}</span>`) : ''}</div>
             </div>
+            ${a.fechaSeguimiento && window.Prod ? `<label class="cell-sub" style="display:flex;align-items:center;gap:4px;white-space:nowrap;cursor:pointer"><input type="checkbox" ${a.completada ? 'checked' : ''} onchange="_fichaProCompletar('${escAttr(a.id)}', this.checked)" /> Hecha</label>` : ''}
             ${(a.origen === 'ficha' && puede)
                 ? `<button class="btn-danger-sm" onclick="fichaEliminarActividad('${a.id}')">Eliminar</button>` : ''}
         </div>`;
     }
+
+    /* ── [Lote 7] Tareas y mensajes desde la ficha ───────────── */
+    function _fichaRef() {
+        const f = window._ficha; if (!f || !f.entidad) return null;
+        const e = f.entidad;
+        return { tipo: f.tipo, refId: e.id, nombre: e.nombre, empresa: e.empresa || '', telefono: e.telefono || '', correo: e.correo || '' };
+    }
+    window._fichaProTarea = function () { const r = _fichaRef(); if (r && window.Prod) Prod.tareaForm(null, null, r); };
+    window._fichaProMensaje = function () {
+        const r = _fichaRef(); if (!r || !window.Prod) return;
+        // Si el registro no tiene teléfono/correo, usar el del primer contacto que lo tenga.
+        const cs = (window._ficha.contactos || []);
+        if (!r.telefono) { const c = cs.find(x => x.telefono); if (c) r.telefono = c.telefono; }
+        if (!r.correo) { const c = cs.find(x => x.correo); if (c) r.correo = c.correo; }
+        Prod.mensaje(r);
+    };
+    window._fichaProCompletar = function (id, valor) {
+        window.api.withSuccessHandler(r => {
+            if (!r || !r.ok) { showToast((r && r.error) || 'No se pudo actualizar la tarea', '#FF453A'); return; }
+            const a = ((window._ficha || {}).actividades || []).find(x => x.id === id);
+            if (a) { a.completada = !!valor; a.completada_por = valor ? 'usted' : null; }
+            showToast(valor ? 'Tarea completada ✓' : 'Tarea reabierta', '#30D158');
+            if (typeof window.renderFichaBody === 'function') window.renderFichaBody();
+            if (window.Prod) Prod.revisarRecordatorios();
+        }).withFailureHandler(e => showToast(e.message || 'Error', '#FF453A')).updateTarea({ id: id, completada: !!valor });
+    };
 
     /* ── Tab: Cotizaciones ───────────────────────────────────── */
     function _fichaCotizacionesPro() {
