@@ -160,6 +160,11 @@ html[data-theme] button:focus:not(:focus-visible) { outline: none; }
 
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    /* Los indicadores de carga son esenciales (dicen que la app está trabajando): se mantienen.
+       Su selector es más específico que «*», así que ganan aunque ambos sean !important. */
+    .az-splash-bar { animation-duration: 1.6s, 2.4s !important; }
+    .pos-spin, #logoutConfirmBtn svg { animation-duration: 1.2s !important; }
+    .az-skeleton, .az-skel, .skeleton-row td { animation-duration: 1.6s !important; }
 }
 
 /* ── 4. Navegación lateral ──────────────────────────────────────────── */
