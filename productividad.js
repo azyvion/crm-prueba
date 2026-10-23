@@ -155,10 +155,11 @@
                 ${lst.slice(0, 3).map(t => `<div class="prod-ev ${t.completada ? 'hecha' : ''} ${!t.completada && k < TAR.hoy ? 'vencida' : ''}" onclick="event.stopPropagation();Prod.tareaForm('${A(t.id)}')" title="${A(t.titulo)}">${t.hora ? hora(t.hora) + ' ' : ''}${E(t.titulo)}</div>`).join('')}
                 ${lst.length > 3 ? `<div class="pos-muted" style="font-size:11px">+${lst.length - 3} más</div>` : ''}</div>`;
         }
-        const titulo = m.toLocaleDateString('es-GT', { month: 'long', year: 'numeric' });
+        const t0 = m.toLocaleDateString('es-GT', { month: 'long', year: 'numeric' });
+        const titulo = t0.charAt(0).toUpperCase() + t0.slice(1);     // «Octubre de 2026» (no «Octubre De»)
         return `<div class="neg-card"><div class="prod-cal-head">
                 <button type="button" class="pos-btn sm" onclick="Prod.calMover(-1)" aria-label="Mes anterior">‹</button>
-                <b style="text-transform:capitalize">${E(titulo)}</b>
+                <b>${E(titulo)}</b>
                 <button type="button" class="pos-btn sm" onclick="Prod.calMover(1)" aria-label="Mes siguiente">›</button>
                 <button type="button" class="pos-btn sm" onclick="Prod.calMover(0)">Hoy</button></div>
             <div class="prod-cal">${['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(d => `<div class="prod-cal-dow">${d}</div>`).join('')}${celdas}</div>

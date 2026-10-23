@@ -125,7 +125,50 @@
         getCierresCaja: () => ({ ok: true, data: [] }),
         posReabrirCaja: () => ({ ok: true }),
         consultarNitSat: () => ({ ok: false }),
-        enviarTicketCorreo: () => ({ ok: true, mensaje: 'Enviado' })
+        enviarTicketCorreo: () => ({ ok: true, mensaje: 'Enviado' }),
+
+        /* ── Lote 7: productividad (en memoria; las reglas reales están en tests/rls/productividad.sql) ── */
+        getUsuarios: () => ({ ok: true, data: [{ usuario: 'admin', nombre: 'Admin Demo', activo: true }, { usuario: 'vend1', nombre: 'Vendedor Uno', activo: true }] }),
+        crmTareas: p => {
+            const hoy = M.hoy || new Date().toISOString().slice(0, 10);
+            const t = (M.tareas || []).filter(x => (p.completadas || !x.completada) && (!p.desde || x.fechaSeguimiento >= p.desde) && (!p.hasta || x.fechaSeguimiento <= p.hasta) && (p.soloMias === false || x.responsable === 'admin'));
+            return { ok: true, usuario: 'admin', hoy: hoy, filas: t };
+        },
+        addTarea: p => {
+            if (!String(p.titulo || '').trim()) return { ok: false, error: 'Escriba qué hay que hacer.' };
+            const t = Object.assign({ id: 't' + Date.now(), completada: false, responsable: p.responsable || 'admin', usuario: 'admin', refNombre: p.refId ? 'Ana López' : null, hora: p.hora || null }, p);
+            (M.tareas = M.tareas || []).push(t); return { ok: true, id: t.id };
+        },
+        updateTarea: p => {
+            const t = (M.tareas || []).find(x => x.id === p.id); if (!t) return { ok: false, error: 'La tarea no existe o no tiene permiso para modificarla.' };
+            Object.keys(p).forEach(k => { if (k !== 'id') t[k] = p[k]; }); if (p.completada) t.completada_en = new Date().toISOString();
+            return { ok: true };
+        },
+        getPlantillas: () => ({ ok: true, data: M.plantillas || [] }),
+        savePlantilla: p => {
+            if (!M.privilegiado) return { ok: false, error: 'Solo un administrador o gerente puede editar plantillas.' };
+            M.plantillas = M.plantillas || [];
+            if (p.id) Object.assign(M.plantillas.find(x => x.id === p.id), p); else M.plantillas.push(Object.assign({}, p, { id: 'pl' + (M.plantillas.length + 1) }));
+            return { ok: true };
+        },
+        deletePlantilla: p => { M.plantillas = (M.plantillas || []).filter(x => x.id !== p.id); return { ok: true }; },
+        registrarMensaje: p => { (M.mensajes = M.mensajes || []).push(p); return { ok: true }; },
+        crmImportar: p => {
+            M.importaciones = (M.importaciones || []).concat([{ tipo: p.tipo, simular: p.simular, n: p.filas.length }]);
+            const clave = p.tipo === 'productos' ? 'producto' : 'nombre';
+            const err = []; p.filas.forEach((f, i) => { if (!f[clave]) err.push({ fila: i + 1, error: 'Falta el ' + (clave === 'nombre' ? 'nombre.' : 'nombre del producto.') }); });
+            return { ok: true, simulado: p.simular, filas: p.filas.length, nuevos: p.filas.length - err.length, actualizados: 0, omitidos: 0, errores: err.length, detalleErrores: err };
+        },
+        crmListarAuditoria: () => ({ ok: true, filas: [
+            { id: 2, fecha: '2026-10-23T15:00:00Z', tabla: 'Clientes', registro_id: 'c1', accion: 'UPDATE', usuario: 'admin', cambios: { telefono: { antes: '5555-0000', despues: '5555-9999' } } },
+            { id: 1, fecha: '2026-10-23T14:00:00Z', tabla: 'Inventario', registro_id: 'p1', accion: 'INSERT', usuario: 'vend1', cambios: { producto: 'Camisa Azul', precioUnit: 100 } }] }),
+        crmMetasProgreso: p => ({ ok: true, periodo: (p && p.periodo) || '2026-10-01', todos: true, puedeEditar: M.privilegiado, filas: (M.metas || [
+            { usuario: 'admin', nombre: 'Admin Demo', meta_ventas: 10000, meta_cotizaciones: 0, meta_actividades: 20, ventas: 12500, cotizaciones: 3000, actividades: 8 },
+            { usuario: 'vend1', nombre: 'Vendedor Uno', meta_ventas: 8000, meta_cotizaciones: 5000, meta_actividades: 0, ventas: 2000, cotizaciones: 1000, actividades: 3 }]) }),
+        crmMetaGuardar: p => { M.metaGuardada = p; return { ok: true }; },
+        posPendientes: () => ({ ok: true, data: M.pendientes || [] }),
+        posPendienteGuardar: p => { (M.pendientes = M.pendientes || []).unshift({ id: 'pd' + Date.now(), usuario: 'admin', nota: p.nota, datos: p.datos, created_at: new Date().toISOString() }); return { ok: true }; },
+        posPendienteEliminar: p => { const n = (M.pendientes || []).length; M.pendientes = (M.pendientes || []).filter(x => x.id !== p.id); return n !== M.pendientes.length ? { ok: true } : { ok: false, yaTomada: true, error: 'Esta venta pendiente ya fue retomada o descartada en otro equipo.' }; }
     };
     function api(onS, onF) {
         const runner = { withSuccessHandler: fn => api(fn, onF), withFailureHandler: fn => api(onS, fn) };

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arnés de pruebas · Productividad</title>
+<!-- Páginas del Lote 7 con servidor simulado. node tests/ui/serve.js → http://localhost:4173/tests/ui/productividad_harness.html -->
+<link rel="stylesheet" href="../../dashboard.css"><link rel="stylesheet" href="../../azyvion-enterprise.css"><link rel="stylesheet" href="../../pos.css"><link rel="stylesheet" href="../../productividad.css">
+<style>body{margin:0;padding:16px;background:var(--az-bg);font-family:Inter,system-ui,sans-serif}.page{display:block!important}#barra{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}</style>
+</head>
+<body>
+<div id="barra">
+  <button type="button" class="pos-btn" onclick="ver('tareas')">Tareas</button>
+  <button type="button" class="pos-btn" onclick="ver('plantillas')">Plantillas</button>
+  <button type="button" class="pos-btn" onclick="ver('importar')">Importar</button>
+  <button type="button" class="pos-btn" onclick="verNeg('reportes')">Reportes → Metas</button>
+  <button type="button" class="pos-btn" onclick="verNeg('auditoria')">Auditoría CRM</button>
+  <span class="nav-item" id="nav-tareas">Tareas <span class="prod-badge" id="navTareasBadge" style="display:none">0</span></span>
+</div>
+<div class="page" id="page-tareas"></div><div class="page" id="page-plantillas" style="display:none!important"></div>
+<div class="page" id="page-importar" style="display:none!important"></div><div class="page" id="page-reportes" style="display:none!important"></div>
+<div class="page" id="page-auditoria" style="display:none!important"></div>
+<div class="toast" id="toast"></div>
+<script src="../../utils.js"></script><script src="mock_api.js"></script><script src="../../pos-calc.js"></script>
+<script>
+  var _currentPage = 'x'; var EMPRESA = { nombre: 'Empresa Demo' }; function esAdmin() { return true; }
+  localStorage.setItem('azyvion_session', JSON.stringify({ usuario: 'admin', nombre: 'Admin Demo', token: 'demo', organization_id: 'org_demo' }));
+  var M = window.__mock; M.privilegiado = true; M.latency = 10;
+  var hoy = new Date(), f = function (n) { var d = new Date(hoy); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  M.hoy = f(0);
+  M.tareas = [
+    { id: 't1', tipo: 'Cliente', refId: 'c1', refNombre: 'Ana López', categoria: 'Llamada', titulo: 'Confirmar pedido de camisas', fechaSeguimiento: f(-2), prioridad: 'Alta', responsable: 'admin', usuario: 'admin', completada: false },
+    { id: 't2', tipo: 'General', refId: null, categoria: 'Tarea', titulo: 'Revisar precios de temporada', fechaSeguimiento: f(0), hora: '16:30:00', prioridad: 'Normal', responsable: 'admin', usuario: 'admin', completada: false, descripcion: 'Comparar con la competencia' },
+    { id: 't3', tipo: 'Prospecto', refId: 'pr1', refNombre: 'Luis Prueba', categoria: 'Visita', titulo: 'Visita a ferretería', fechaSeguimiento: f(3), prioridad: 'Baja', responsable: 'admin', usuario: 'admin', completada: false },
+    { id: 't4', tipo: 'General', refId: null, categoria: 'Tarea', titulo: 'Tarea de otro vendedor', fechaSeguimiento: f(1), prioridad: 'Normal', responsable: 'vend1', usuario: 'admin', completada: false },
+    { id: 't5', tipo: 'General', refId: null, categoria: 'Tarea', titulo: 'Inventario mensual', fechaSeguimiento: f(-5), prioridad: 'Normal', responsable: 'admin', usuario: 'admin', completada: true, completada_en: new Date().toISOString() }
+  ];
+  var t = new URLSearchParams(location.search).get('theme'); if (t) document.documentElement.setAttribute('data-theme', t);
+  function abrirFicha(tipo, id) { window.__fichaAbierta = tipo + ':' + id; }
+</script>
+<script src="../../pos.js"></script><script src="../../negocio.js"></script><script src="../../productividad.js"></script>
+<script>
+  function mostrar(id) { document.querySelectorAll('.page').forEach(function (p) { p.style.cssText = p.id === 'page-' + id ? '' : 'display:none!important'; }); }
+  function ver(id) { mostrar(id); Prod.onShow(id); }
+  function verNeg(id) { mostrar(id); if (id === 'reportes') { Negocio.onShow('reportes'); setTimeout(function () { Negocio.repTab('metas'); }, 150); } else { Negocio.onShow('auditoria'); setTimeout(function () { Negocio.audTab('crm'); }, 150); } }
+  ver('tareas');
+</script>
+</body>
+</html>
