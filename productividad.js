@@ -274,7 +274,7 @@
                 const txt = hora(t.hora) + ' · ' + t.titulo + (t.refNombre ? ' — ' + t.refNombre : '');
                 toast('⏰ ' + txt, AMBAR);
                 if (avisosDisponibles() && Notification.permission === 'granted') {
-                    try { new Notification('Recordatorio · Azyvion CRM', { body: txt, tag: 'azy-' + t.id, icon: 'logo-crm.png' }); } catch (e) { /* algunos móviles exigen service worker */ }
+                    try { new Notification('Recordatorio · Azyvion CRM', { body: txt, tag: 'azy-' + t.id, icon: 'logo-crm-192.png' }); } catch (e) { /* algunos móviles exigen service worker */ }
                 }
             }
         });

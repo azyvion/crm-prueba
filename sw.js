@@ -3,9 +3,9 @@
    saltándose el caché de 10 min de GitHub Pages) y caché solo como respaldo sin conexión.
    Nunca intercepta Supabase, correo ni ninguna otra API: los datos siempre van directo al servidor.
    No hace falta cambiar nada en cada publicación; subir VERSION solo limpia cachés antiguos. */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'azyvion-' + VERSION;
-const PRECACHE = ['login.html', 'logo-crm.png', 'azyvion-logo.png', 'manifest.webmanifest'];
+const PRECACHE = ['login.html', 'logo-crm-192.png', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE).catch(() => {})).then(() => self.skipWaiting()));

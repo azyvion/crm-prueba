@@ -2520,39 +2520,38 @@ body.densidad-compacta .cell-sub { margin-top: 1px; }
     margin-top: 5px;
 }
 
-/* Barra de progreso indeterminada */
+/* Barra de progreso indeterminada con los colores del logo. Solo anima transform
+   (fluida incluso con el hilo principal ocupado) y nunca queda en ancho 0. */
 .az-splash-track {
-    width: 220px;
-    height: 2px;
-    background: rgba(255,255,255,.1);
-    border-radius: 2px;
+    position: relative;
+    width: 240px;
+    height: 4px;
+    background: rgba(255,255,255,.08);
+    border-radius: 999px;
     overflow: hidden;
     animation: az-splash-in .5s .15s cubic-bezier(.34,1.4,.64,1) both;
 }
 .az-splash-bar {
+    position: absolute;
+    top: 0; left: 0;
+    width: 40%;
     height: 100%;
-    border-radius: 2px;
-    background: linear-gradient(90deg, #0A84FF, #30D158, #0A84FF);
-    background-size: 200% 100%;
-    animation: az-bar-move 1.6s ease-in-out infinite,
-               az-bar-bg   2.4s linear infinite;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #1BA3C6 0%, #4F6BED 50%, #F25FA6 100%);
+    box-shadow: 0 0 10px rgba(79,107,237,.55);
+    animation: az-bar-slide 1.4s cubic-bezier(.65,0,.35,1) infinite;
+    will-change: transform;
 }
-@keyframes az-bar-move {
-    0%   { width: 0%;   transform: translateX(0%); }
-    40%  { width: 55%;  }
-    60%  { width: 55%;  }
-    100% { width: 0%;   transform: translateX(460%); }
-}
-@keyframes az-bar-bg {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+@keyframes az-bar-slide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(250%); }
 }
 
 /* Texto de estado */
 .az-splash-status {
     margin-top: 18px;
-    font-size: 12px;
-    color: rgba(255,255,255,.3);
+    font-size: 12.5px;
+    color: rgba(255,255,255,.55);
     letter-spacing: .2px;
     height: 18px;
     transition: opacity .25s;
