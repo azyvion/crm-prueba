@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arnés de pruebas · Barra lateral</title>
+<!-- Usa la barra lateral REAL de dashboard.html con los estilos reales. node tests/ui/serve.js → /tests/ui/sidebar_harness.html -->
+<link rel="stylesheet" href="../../dashboard.css"><link rel="stylesheet" href="../../azyvion-enterprise.css"><link rel="stylesheet" href="../../pos.css"><link rel="stylesheet" href="../../sidebar-fix.css">
+</head>
+<body>
+<div id="mount"></div>
+<script>
+  fetch('../../dashboard.html').then(r => r.text()).then(function (html) {
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+    var nav = doc.getElementById('sidebarNav');
+    // todas las opciones visibles para la prueba (en la app se muestran según permisos)
+    nav.querySelectorAll('[style*="display:none"], [style*="display: none"]').forEach(function (e) { e.style.display = ''; });
+    document.getElementById('mount').appendChild(document.importNode(nav, true));
+    window.__listo = true;
+  });
+</script>
+</body>
+</html>

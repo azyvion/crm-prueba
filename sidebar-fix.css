@@ -1,0 +1,45 @@
+/* ═══════════════════════════════════════════════════════════════════
+   sidebar-fix.css — la barra lateral siempre muestra TODAS las opciones
+   Problema: el menú creció (Negocio, Contactar prospectos…) y en pantallas bajas o con zoom
+   las últimas opciones (Organigrama, Perfil) y el usuario quedaban fuera de la pantalla sin
+   forma de llegar a ellas. Ahora la barra se desplaza, el pie con el usuario queda fijo
+   abajo y el menú se compacta cuando la altura de la ventana es pequeña.
+   Se carga después de dashboard.css y azyvion-enterprise.css.
+═══════════════════════════════════════════════════════════════════ */
+.sidebar {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, .28) transparent;
+    -webkit-overflow-scrolling: touch;
+}
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .25); border-radius: 3px; }
+.sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, .4); }
+
+/* El usuario / perfil queda siempre visible al pie, sin tapar las opciones al desplazar */
+.sidebar .sidebar-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    background: var(--az-sidebar-2, var(--sidebar, #0E2A4A));
+    margin-top: auto;
+    padding-top: 8px;
+}
+.sidebar .sidebar-logo, .sidebar .sidebar-close-btn { flex-shrink: 0; }
+.sidebar .nav-item, .sidebar .nav-subitem, .sidebar .nav-section { flex-shrink: 0; }
+
+/* Menú más compacto cuando la ventana es baja (portátiles, zoom del navegador) */
+@media (max-height: 900px) {
+    .sidebar .nav-item { padding-top: 8px; padding-bottom: 8px; margin: 0; }
+    .sidebar .nav-subitem { padding-top: 6px; padding-bottom: 6px; }
+    .sidebar .nav-section { padding-top: 12px; padding-bottom: 4px; }
+    .sidebar .sidebar-logo { padding-bottom: 12px; }
+}
+@media (max-height: 740px) {
+    .sidebar .nav-item { padding-top: 6px; padding-bottom: 6px; font-size: 13px; }
+    .sidebar .nav-section { padding-top: 8px; padding-bottom: 2px; }
+    .sidebar .sidebar-logo { padding-bottom: 8px; }
+}
