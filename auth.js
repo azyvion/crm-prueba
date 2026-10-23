@@ -1244,223 +1244,98 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
         }
 
         /* ─── API PUNTO DE VENTA (POS) ─────────────────────────────────── */
+        // [POS Lote 4] La lógica crítica vive en funciones SQL transaccionales
+        // (supabase/migrations/20261023_06_pos_ventas.sql): precios, stock, permisos,
+        // numeración, pagos, contabilidad y caja se resuelven en el servidor.
+        // Un error SIN código SQL (corte de red, timeout) es de resultado incierto:
+        // el cliente debe consultar la venta por su clave de idempotencia antes de reintentar.
+        function _posRpcErr(error) {
+            const msg = (error && error.message) || 'Error desconocido';
+            const code = error && (error.code || error.hint || error.details);
+            return {ok: false, error: msg, incierto: !code};
+        }
+        async function _posRpc(fn, args) {
+            try {
+                const {data, error} = await _sb.rpc(fn, args || {});
+                if (error) return _posRpcErr(error);
+                return data && typeof data === 'object' ? data : {ok: true, data: data};
+            } catch (e) {
+                return {ok: false, error: 'Sin conexión con el servidor: ' + ((e && e.message) || e), incierto: true};
+            }
+        }
+
         async function _getPosInit() {
             await _loadOrgConfig();
             const orgId = _getEffectiveOrgId();
             let qInv = _sb.from('Inventario').select('*').order('producto');
-            let qCli = _sb.from('Clientes').select('id,nombre,empresa,nit,correo,telefono,lista_precio').order('nombre');
+            let qCli = _sb.from('Clientes').select('id,nombre,empresa,nit,correo,telefono,direccion,lista_precio').order('nombre');
             let qCuentas = _sb.from('CuentasBancarias').select('*').order('nombre');
             if (orgId) {
                 qInv = qInv.eq('organization_id', orgId);
                 qCli = qCli.eq('organization_id', orgId);
                 qCuentas = qCuentas.eq('organization_id', orgId);
             }
-            const [iR, cR, bR] = await Promise.all([qInv, qCli, qCuentas]);
+            const [iR, cR, bR, pR] = await Promise.all([qInv, qCli, qCuentas, _posRpc('pos_mis_permisos')]);
+            if (iR.error) return {ok: false, error: 'No se pudo cargar el inventario: ' + iR.error.message};
             return {
                 ok: true,
                 productos: iR.data || [],
                 clientes: cR.data || [],
                 cuentas: bR.data || [],
+                permisos: pR && pR.ok ? pR : null,
                 empresa: EMPRESA
             };
         }
 
-        async function _registrarVentaPos(p, u) {
+        async function _registrarVentaPos(p) {
             if (!p || !p.items || !p.items.length) return {ok: false, error: 'Agrega al menos un producto a la venta.'};
-
-            // Validar consistencia matemática y financiera estricta
-            let checkSubtotal = 0;
-            for (const it of p.items) {
-                const c = Number(it.cantidad);
-                const pu = Number(it.precioUnit);
-                if (isNaN(c) || c <= 0 || isNaN(pu) || pu < 0) {
-                    return {ok: false, error: 'Línea de venta con cantidad o precio unitario inválido.'};
-                }
-                checkSubtotal += Math.round(c * pu * 100) / 100;
-            }
-            checkSubtotal = Math.round(checkSubtotal * 100) / 100;
-            if (checkSubtotal <= 0) {
-                return {ok: false, error: 'El subtotal de la venta debe ser mayor a cero.'};
-            }
-
-            const descMonto = Math.max(0, Math.round(Number(p.descuento || 0) * 100) / 100);
-            if (descMonto >= checkSubtotal && (p.descuentoPct > 100 || descMonto > checkSubtotal)) {
-                return {ok: false, error: 'El descuento no puede superar el 100% ni el subtotal de la venta.'};
-            }
-
-            const expectedTotal = Math.round((checkSubtotal - descMonto) * 100) / 100;
-            if (expectedTotal <= 0) {
-                return {ok: false, error: 'No se permite registrar una venta con total menor o igual a cero por un descuento inválido.'};
-            }
-
+            if (!p.idempotency_key) return {ok: false, error: 'Falta la clave de idempotencia de la venta.'};
             await _loadOrgConfig();
-            const orgId = _getEffectiveOrgId();
-            const y = new Date().getFullYear();
-
-            // Siguiente número de ticket POS — Conteo robusto que garantiza incremento
-            const prefPos = (EMPRESA && EMPRESA.prefijoTicket) || 'POS-';
-            let maxPos = 0;
-            const rePos = new RegExp(prefPos.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '\\d{4}-(\\d+)');
-            
-            // 1. Buscar en Transacciones
-            try {
-                let qPos = _sb.from('Transacciones').select('descripcion, concepto, referencia');
-                if (orgId) qPos = qPos.eq('organization_id', orgId);
-                const {data: tData} = await qPos;
-                (tData || []).forEach(t => {
-                    const txt = (t.referencia || '') + ' ' + (t.concepto || '') + ' ' + (t.descripcion || '');
-                    const m = txt.match(rePos);
-                    if (m) maxPos = Math.max(maxPos, Number(m[1]));
-                });
-            } catch(e) {}
-
-            // 3. Incremento atómico en memoria/localStorage para evitar duplicados en ventas consecutivas
-            const localSeqKey = 'pos_ticket_seq_' + (orgId || 'org') + '_' + y;
-            try {
-                const localSeq = Number(localStorage.getItem(localSeqKey) || 0);
-                maxPos = Math.max(maxPos, localSeq);
-            } catch(e) {}
-            const nextSeq = maxPos + 1;
-            try { localStorage.setItem(localSeqKey, String(nextSeq)); } catch(e) {}
-            const ticketNum = prefPos + y + '-' + String(nextSeq).padStart(5, '0');
-
-            // [AUDIT FN-20] El monto registrado es el validado aquí, no el enviado por el cliente.
-            if (Math.abs((Number(p.total) || 0) - expectedTotal) > 0.05) {
-                return {ok: false, error: 'El total de la venta no coincide con sus líneas. Revisa el carrito.'};
-            }
-            const total = expectedTotal;
-            const metodoPago = p.metodoPago || 'Efectivo';
-            const clienteNombre = p.clienteNombre || 'Consumidor Final (C/F)';
-            const nit = p.nit || 'C/F';
-            const ctaBanco = p.cuentaBancariaId && String(p.cuentaBancariaId).trim() !== '' ? String(p.cuentaBancariaId).trim() : null;
-            const sucursalId = p.sucursal_id || p.sucursalId || null;
-            const cajaTurnoId = p.cajaTurnoId || p.cajaId || null;
-
-            // Auto-crear cliente en CRM si no es C/F y se especificó que es nuevo o no existía
-            if (nit !== 'C/F' && p.clienteNombre) {
-                try {
-                    let qExCli = _sb.from('Clientes').select('id, nombre, nit');
-                    if (orgId) qExCli = qExCli.eq('organization_id', orgId);
-                    const { data: exClis } = await qExCli;
-                    const yaExiste = (exClis || []).some(c => String(c.nit || '').toUpperCase().replace(/[-\s]/g, '') === String(nit).toUpperCase().replace(/[-\s]/g, ''));
-                    if (!yaExiste) {
-                        await _sb.from('Clientes').insert({
-                            id: _uuid(),
-                            nombre: p.clienteNombre,
-                            empresa: p.clienteEmpresa || '',
-                            nit: nit,
-                            direccion: p.direccion || 'Ciudad',
-                            telefono: p.telefono || '',
-                            correo: p.correo || '',
-                            lista_precio: 'Publico',
-                            organization_id: orgId,
-                            sucursal_id: sucursalId,
-                            creadoPor: u,
-                            fechaReg: new Date().toISOString()
-                        });
-                    }
-                } catch(e) {
-                    console.warn('[Azyvion POS] Auto-creación cliente:', e);
-                }
-            }
-
-            // 4. Descontar inventario
-            // [AUDIT FN-19] Antes: leer y luego escribir por producto (ventas simultáneas perdían
-            // descuentos), truncar a 0 sin avisar y ocultar errores. Ahora un RPC atómico que
-            // rechaza la venta completa si falta existencia.
-            const stockItems = p.items
-                .filter(it => it.id && it.tipo !== 'Servicio')
-                .map(it => ({id: it.id, tipo: it.tipo || 'Producto', cantidad: Number(it.cantidad) || 0}));
-            if (stockItems.length) {
-                const {error: stErr} = await _sb.rpc('pos_mover_stock', {p_items: stockItems, p_devolver: false});
-                if (stErr) return {ok: false, error: stErr.message || 'No se pudo descontar el inventario.'};
-            }
-
-            // 5. Registrar asiento / transacción contable
-            const trxId = _uuid();
-            const trxConcepto = 'Venta POS · Ticket ' + ticketNum;
-            const trxDesc = 'Ticket ' + ticketNum + ' · ' + clienteNombre + ' · Pago: ' + metodoPago + (nit !== 'C/F' ? ' · NIT: ' + nit : '');
-            
-            // Inserción en Transacciones (tabla principal de Contabilidad de Azyvion)
-            // [AUDIT FN-20] supabase-js no lanza excepciones: antes un fallo aquí dejaba la venta
-            // "exitosa" sin ingreso contable. Ahora se revisa el error y se repone el inventario.
-            {
-                const {error: trxErr} = await _sb.from('Transacciones').insert({
-                    id: trxId,
-                    fecha: new Date().toISOString().slice(0, 10),
-                    tipo: 'Ingreso',
-                    concepto: trxConcepto,
-                    monto: total,
-                    cuentaBancariaId: ctaBanco,
-                    referencia: ticketNum,
-                    descripcion: trxDesc,
-                    creadoPor: u,
-                    fechaReg: new Date().toISOString(),
-                    organization_id: orgId,
-                    sucursal_id: sucursalId,
-                    caja_turno_id: cajaTurnoId
-                });
-                if (trxErr) {
-                    console.error('[POS] Inserción Transacciones:', trxErr);
-                    if (stockItems.length) {
-                        const {error: devErr} = await _sb.rpc('pos_mover_stock', {p_items: stockItems, p_devolver: true});
-                        if (devErr) console.error('[POS] No se pudo reponer el inventario:', devErr);
-                    }
-                    return {ok: false, error: 'La venta no se registró: ' + trxErr.message};
-                }
-            }
-            // [AUDIT FN-10] Se eliminó la escritura a TransaccionesCRM (la tabla no existe).
-
-            // Si es con cuenta bancaria (Transferencia o Depósito), actualizar saldo en CuentasBancarias
-            if (ctaBanco) {
-                try {
-                    const {data: cb} = await _sb.from('CuentasBancarias').select('saldo').eq('id', ctaBanco).single();
-                    if (cb) {
-                        const s = (Number(cb.saldo) || 0) + total;
-                        await _sb.from('CuentasBancarias').update({saldo: s}).eq('id', ctaBanco);
-                    }
-                } catch(e) {}
-            }
-
-            // 6. Si FEL está habilitado, generar datos fiscales tributarios DTE
-            let dteInfo = null;
-            let orgData = null;
-            try {
-                const {data: od} = await _sb.from('Organizations').select('*').eq('id', orgId).maybeSingle();
-                orgData = od;
-            } catch(e) {}
-
-            const felConfig = _felLocalSinSecretos();
-            const esFel = !!((orgData && orgData.fel_habilitado) || felConfig.fel_habilitado);
-            // [AUDIT FN-15] Antes se inventaba un "UUID SAT", serie, número y enlace de
-            // verificación y el ticket se presentaba como DTE certificado sin haber
-            // llamado a ningún certificador. Sin integración real, dteInfo queda null y
-            // el ticket se marca como comprobante interno no certificado.
-
-            // 7. Preparar datos para imprimir ticket térmico o comprobante
-            return {
-                ok: true,
-                ticket: {
-                    numero: ticketNum,
-                    fecha: new Date().toISOString(),
-                    cliente: clienteNombre,
-                    nit: nit,
-                    direccion: p.direccion || 'Ciudad',
-                    items: p.items,
-                    subtotal: Number(p.subtotal || total),
-                    descuento: Number(p.descuento || 0),
-                    iva: Number(p.iva || 0),
-                    total: total,
-                    metodoPago: metodoPago,
-                    montoRecibido: Number(p.montoRecibido || total),
-                    cambio: Number(p.cambio || 0),
-                    cajero: u,
-                    empresa: EMPRESA,
-                    fel: dteInfo,
-                    felNoCertificado: esFel && !dteInfo
-                }
-            };
+            const res = await _posRpc('pos_registrar_venta', {p: p});
+            if (!res.ok) return res;
+            const t = res.ticket || {};
+            // El servidor es la fuente de verdad; aquí solo se añaden los datos de la empresa para imprimir.
+            // Ningún certificador FEL está integrado: el comprobante es siempre interno.
+            t.empresa = EMPRESA;
+            t.fel = null;
+            t.felNoCertificado = true;
+            return {ok: true, ticket: t, duplicado: !!res.duplicado};
         }
+
+        async function _posObtenerVenta(p) {
+            const res = await _posRpc('pos_obtener_ticket', {
+                p_venta_id: (p && p.ventaId) || null, p_key: (p && p.key) || null, p_reimpresion: !!(p && p.reimpresion)
+            });
+            if (!res.ok) return res;
+            if (res.ticket) { await _loadOrgConfig(); res.ticket.empresa = EMPRESA; res.ticket.fel = null; res.ticket.felNoCertificado = true; }
+            return res;
+        }
+
+        async function _posDevolverVenta(p) {
+            const res = await _posRpc('pos_devolver_venta', {p: p});
+            if (res.ok && res.ticket) { await _loadOrgConfig(); res.ticket.empresa = EMPRESA; }
+            return res;
+        }
+
+        async function _posBuscarVentas(p) {
+            p = p || {};
+            const orgId = _getEffectiveOrgId();
+            let q = _sb.from('pos_ventas')
+                .select('id,numero,created_at,estado,cliente_id,cliente_nombre,nit,total,reembolsado,cajero,caja_turno_id')
+                .order('created_at', {ascending: false}).limit(Math.min(Number(p.limit) || 50, 200));
+            if (orgId) q = q.eq('organization_id', orgId);
+            const txt = String(p.q || '').trim().replace(/[%,()]/g, ' ').trim();
+            if (txt) q = q.or('numero.ilike.%' + txt + '%,cliente_nombre.ilike.%' + txt + '%,nit.ilike.%' + txt + '%');
+            if (p.clienteId) q = q.eq('cliente_id', p.clienteId);
+            if (p.estado) q = q.eq('estado', p.estado);
+            if (p.desde) q = q.gte('created_at', p.desde + 'T00:00:00');
+            if (p.hasta) q = q.lte('created_at', p.hasta + 'T23:59:59');
+            const {data, error} = await q;
+            if (error) return _posRpcErr(error);
+            return {ok: true, data: data || []};
+        }
+
+        async function _posMisPermisos() { return await _posRpc('pos_mis_permisos'); }
 
         /* ─── API CONSULTA LEGAL NIT SAT / CRM ─────────────────────────── */
         /* ─── API CONSULTA LEGAL NIT SAT / CRM ─────────────────────────── */
@@ -1532,246 +1407,30 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
             };
         }
 
-        /* ─── API CONTROL DE CAJA POS (APERTURA Y CIERRE CON HISTORIAL) ─── */
-        let _cajaMemoria = null;
-
-        async function _getCajaStatus(p, sess) {
-            const orgId = _getEffectiveOrgId();
-            const sucursalId = p?.sucursal_id || p?.sucursalId || sess?.sucursal_id || null;
-            
-            // 1. Intentar consultar en base de datos tabla Cajas_Turnos
-            try {
-                let q = _sb.from('Cajas_Turnos').select('*').eq('estado', 'ABIERTA');
-                if (orgId) q = q.eq('organization_id', orgId);
-                if (sucursalId) q = q.eq('sucursal_id', sucursalId);
-                const { data, error } = await q.order('fecha_apertura', { ascending: false }).limit(1);
-                if (!error && data && data.length > 0) {
-                    const c = data[0];
-                    return {
-                        ok: true,
-                        cajaAbierta: true,
-                        cajaId: c.id,
-                        montoInicial: Number(c.monto_inicial || 0),
-                        fecha: c.fecha_apertura,
-                        cajero: c.cajero || sess?.usuario || 'Cajero',
-                        sucursalId: c.sucursal_id
-                    };
-                }
-            } catch(e) {}
-
-            // 2. Respaldo en localStorage / memoria
-            const storageKey = 'pos_caja_activa_' + (orgId || 'global') + (sucursalId ? '_' + sucursalId : '');
-            let estado = null;
-            try { estado = JSON.parse(localStorage.getItem(storageKey) || 'null'); } catch(e) {}
-            if (!estado && _cajaMemoria && _cajaMemoria.orgId === orgId) estado = _cajaMemoria;
-
-            if (estado && estado.abierta) {
-                return {
-                    ok: true,
-                    cajaAbierta: true,
-                    cajaId: estado.id,
-                    montoInicial: Number(estado.montoInicial || 0),
-                    fecha: estado.fecha,
-                    cajero: estado.cajero || sess?.usuario || 'Cajero',
-                    sucursalId: estado.sucursalId || null
-                };
-            }
-            return { ok: true, cajaAbierta: false };
+        /* ─── API CONTROL DE CAJA POS (APERTURA, MOVIMIENTOS Y CIERRE) ─── */
+        // [POS Lote 4] Antes: errores tragados, "modo local" simulado en localStorage, ventas sin
+        // turno y cierres repetibles. Ahora el turno vive solo en la base y se opera con funciones
+        // transaccionales; un fallo se informa, nunca se simula.
+        async function _getCajaStatus() {
+            return await _posRpc('pos_estado_caja');
         }
-
-        async function _abrirCajaPOS(p, sess) {
-            const orgId = _getEffectiveOrgId();
-            const sucursalId = p.sucursalId || p.sucursal_id || sess?.sucursal_id || null;
-            const y = new Date().getFullYear();
-            const monto = Number(p.montoInicial || 0);
-            const u = sess?.usuario || 'Cajero';
-            const cajaId = 'CAJA-' + y + '-' + Date.now();
-            const fechaApertura = new Date().toISOString();
-            const cajaObj = {
-                id: cajaId,
-                orgId: orgId,
-                sucursalId: sucursalId,
-                abierta: true,
-                montoInicial: monto,
-                observaciones: p.observaciones || '',
-                fecha: fechaApertura,
-                cajero: u
-            };
-            _cajaMemoria = cajaObj;
-            const storageKey = 'pos_caja_activa_' + (orgId || 'global') + (sucursalId ? '_' + sucursalId : '');
-            try { localStorage.setItem(storageKey, JSON.stringify(cajaObj)); } catch(e) {}
-
-            // Guardar en tabla Cajas_Turnos en Supabase
-            try {
-                await _sb.from('Cajas_Turnos').insert({
-                    id: cajaId,
-                    organization_id: orgId,
-                    sucursal_id: sucursalId,
-                    cajero: u,
-                    monto_inicial: monto,
-                    fecha_apertura: fechaApertura,
-                    estado: 'ABIERTA',
-                    observaciones: p.observaciones || ''
-                });
-            } catch(e) {}
-
-            // Asiento contable de apertura en Transacciones: 1.1.1.01 Fondo de Caja
-            try {
-                await _sb.from('Transacciones').insert({
-                    id: _uuid(),
-                    fecha: fechaApertura.slice(0, 10),
-                    tipo: 'Ajuste',
-                    concepto: 'Apertura de Caja POS · Fondo Inicial (' + cajaId + ')',
-                    monto: monto,
-                    referencia: cajaId,
-                    descripcion: 'Apertura de caja por ' + u + '. Fondo inicial en efectivo: Q ' + monto.toFixed(2),
-                    creadoPor: u,
-                    fechaReg: fechaApertura,
-                    organization_id: orgId,
-                    sucursal_id: sucursalId,
-                    caja_turno_id: cajaId
-                });
-            } catch(e) {}
-
-            return { ok: true, cajaId: cajaId };
+        async function _abrirCajaPOS(p) {
+            return await _posRpc('pos_abrir_caja', {p_monto: Number(p && p.montoInicial), p_obs: (p && p.observaciones) || ''});
         }
-
-        async function _cerrarCajaPOS(p, sess) {
-            const orgId = _getEffectiveOrgId();
-            const sucursalId = p.sucursalId || p.sucursal_id || sess?.sucursal_id || null;
-            const u = sess?.usuario || 'Cajero';
-            const contado = Number(p.efectivoContado || 0);
-            const storageKey = 'pos_caja_activa_' + (orgId || 'global') + (sucursalId ? '_' + sucursalId : '');
-            let estado = null;
-            try { estado = JSON.parse(localStorage.getItem(storageKey) || 'null'); } catch(e) {}
-            
-            // Buscar turno en DB si no está en local
-            let dbTurno = null;
-            try {
-                const { data } = await _sb.from('Cajas_Turnos').select('*').eq('id', p.cajaId || (estado && estado.id)).maybeSingle();
-                dbTurno = data;
-            } catch(e) {}
-
-            const cajaId = (dbTurno && dbTurno.id) || (estado && estado.id) || p.cajaId || ('CAJA-CIERRE-' + Date.now());
-            const montoInicial = Number((dbTurno && dbTurno.monto_inicial) || (estado && estado.montoInicial) || 0);
-            const fechaApertura = (dbTurno && dbTurno.fecha_apertura) || (estado && estado.fecha) || new Date(Date.now() - 86400000).toISOString();
-            const fechaCierre = new Date().toISOString();
-
-            // Calcular ventas del turno (desde fechaApertura hasta AHORA - sin límite de día/24h)
-            let ventasEfectivo = 0;
-            let ventasTarjeta = 0;
-            let ventasTransferencia = 0;
-            let ventasOtros = 0;
-            let cantidadTickets = 0;
-
-            try {
-                let q = _sb.from('Transacciones').select('monto, concepto, descripcion, referencia, fechaReg, caja_turno_id');
-                if (orgId) q = q.eq('organization_id', orgId);
-                q = q.gte('fechaReg', fechaApertura);
-                const { data } = await q;
-                (data || []).forEach(t => {
-                    const desc = String(t.descripcion || '');
-                    const conc = String(t.concepto || '');
-                    if (conc.includes('Venta POS') || desc.includes('Ticket POS-') || t.caja_turno_id === cajaId) {
-                        cantidadTickets++;
-                        const m = Number(t.monto || 0);
-                        if (desc.includes('Pago: Efectivo')) {
-                            ventasEfectivo += m;
-                        } else if (desc.includes('Pago: Tarjeta')) {
-                            ventasTarjeta += m;
-                        } else if (desc.includes('Pago: Transferencia') || desc.includes('Pago: Depósito')) {
-                            ventasTransferencia += m;
-                        } else {
-                            ventasOtros += m;
-                        }
-                    }
-                });
-            } catch(e) {}
-
-            const totalVentas = ventasEfectivo + ventasTarjeta + ventasTransferencia + ventasOtros;
-            const esperado = montoInicial + ventasEfectivo;
-            const diferencia = Math.round((contado - esperado) * 100) / 100;
-
-            // 1. Actualizar turno en Cajas_Turnos
-            try {
-                await _sb.from('Cajas_Turnos').update({
-                    fecha_cierre: fechaCierre,
-                    ventas_efectivo: ventasEfectivo,
-                    ventas_tarjeta: ventasTarjeta,
-                    ventas_transferencia: ventasTransferencia,
-                    ventas_otros: ventasOtros,
-                    total_esperado: esperado,
-                    efectivo_contado: contado,
-                    diferencia: diferencia,
-                    estado: 'CERRADA',
-                    observaciones: p.observaciones || ''
-                }).eq('id', cajaId);
-            } catch(e) {}
-
-            // 2. Asiento contable de cierre con cuadre en Transacciones
-            try {
-                await _sb.from('Transacciones').insert({
-                    id: _uuid(),
-                    fecha: fechaCierre.slice(0, 10),
-                    tipo: diferencia >= 0 ? 'Ajuste' : 'Egreso',
-                    concepto: 'Cierre de Caja POS · ' + cajaId,
-                    monto: Math.abs(diferencia),
-                    referencia: 'CIERRE-' + cajaId,
-                    descripcion: 'Cierre de caja por ' + u + '. Efectivo contado: Q ' + contado.toFixed(2) + ' · Esperado: Q ' + esperado.toFixed(2) + ' · Diferencia: Q ' + diferencia.toFixed(2) + (p.observaciones ? ' · Obs: ' + p.observaciones : ''),
-                    creadoPor: u,
-                    fechaReg: fechaCierre,
-                    organization_id: orgId,
-                    sucursal_id: sucursalId,
-                    caja_turno_id: cajaId
-                });
-            } catch(e) {}
-
-            // Limpiar caja activa local
-            _cajaMemoria = null;
-            try { localStorage.removeItem(storageKey); } catch(e) {}
-
-            return {
-                ok: true,
-                cajaId: cajaId,
-                diferencia: diferencia,
-                esperado: esperado,
-                contado: contado,
-                montoInicial: montoInicial,
-                ventasEfectivo: ventasEfectivo,
-                ventasTarjeta: ventasTarjeta,
-                ventasTransferencia: ventasTransferencia,
-                ventasOtros: ventasOtros,
-                totalVentas: totalVentas,
-                cantidadTickets: cantidadTickets,
-                fechaApertura: fechaApertura,
-                fechaCierre: fechaCierre,
-                cajero: u,
-                observaciones: p.observaciones || ''
-            };
+        async function _cerrarCajaPOS(p) {
+            return await _posRpc('pos_cerrar_caja', {p_caja_id: p && p.cajaId, p_contado: Number(p && p.efectivoContado), p_obs: (p && p.observaciones) || ''});
         }
-
-        async function _getVentasTurnoCaja(cajaId, sess) {
-            const orgId = _getEffectiveOrgId();
-            let total = 0;
-            try {
-                // Obtener fecha de apertura de la caja
-                let fechaApertura = new Date().toISOString().slice(0, 10);
-                try {
-                    const { data: cData } = await _sb.from('Cajas_Turnos').select('fecha_apertura').eq('id', cajaId).maybeSingle();
-                    if (cData && cData.fecha_apertura) fechaApertura = cData.fecha_apertura;
-                } catch(e) {}
-
-                let q = _sb.from('Transacciones').select('monto, concepto, descripcion').gte('fechaReg', fechaApertura);
-                if (orgId) q = q.eq('organization_id', orgId);
-                const { data } = await q;
-                (data || []).forEach(t => {
-                    const txt = (t.concepto || '') + ' ' + (t.descripcion || '');
-                    if (txt.includes('Venta POS') || txt.includes('Ticket POS-')) {
-                        total += Number(t.monto || 0);
-                    }
-                });
-            } catch(e) {}
-            return { ok: true, totalVentas: total };
+        async function _posCajaMovimiento(p) {
+            return await _posRpc('pos_caja_movimiento', {p_tipo: p && p.tipo, p_monto: Number(p && p.monto), p_motivo: (p && p.motivo) || ''});
+        }
+        async function _posReabrirCaja(p) {
+            return await _posRpc('pos_reabrir_caja', {p_caja_id: p && p.cajaId, p_motivo: (p && p.motivo) || ''});
+        }
+        async function _getVentasTurnoCaja() {
+            const r = await _posRpc('pos_estado_caja');
+            if (!r.ok) return r;
+            const rs = r.resumen || {};
+            return {ok: true, totalVentas: Number(rs.totalVentas || 0), resumen: rs};
         }
 
         async function _getCierresCaja(p) {
@@ -2430,7 +2089,13 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 case 'enviarCotizacion':return await _enviarCotizacion(args[0],usuario);
                 case 'getResumenCotizaciones':return await _getResumenCotizaciones();
                 case 'getPosInit':return await _getPosInit();
-                case 'registrarVentaPos':return await _registrarVentaPos(args[0],usuario);
+                case 'registrarVentaPos':return await _registrarVentaPos(args[0]);
+                case 'posObtenerVenta':return await _posObtenerVenta(args[0]);
+                case 'posDevolverVenta':return await _posDevolverVenta(args[0]);
+                case 'posBuscarVentas':return await _posBuscarVentas(args[0]);
+                case 'posMisPermisos':return await _posMisPermisos();
+                case 'posCajaMovimiento':return await _posCajaMovimiento(args[0]);
+                case 'posReabrirCaja':return await _posReabrirCaja(args[0]);
                 case 'getLibroDiario':return await _getLibroDiario(args[0]);
                 case 'getEstadoResultados':return await _getEstadoResultados(args[0]);
                 case 'getFicha':return await _getFicha(args[0],_currentUserRole||'AGENTE');
@@ -2453,10 +2118,10 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 case 'uploadLogoOrg':return await _uploadLogoOrg(args[0],sess);
                 case 'deleteLogoOrg':return await _deleteLogoOrg(args[0],sess);
                 case 'consultarNitSat':return await _consultarNitSat(args[0],usuario);
-                case 'getCajaStatus':return await _getCajaStatus(args[0],sess);
-                case 'abrirCajaPOS':return await _abrirCajaPOS(args[0],sess);
-                case 'cerrarCajaPOS':return await _cerrarCajaPOS(args[0],sess);
-                case 'getVentasTurnoCaja':return await _getVentasTurnoCaja(args[0],sess);
+                case 'getCajaStatus':return await _getCajaStatus();
+                case 'abrirCajaPOS':return await _abrirCajaPOS(args[0]);
+                case 'cerrarCajaPOS':return await _cerrarCajaPOS(args[0]);
+                case 'getVentasTurnoCaja':return await _getVentasTurnoCaja();
                 case 'uploadFotoProducto':return await _uploadFotoProducto(args[0],sess);
                 case 'probarConexionFel':return await _probarConexionFel(args[0],sess);
                 case 'getCierresCaja':return await _getCierresCaja(args[0]);
@@ -2476,7 +2141,7 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                 withSuccessHandler:fn=>api(fn,onFailure),
                 withFailureHandler:fn=>api(onSuccess,fn)
             };
-            const METHODS=['logout','getResumen','getActividad','getClientes','addCliente','updateCliente','deleteCliente','getProspectos','addProspecto','updateProspecto','deleteProspecto','convertirProspecto','getInventario','addInventario','updateInventario','deleteInventario','getCategorias','addCategoria','updateCategoria','deleteCategoria','getEncuestas','addEncuesta','updateEncuesta','deleteEncuesta','getUsuarios','addUsuario','updateUsuario','deleteUsuario','getCuentasBancarias','addCuentaBancaria','updateCuentaBancaria','deleteCuentaBancaria','getPlanCuentas','addCuentaContable','updateCuentaContable','deleteCuentaContable','getTransacciones','addTransaccion','deleteTransaccion','getResumenContable','getCotizaciones','getCotizacion','getCotizacionHtml','addCotizacion','updateCotizacion','updateEstadoCotizacion','deleteCotizacion','duplicarCotizacion','convertirCotizacionAVenta','enviarCotizacion','getResumenCotizaciones','getPosInit','registrarVentaPos','getLibroDiario','getEstadoResultados','getFicha','addContacto','updateContacto','deleteContacto','addNotaCRM','deleteNotaCRM','addActividadCRM','deleteActividadCRM','getPerfil','updatePerfil','updatePreferencias','changePasswordPropio','uploadFotoPerfil','deleteFotoPerfil','getDashboardInit','getOrgConfig','saveOrgConfig','uploadLogoOrg','deleteLogoOrg','consultarNitSat','getCajaStatus','abrirCajaPOS','cerrarCajaPOS','getVentasTurnoCaja','uploadFotoProducto','probarConexionFel','getCierresCaja','getSucursales','addSucursal','updateSucursal','deleteSucursal','enviarTicketCorreo','getReporteVentasSucursal'];
+            const METHODS=['logout','getResumen','getActividad','getClientes','addCliente','updateCliente','deleteCliente','getProspectos','addProspecto','updateProspecto','deleteProspecto','convertirProspecto','getInventario','addInventario','updateInventario','deleteInventario','getCategorias','addCategoria','updateCategoria','deleteCategoria','getEncuestas','addEncuesta','updateEncuesta','deleteEncuesta','getUsuarios','addUsuario','updateUsuario','deleteUsuario','getCuentasBancarias','addCuentaBancaria','updateCuentaBancaria','deleteCuentaBancaria','getPlanCuentas','addCuentaContable','updateCuentaContable','deleteCuentaContable','getTransacciones','addTransaccion','deleteTransaccion','getResumenContable','getCotizaciones','getCotizacion','getCotizacionHtml','addCotizacion','updateCotizacion','updateEstadoCotizacion','deleteCotizacion','duplicarCotizacion','convertirCotizacionAVenta','enviarCotizacion','getResumenCotizaciones','getPosInit','registrarVentaPos','posObtenerVenta','posDevolverVenta','posBuscarVentas','posMisPermisos','posCajaMovimiento','posReabrirCaja','getLibroDiario','getEstadoResultados','getFicha','addContacto','updateContacto','deleteContacto','addNotaCRM','deleteNotaCRM','addActividadCRM','deleteActividadCRM','getPerfil','updatePerfil','updatePreferencias','changePasswordPropio','uploadFotoPerfil','deleteFotoPerfil','getDashboardInit','getOrgConfig','saveOrgConfig','uploadLogoOrg','deleteLogoOrg','consultarNitSat','getCajaStatus','abrirCajaPOS','cerrarCajaPOS','getVentasTurnoCaja','uploadFotoProducto','probarConexionFel','getCierresCaja','getSucursales','addSucursal','updateSucursal','deleteSucursal','enviarTicketCorreo','getReporteVentasSucursal'];
             METHODS.forEach(name=>{
                 runner[name]=function(){
                     const args=Array.from(arguments);

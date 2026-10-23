@@ -706,6 +706,7 @@ body.bn-more-open .az-ai-fab { display: none !important; }
 </style>
     <!-- Azyvion Enterprise: sistema de diseño (debe ir al final del <head>) -->
     <link rel="stylesheet" href="./azyvion-enterprise.css">
+    <link rel="stylesheet" href="./pos.css">
 </head>
 
 <body>
@@ -2119,134 +2120,96 @@ body.bn-more-open .az-ai-fab { display: none !important; }
 
             <!-- ── PUNTO DE VENTA (POS) ── -->
             <div class="page" id="page-pos">
-                <!-- Barra de Estado de Caja (Apertura y Cierre) -->
-                <div class="pos-caja-bar" id="posCajaBar">
-                    <div style="display:flex;align-items:center;gap:10px">
-                        <span class="tag tag-gray">Cargando estado de caja…</span>
-                    </div>
+                <!-- Estado de caja y accesos (lo pinta pos.js con datos reales del servidor) -->
+                <div class="pos-caja-bar" id="posCajaBar" aria-live="polite">
+                    <div class="pos-caja-info"><span class="pos-chip-st off">Verificando caja…</span></div>
                 </div>
 
                 <div class="pos-layout">
-                    <!-- Panel Izquierdo: Catálogo y Búsqueda -->
-                    <div class="pos-catalog-panel">
-                        <!-- Barra de Búsqueda Superior -->
-                        <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
-                            <div style="position:relative;flex:1">
-                                <input class="form-input" id="posSearchInput" placeholder="🔍 Buscar por código, SKU, nombre o descripción…" oninput="posFiltrarCatalogo()" style="padding-left:14px;height:38px;font-size:13.5px" />
+                    <!-- Catálogo -->
+                    <section class="pos-catalog-panel" aria-label="Catálogo de productos">
+                        <div class="pos-search-row">
+                            <div class="pos-search">
+                                <input class="pos-in" id="posSearchInput" type="search" autocomplete="off" spellcheck="false"
+                                       placeholder="Buscar por nombre o SKU, o escanear código y pulsar Enter  (F2)"
+                                       aria-label="Buscar producto" oninput="posFiltrarCatalogo()" onkeydown="posBuscarEnter(event)" />
                             </div>
-                            <button class="topbar-btn" id="posToggleViewBtn" onclick="posToggleViewMode()" title="Cambiar modo de vista" style="height:38px;padding:0 12px;font-size:12px">
-                                🖼️ Con fotos
-                            </button>
-                            <button class="topbar-btn" onclick="loadPos()" title="Recargar productos" style="height:38px;padding:0 12px">
-                                <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                            </button>
+                            <select class="pos-in" id="posCatSelect" onchange="posFiltrarCat(this.value)" aria-label="Categoría">
+                                <option value="Todos">Todas las categorías</option>
+                            </select>
+                            <button type="button" class="pos-btn" id="posToggleViewBtn" onclick="posToggleViewMode()" title="Cambiar entre vista compacta y con fotos">Compacto</button>
+                            <button type="button" class="pos-btn" onclick="loadPos()" title="Recargar catálogo y existencias" aria-label="Recargar catálogo">⟳</button>
                         </div>
-
-                        <!-- Barra de Filtros Rápidos (Criterios de Búsqueda para >1000 productos) -->
                         <div class="pos-filter-bar" id="posFilterBar">
-                            <button type="button" class="pos-filter-chip active" onclick="posSetTipoFiltro('todos', this)">🏷️ Todos</button>
-                            <button type="button" class="pos-filter-chip" onclick="posSetTipoFiltro('codigo', this)">🔢 Por Código / SKU</button>
-                            <button type="button" class="pos-filter-chip" onclick="posSetTipoFiltro('descripcion', this)">📝 Por Descripción</button>
-                            <button type="button" class="pos-filter-chip" onclick="posSetTipoFiltro('stock', this)">📦 Con Stock</button>
-                            <button type="button" class="pos-filter-chip" onclick="posSetTipoFiltro('servicios', this)">⭐ Servicios</button>
+                            <button type="button" class="pos-filter-chip active" onclick="posSetTipoFiltro('todos', this)">Todos</button>
+                            <button type="button" class="pos-filter-chip" onclick="posSetTipoFiltro('stock', this)">Con existencia</button>
+                            <button type="button" class="pos-filter-chip" onclick="posSetTipoFiltro('servicios', this)">Servicios</button>
                         </div>
-
-                        <!-- Filtro Categorías -->
-                        <div class="filter-tabs" id="posCatFilterWrap" style="margin-bottom:12px;overflow-x:auto;padding-bottom:4px">
-                            <button class="filter-tab active">Todos</button>
+                        <div class="pos-grid compact-view" id="posProductCatalog">
+                            <div class="pos-empty">Cargando catálogo…</div>
                         </div>
-
-                        <!-- Grid de Productos (1x1) -->
-                        <div class="pos-grid" id="posProductCatalog">
-                            <div style="text-align:center;padding:40px;color:var(--text-muted)">Cargando catálogo…</div>
+                        <div id="posLoadMoreWrap" style="text-align:center;display:none">
+                            <button type="button" class="pos-btn" id="posLoadMoreBtn" onclick="posCargarMasItems()">Mostrar más</button>
                         </div>
+                    </section>
 
-                        <!-- Paginación / Carga por lotes para alto volumen -->
-                        <div id="posLoadMoreWrap" style="text-align:center;padding:10px 0;display:none">
-                            <button class="topbar-btn" id="posLoadMoreBtn" onclick="posCargarMasItems()" style="height:34px;font-size:12px;padding:0 16px;margin:0 auto">
-                                Cargar más productos…
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Panel Derecho: Carrito y Cobro -->
-                    <div class="pos-cart-panel">
+                    <!-- Orden de venta -->
+                    <aside class="pos-cart-panel" aria-label="Orden de venta">
                         <div class="pos-cart-header">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-                                <div style="font-size:15px;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:6px">
-                                    <span>Orden de Venta</span>
-                                    <span class="badge" id="posCartCount" style="background:var(--accent);color:#fff">0</span>
-                                </div>
-                                <button class="btn-ghost" onclick="posVaciarCarrito()" style="font-size:11.5px;color:var(--danger);padding:4px 8px">Vaciar</button>
+                            <div class="pos-cart-title">
+                                <span>Orden de venta</span>
+                                <span class="badge" id="posCartCount">0</span>
+                                <button type="button" class="pos-sheet-close" onclick="posToggleCarritoMovil(false)" aria-label="Cerrar orden">&times;</button>
                             </div>
-
-                            <!-- Consulta Rápida por NIT (Directa SAT / CRM sin salir del sistema) -->
-                            <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:8px">
-                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-                                    <label class="form-label" style="font-size:10px;margin:0;font-weight:700">🔍 BÚSQUEDA RÁPIDA POR NIT (SAT / CRM)</label>
-                                    <span style="font-size:9.5px;color:var(--accent);cursor:pointer;font-weight:600" onclick="posLimpiarNitBusqueda()">Limpiar</span>
-                                </div>
-                                <div style="display:flex;gap:6px">
-                                    <input class="form-input" id="posNitSearchInput" placeholder="Ej. 12345678 o C/F" style="font-size:12px;height:32px;text-transform:uppercase" onkeydown="if(event.key==='Enter'){event.preventDefault();posBuscarClientePorNit();}" />
-                                    <button type="button" class="topbar-btn" onclick="posBuscarClientePorNit()" id="posNitSearchBtn" style="height:32px;padding:0 10px;font-size:11.5px;background:var(--accent);color:#fff;white-space:nowrap">
-                                        Buscar NIT
-                                    </button>
-                                </div>
-                                <div id="posNitResultMsg" style="font-size:11px;margin-top:4px;display:none;line-height:1.3"></div>
-                            </div>
-
-                            <!-- Selector de Cliente -->
-                            <div class="form-field" style="margin-bottom:8px">
-                                <label class="form-label" style="font-size:10.5px">CLIENTE FACTURACIÓN</label>
-                                <select class="form-select" id="posClienteSelect" onchange="posOnClienteChange(this)" style="font-size:12.5px;height:34px">
+                            <div class="pos-cliente">
+                                <label class="pos-lbl" for="posClienteSelect">Cliente</label>
+                                <select class="form-select" id="posClienteSelect" onchange="posOnClienteChange(this)">
                                     <option value="__cf__">Consumidor Final (C/F)</option>
                                 </select>
+                                <div class="pos-nit">
+                                    <input class="form-input" id="posNitSearchInput" placeholder="Buscar cliente por NIT" aria-label="NIT del cliente"
+                                           onkeydown="if(event.key==='Enter'){event.preventDefault();posBuscarClientePorNit();}" />
+                                    <button type="button" class="pos-btn sm" id="posNitSearchBtn" onclick="posBuscarClientePorNit()">Buscar NIT</button>
+                                    <button type="button" class="pos-nit-clear" onclick="posLimpiarNitBusqueda()">Limpiar</button>
+                                </div>
+                                <div id="posNitResultMsg" style="font-size:12px;display:none;line-height:1.35"></div>
+                                <div id="posClienteResumen" class="pos-muted"></div>
                             </div>
-
-                            <!-- Selector Rápido de Tarifa / Lista de Precios -->
-                            <div style="display:flex;align-items:center;justify-content:space-between">
-                                <span style="font-size:11px;font-weight:600;color:var(--text-muted)">LISTA DE PRECIO:</span>
-                                <div style="display:flex;gap:4px">
+                            <div class="pos-lp" id="posListaRow" style="display:none">
+                                <span>Lista de precios</span>
+                                <span style="display:flex;gap:4px">
                                     <button type="button" class="pos-lp-btn active" data-lp="Publico" onclick="posCambiarListaPrecio('Publico')">Público</button>
                                     <button type="button" class="pos-lp-btn" data-lp="Plata" onclick="posCambiarListaPrecio('Plata')">Plata</button>
                                     <button type="button" class="pos-lp-btn" data-lp="Oro" onclick="posCambiarListaPrecio('Oro')">Oro</button>
-                                </div>
+                                </span>
                             </div>
                         </div>
 
-                        <!-- Items del Carrito -->
-                        <div class="pos-cart-body">
-                            <table style="width:100%;border-collapse:collapse">
-                                <tbody id="posCartTbody">
-                                    <tr>
-                                        <td colspan="4" style="text-align:center;padding:48px 16px;color:var(--text-muted)">
-                                            El carrito está vacío.
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                        <div class="pos-cart-body" id="posCartTbody" role="list" aria-label="Artículos de la orden"></div>
 
-                        <!-- Footer / Totales / Botón Guardar / Cobrar -->
                         <div class="pos-cart-footer">
-                            <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;color:var(--text-secondary)">
-                                <span>Subtotal</span>
-                                <span id="posSubtotal" style="font-weight:600">Q 0.00</span>
+                            <div class="pos-tot-row"><span>Subtotal</span><b id="posSubtotal">Q 0.00</b></div>
+                            <div class="pos-tot-row" id="posDescRow" style="display:none">
+                                <span class="pos-disc"><label for="posDescuentoPct">Descuento %</label>
+                                    <input type="number" id="posDescuentoPct" min="0" max="100" step="0.01" value="0" inputmode="decimal" oninput="renderPosCarrito()" />
+                                    <span class="pos-muted" id="posDescMaxTxt"></span></span>
+                                <b id="posDescMonto">Q 0.00</b>
                             </div>
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;color:var(--text-secondary)">
-                                <span>Descuento (%)</span>
-                                <input type="number" id="posDescuentoPct" min="0" max="100" step="1" value="0" oninput="if(Number(this.value)<0)this.value=0;if(Number(this.value)>100)this.value=100;renderPosCarrito()" style="width:64px;height:26px;text-align:right;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-weight:600" />
+                            <div class="pos-tot-row"><span id="posIvaLbl">IVA</span><b id="posIvaMonto">Q 0.00</b></div>
+                            <div class="pos-total"><span>TOTAL</span><span id="posTotalPagar">Q 0.00</span></div>
+                            <button type="button" class="pos-cobrar" id="posBtnCobrar" onclick="posAbrirModalCobro()" disabled><span>COBRAR</span><span class="pos-kbd">F9</span></button>
+                            <div class="pos-cart-sec">
+                                <button type="button" class="pos-btn" id="posBtnPendiente" onclick="posGuardarPendiente()" disabled>Guardar pendiente <span class="pos-kbd">F8</span></button>
+                                <button type="button" class="pos-btn danger-o" id="posBtnCancelar" onclick="posVaciarCarrito()" disabled>Cancelar venta</button>
                             </div>
-                            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;border-top:1.5px solid var(--border);padding-top:10px">
-                                <span style="font-size:14px;font-weight:700;color:var(--text-primary)">TOTAL A PAGAR</span>
-                                <span id="posTotalPagar" style="font-size:24px;font-weight:900;color:var(--accent)">Q 0.00</span>
-                            </div>
-                            <button class="topbar-btn" id="posBtnCobrar" onclick="posAbrirModalCobro()" disabled style="width:100%;height:44px;font-size:15px;font-weight:800;background:var(--success);color:#fff;justify-content:center;border-radius:10px;box-shadow:0 6px 16px rgba(48,209,88,.25)">
-                                GUARDAR (Q 0.00)
-                            </button>
                         </div>
-                    </div>
+                    </aside>
                 </div>
+
+                <!-- Barra inferior (solo pantallas pequeñas) -->
+                <button type="button" class="pos-mobbar" onclick="posToggleCarritoMovil(true)">
+                    <span>🛒 <span id="posMobCount">0</span> artículo(s)</span><b id="posMobTotal">Q 0.00</b><span>Ver orden ›</span>
+                </button>
             </div>
 
             <!-- ── ENCUESTAS ── -->
@@ -3841,6 +3804,10 @@ body.bn-more-open .az-ai-fab { display: none !important; }
                 } else {
                     const submenus = Array.from(document.querySelectorAll('#uPermisosSubmenus input[type="checkbox"]:checked')).map(cb => cb.value);
                     const permisos = { submenus: submenus };
+                    // Permisos específicos del POS (validados por el servidor en cada operación)
+                    permisos.pos = Array.from(document.querySelectorAll('#uPermisosPos input[type="checkbox"]:checked')).map(cb => cb.value);
+                    const _dm = Number(v('uPosDescMax'));
+                    if (permisos.pos.includes('descuento') && isFinite(_dm)) permisos.pos_descuento_max = Math.min(100, Math.max(0, _dm));
 
                     if (m.action === 'add') {
                         const usu = v('uUsuario').trim(), nom = v('uNombre').trim(), pwd = v('uPassword'), rol = v('uRol'), correo = v('uCorreo').trim();
@@ -4262,7 +4229,43 @@ body.bn-more-open .az-ai-fab { display: none !important; }
             }
         }
 
+        // Permisos específicos del POS (se guardan en Usuarios.permisos.pos; el servidor los valida en cada operación).
+        // Admin, Gerente y Super Admin tienen todos sin necesidad de marcarlos.
+        function _htmlPermisosPos(permisosExistentes) {
+            const lista = [
+                { id: 'descuento', label: 'Aplicar descuentos', desc: 'Hasta el máximo indicado abajo' },
+                { id: 'editar_precio', label: 'Modificar precios y listas', desc: 'Cambiar el precio de una línea o la lista de precios' },
+                { id: 'devolver', label: 'Registrar devoluciones', desc: 'Totales o parciales, con reingreso a inventario' },
+                { id: 'anular', label: 'Anular ventas', desc: 'Anulación completa con reintegro' },
+                { id: 'caja_mov', label: 'Entradas / salidas de efectivo', desc: 'Retiros y aportes de caja' },
+                { id: 'reimprimir', label: 'Reimprimir comprobantes', desc: 'Ventas anteriores (queda auditado)' }
+            ];
+            const p = permisosExistentes || {};
+            const marcados = new Set(Array.isArray(p.pos) ? p.pos : []);
+            const max = (p.pos_descuento_max !== undefined && p.pos_descuento_max !== null) ? Number(p.pos_descuento_max) : 10;
+            return `
+            <div class="form-field" style="margin-top:14px;background:var(--bg,#f8f9fa);border:1px solid var(--border);border-radius:10px;padding:14px">
+                <label class="form-label" style="font-weight:700;color:var(--text-primary);margin-bottom:4px">PERMISOS DEL PUNTO DE VENTA</label>
+                <div style="font-size:11.5px;color:var(--text-secondary);margin-bottom:10px">Operaciones sensibles del POS. Administradores y gerentes las tienen siempre; para el resto se validan en el servidor.</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="uPermisosPos">
+                    ${lista.map(m => `
+                        <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;background:var(--card);padding:8px 10px;border-radius:8px;border:1px solid var(--border)">
+                            <input type="checkbox" value="${m.id}" ${marcados.has(m.id) ? 'checked' : ''} style="margin-top:2px"/>
+                            <div><div style="font-weight:600;color:var(--text-primary)">${m.label}</div><div style="font-size:10.5px;color:var(--text-muted)">${m.desc}</div></div>
+                        </label>`).join('')}
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px">
+                    <label for="uPosDescMax" style="font-weight:600">Descuento máximo permitido (%)</label>
+                    <input class="form-input" id="uPosDescMax" type="number" min="0" max="100" step="1" value="${max}" style="width:80px"/>
+                </div>
+            </div>`;
+        }
+
         function _htmlPermisosSubmenus(permisosExistentes) {
+            return _htmlPermisosSubmenusBase(permisosExistentes) + _htmlPermisosPos(permisosExistentes);
+        }
+
+        function _htmlPermisosSubmenusBase(permisosExistentes) {
             const todos = [
                 { id: 'pos', label: '🛒 Punto de Venta (POS)', desc: 'Ventas directas y tickets' },
                 { id: 'clientes', label: '👥 Clientes', desc: 'Directorio y tarifas' },
@@ -4435,6 +4438,7 @@ body.bn-more-open .az-ai-fab { display: none !important; }
     </script>
     <script src="contabilidad.js"></script>
     <script src="cotizaciones.js"></script>
+    <script src="pos-calc.js"></script>
     <script src="pos.js"></script>
     <script>
         /* ══════════════════════════════════════════════════════════
