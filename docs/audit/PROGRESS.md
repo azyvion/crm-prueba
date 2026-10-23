@@ -136,3 +136,12 @@ Detalle en [`POS-LOTE4.md`](./POS-LOTE4.md) (sección Lote 5). Migración `20261
 
 ## Lote 6 — 2026-10-23 UTC (Negocio: reportes, compras, kardex, seguimiento)
 Detalle en [`POS-LOTE4.md`](./POS-LOTE4.md) (sección Lote 6). Migración `20261023_08_negocio.sql` **no aplicada**; frontend **no publicado**. Pruebas: SQL 28/28 + suites previas, unitarias 60/60, interfaz en arnés.
+
+## Lote 7 — 2026-10-23 (Productividad)
+Detalle completo en `docs/audit/LOTE7-PRODUCTIVIDAD.md`.
+
+- **Estado real verificado:** 06–08 ya aplicadas en producción (fuera del historial de migraciones); el frontend publicado = línea base local (Lotes 1–6 publicados). Uso real del POS nuevo (1 caja abierta, 1 venta). `org_azyvion_001` con 0 clientes.
+- **Git local** creado (sin remoto): `ed1d793` línea base → commits del Lote 7.
+- **Nuevo:** tareas/calendario/recordatorios, plantillas y redactor de mensajes con registro, importación CSV, auditoría general, metas por vendedor, alerta de stock mínimo, ventas pendientes del POS en el servidor. Corrección FN-25.
+- **Pruebas:** SQL 19/19 (solo 09 sobre el estado real) + suites previas sin regresiones; unitarias 71/71; arnés de interfaz OK.
+- **Siguiente acción exacta:** aprobación para aplicar `20261023_09_crm_productividad.sql` y publicar los 8 archivos listados en el documento del lote.

@@ -55,6 +55,7 @@ Estados: **CORREGIDO** (en producción y verificado) · **BACKEND-OK / FRONT-PEN
 | FN-22 | Alto | Cotizaciones | `clienteId: ''` en columna uuid → crear una cotización sin elegir un cliente existente fallaba. | `null`. | **CORREGIDO-LOCAL**. |
 | FN-23 | Medio | Customer 360 | La ficha agregaba cotizaciones con `cliente ILIKE %nombre%` ("Ana" ⊂ "Mariana") y doble codificación (nombres con espacios no coincidían). | Por `clienteId`; por nombre exacto solo si no hay `clienteId`. | **CORREGIDO-LOCAL** — sintaxis del filtro validada contra la API (HTTP 200 con comas, paréntesis y comillas). **Datos:** 3 cotizaciones apuntan a clientes eliminados (sin FK) → REQUIERE-APROBACIÓN. |
 | FN-24 | Medio | Usuarios | 4 cuentas con `user_roles` en `org_azyvion_001` sin perfil en `Usuarios` (2 ADMIN, 2 VENDEDOR): las políticas basadas en `current_user_org_id()` les niegan Clientes/Inventario/Cotizaciones/etc. | Crear perfiles o retirar esas cuentas (decisión del propietario). | **REQUIERE-APROBACIÓN**. |
+| FN-25 | Medio | Ficha / Actividades | Registrar una actividad sin fecha de seguimiento enviaba `''` a la columna `date` `fechaSeguimiento`: el guardado fallaba. | Se envía `null`. | **CORREGIDO-LOCAL** (Lote 7) — prueba unitaria. |
 | ARC-01 | Medio | Arquitectura | Dos fuentes de organización (`current_user_org_id()` vía `Usuarios` y `get_my_org_id()` vía `user_roles`) y dos tablas de empresa. | Ver plan en `QA-REPORT.md` §Empresas. No se fusionan: son conceptos distintos. | **ABIERTO** (plan documentado). |
 
 ## No verificado
