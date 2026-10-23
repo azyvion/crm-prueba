@@ -347,6 +347,9 @@ html[data-theme] .bank-drawer {
 html[data-theme] .kpi-card .kpi-value,
 html[data-theme] .ov-kpi-card .kpi-value,
 html[data-theme] .ov-stat-item strong { color: var(--az-text) !important; font-variant-numeric: tabular-nums; }
+html[data-theme] .kpi-card .kpi-value.is-pos { color: var(--az-success) !important; }
+html[data-theme] .kpi-card .kpi-value.is-neg { color: var(--az-danger) !important; }
+html[data-theme] .kpi-delta.neu { color: var(--az-text-2) !important; background: var(--az-surface-2) !important; }
 html[data-theme] .kpi-label,
 html[data-theme] .ov-kpi-label { color: var(--az-text-2) !important; font-size: 12px !important; font-weight: 600 !important; text-transform: uppercase; letter-spacing: .5px; }
 html[data-theme] .kpi-delta { font-weight: 600 !important; }
@@ -367,11 +370,13 @@ html[data-theme] .page table thead th {
     white-space: nowrap;
 }
 html[data-theme] .page table tbody td {
-    color: var(--az-text) !important;
     border-bottom: 1px solid var(--az-border) !important;
     padding: 11px 14px !important;
     background: transparent;
+    vertical-align: middle;
 }
+/* Color base de celda sin pisar los colores semánticos (montos, diferencias) */
+html[data-theme] .page table tbody td:not([style*="color"]):not(.is-pos):not(.is-neg) { color: var(--az-text) !important; }
 html[data-theme] .page table tbody tr { transition: background-color .12s ease; }
 html[data-theme] .page table tbody tr:hover td { background: var(--az-surface-hover) !important; }
 html[data-theme] .page table tbody tr:last-child td { border-bottom: none !important; }
@@ -529,6 +534,9 @@ html[data-theme] .modal-title { color: var(--az-text) !important; font-weight: 7
 html[data-theme] .modal-close { color: var(--az-text-2) !important; border-radius: var(--az-radius-sm) !important; }
 html[data-theme] .modal-close:hover { background: var(--az-surface-hover) !important; color: var(--az-text) !important; }
 html[data-theme] .toast { border-radius: var(--az-radius) !important; box-shadow: var(--az-shadow-lg) !important; font-weight: 500 !important; }
+/* En móvil el estado oculto solo desplazaba 8px: la barra vacía quedaba visible bajo el encabezado */
+html[data-theme] .toast:not(.show) { opacity: 0; visibility: hidden; }
+html[data-theme] .toast { transition: transform .3s cubic-bezier(0.34, 1.42, 0.64, 1), opacity .2s ease, visibility .2s; }
 
 /* Estado vacío y carga (componentes reutilizables) */
 html[data-theme] .az-empty { text-align: center; padding: 40px 20px; color: var(--az-text-2); }
@@ -578,7 +586,289 @@ html[data-theme="dark"] #ticketTermicoArea,
 html[data-theme="dark"] #ticketTermicoArea * { color: #000 !important; }
 html[data-theme="dark"] #ticketTermicoArea { background: #FFFFFF !important; }
 
-/* ── 13. Impresión ──────────────────────────────────────────────────── */
+/* ── 13. Inicio: saludo y tarjetas inferiores ───────────────────────── */
+/* El saludo pasa a superficie neutra: el texto blanco heredado era invisible en claro */
+html[data-theme] .ov-greeting-bar { background: var(--az-surface) !important; padding: 22px 26px !important; }
+html[data-theme] .ov-greeting-bar::before,
+html[data-theme] .ov-greeting-bar::after { display: none !important; }
+html[data-theme] .ov-greeting { color: var(--az-text) !important; font-size: 24px !important; font-weight: 700 !important; letter-spacing: -.4px !important; }
+html[data-theme] .ov-greeting-sub { color: var(--az-text-2) !important; }
+/* Alertas + acciones rápidas: el bloque quedaba cortado por la altura fija */
+html[data-theme] #page-overview #ovCardAccionesRapidas { overflow-y: auto !important; }
+html[data-theme] #page-overview #ovCardAccionesRapidas > * { flex: none !important; overflow: visible !important; }
+/* Botón de la consola de desarrollo: chocaba con el asistente IA (sigue con Ctrl + Shift + D) */
+html[data-theme] .devtools-fab { display: none !important; }
+
+/* ── 14. Contabilidad ───────────────────────────────────────────────── */
+html[data-theme] #page-contabilidad .kpi-grid { margin-bottom: 16px; }
+/* Montos en una sola línea: en pantallas medianas el "Q" quedaba separado de la cifra */
+html[data-theme] #page-contabilidad .kpi-value { white-space: nowrap; font-size: clamp(19px, 1.9vw, 28px) !important; }
+@media (min-width: 601px) and (max-width: 1100px) {
+    html[data-theme] #page-contabilidad .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+html[data-theme] #page-contabilidad .cont-kpi-grid { margin-bottom: 16px !important; }
+@media (min-width: 900px) {
+    html[data-theme] #page-contabilidad .cont-kpi-grid-2 { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* Pestañas: una sola línea; desplazamiento horizontal si no caben */
+html[data-theme] .cont-tabs {
+    background: var(--az-surface) !important;
+    border: 1px solid var(--az-border) !important;
+    border-radius: var(--az-radius-lg) !important;
+    box-shadow: var(--az-shadow-sm) !important;
+    padding: 4px !important;
+    gap: 2px !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+html[data-theme] .cont-tabs::-webkit-scrollbar { display: none; }
+html[data-theme] .cont-tab {
+    flex: 1 0 auto !important;
+    white-space: nowrap;
+    min-height: 36px !important;
+    padding: 0 14px !important;
+    font-size: 13px !important;
+    border-radius: 8px !important;
+}
+html[data-theme] .cont-tab:hover:not(.active) { background: var(--az-surface-hover) !important; color: var(--az-text) !important; }
+
+/* Barra de filtros (período, botones) — igual dentro y fuera de una tarjeta */
+html[data-theme] .cont-filterbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 12px;
+}
+html[data-theme] .cont-filterbar-card {
+    background: var(--az-surface);
+    border: 1px solid var(--az-border);
+    border-radius: var(--az-radius-lg);
+    box-shadow: var(--az-shadow-sm);
+    padding: 10px 14px;
+    margin-bottom: 16px;
+}
+html[data-theme] .cont-filter-group { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+html[data-theme] .cont-filter-label { font-size: 12.5px; font-weight: 600; color: var(--az-text-2); margin-right: 2px; }
+html[data-theme] .cont-range-sep { font-size: 12px; color: var(--az-text-3); }
+html[data-theme] .cont-card-title { font-size: 14px; font-weight: 700; color: var(--az-text); }
+html[data-theme] #page-contabilidad .table-toolbar { gap: 10px; flex-wrap: wrap; }
+html[data-theme] #page-contabilidad .toolbar-right { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+
+/* Controles compactos de la barra: misma altura (32px) */
+html[data-theme] .mini-date,
+html[data-theme] #page-contabilidad .mini-select {
+    height: 32px !important;
+    border: 1px solid var(--az-border-strong) !important;
+    border-radius: var(--az-radius-sm) !important;
+    color: var(--az-text) !important;
+    font-family: inherit;
+    font-size: 13px !important;
+}
+html[data-theme] .mini-date {
+    width: 148px;
+    padding: 0 8px !important;
+    background: var(--az-surface) !important;
+    font-variant-numeric: tabular-nums;
+}
+html[data-theme] #page-contabilidad .mini-select { background-color: var(--az-surface) !important; min-width: 170px; }
+html[data-theme] #page-contabilidad .btn-ghost,
+html[data-theme] #page-contabilidad .topbar-btn.cont-btn,
+html[data-theme] #bankDrawer .btn-ghost {
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 12px !important;
+    font-size: 12.5px !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+html[data-theme] #page-contabilidad .btn-ghost svg,
+html[data-theme] #page-contabilidad .cont-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor !important; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+html[data-theme] #page-contabilidad .table-scroll .btn-ghost { height: 28px !important; min-height: 28px !important; padding: 0 10px !important; font-size: 12px !important; }
+
+/* Acciones por fila: Editar (secundario) + Eliminar (destructivo suave), mismo tamaño */
+html[data-theme] #page-contabilidad .row-actions { justify-content: flex-end; flex-wrap: nowrap; }
+html[data-theme] #page-contabilidad .row-actions .section-action,
+html[data-theme] #page-contabilidad .row-actions .btn-danger-sm {
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    border-radius: var(--az-radius-sm) !important;
+    white-space: nowrap;
+    box-shadow: none !important;
+    transform: none !important;
+}
+html[data-theme] #page-contabilidad .row-actions .section-action {
+    background: var(--az-surface) !important;
+    border: 1px solid var(--az-border-strong) !important;
+    color: var(--az-text) !important;
+}
+html[data-theme] #page-contabilidad .row-actions .section-action:hover { background: var(--az-surface-hover) !important; }
+html[data-theme] .btn-danger-sm {
+    background: var(--az-danger-soft) !important;
+    color: var(--az-danger) !important;
+    border: 1px solid transparent !important;
+}
+html[data-theme] .btn-danger-sm:hover { border-color: var(--az-danger) !important; }
+
+/* Celdas */
+html[data-theme] .cont-nowrap { white-space: nowrap; }
+html[data-theme] .cont-code {
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--az-text-2);
+    font-variant-numeric: tabular-nums;
+}
+html[data-theme] .cont-partida { font-weight: 700; color: var(--az-text-2) !important; white-space: nowrap; font-variant-numeric: tabular-nums; }
+html[data-theme] .cont-amt { font-weight: 600; }
+html[data-theme] .page table tbody td.is-pos, html[data-theme] .cont-totals strong.is-pos { color: var(--az-success) !important; }
+html[data-theme] .page table tbody td.is-neg, html[data-theme] .cont-totals strong.is-neg { color: var(--az-danger) !important; }
+html[data-theme] .cont-totals strong.is-accent { color: var(--az-primary) !important; }
+html[data-theme] #page-contabilidad .cell-clip { max-width: 260px; }
+html[data-theme] .cont-tag-inline { margin-left: 6px; font-size: 11px !important; padding: 1px 8px !important; vertical-align: 1px; }
+html[data-theme] #page-contabilidad .tag { white-space: nowrap; }
+
+/* Libro diario: cuentas como texto contable (Haber sangrado), no como píldoras */
+html[data-theme] .cont-acct { display: inline-block; font-weight: 500; color: var(--az-text); line-height: 1.35; }
+html[data-theme] .cont-acct-haber { padding-left: 14px; color: var(--az-text-2); }
+html[data-theme] .cont-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+html[data-theme] .cont-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+html[data-theme] .cont-badge.is-ok  { background: var(--az-success-soft); color: var(--az-success); }
+html[data-theme] .cont-badge.is-bad { background: var(--az-danger-soft);  color: var(--az-danger); }
+
+/* Barra de participación */
+html[data-theme] .cont-share { display: flex; align-items: center; gap: 10px; }
+html[data-theme] .cont-share-track { flex: 1; height: 6px; border-radius: 999px; background: var(--az-surface-hover); overflow: hidden; }
+html[data-theme] .cont-share-fill { height: 100%; border-radius: 999px; background: var(--az-primary); }
+html[data-theme] .cont-share.is-pos .cont-share-fill { background: var(--az-success); }
+html[data-theme] .cont-share.is-neg .cont-share-fill { background: var(--az-danger); }
+html[data-theme] .cont-share-pct { min-width: 40px; text-align: right; font-size: 12px; font-weight: 600; color: var(--az-text-2); font-variant-numeric: tabular-nums; }
+
+/* Pie de tabla con totales */
+html[data-theme] .table-foot:empty { display: none !important; }
+html[data-theme] .table-foot.cont-totals {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    padding: 12px 16px !important;
+    background: var(--az-surface-2) !important;
+    border-top: 1px solid var(--az-border) !important;
+    font-size: 12.5px;
+    color: var(--az-text-2) !important;
+}
+html[data-theme] .cont-totals-label { font-weight: 600; color: var(--az-text-2); }
+html[data-theme] .cont-totals-values { display: flex; flex-wrap: wrap; gap: 6px 24px; margin-left: auto; }
+html[data-theme] .cont-totals-values strong { margin-left: 6px; color: var(--az-text); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Tarjetas bancarias */
+html[data-theme] .bank-card {
+    border-radius: var(--az-radius-lg) !important;
+    border: 1px solid var(--az-border) !important;
+    background: var(--az-surface) !important;
+    box-shadow: var(--az-shadow-sm) !important;
+    transition: box-shadow .15s ease, border-color .15s ease !important;
+}
+html[data-theme] .bank-card:hover { transform: none !important; border-color: var(--az-border-strong) !important; box-shadow: var(--az-shadow) !important; }
+html[data-theme] .bank-card.is-inactive .bank-card-saldo,
+html[data-theme] .bank-card.is-inactive .bank-logo-wrap { opacity: .55; }
+html[data-theme] .bank-logo-wrap { border: 1px solid var(--az-border); background-color: #FFFFFF; }
+html[data-theme] .bank-card-badge { background: var(--az-success-soft) !important; color: var(--az-success) !important; font-size: 11px !important; padding: 2px 8px !important; border-radius: 999px !important; }
+html[data-theme] .bank-card-badge.inactiva { background: var(--az-danger-soft) !important; color: var(--az-danger) !important; }
+html[data-theme] .bank-card-bank { color: var(--az-text-2) !important; }
+html[data-theme] .bank-card-num { color: var(--az-text-3) !important; font-variant-numeric: tabular-nums; }
+html[data-theme] .bank-card-saldo-label { color: var(--az-text-3) !important; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+html[data-theme] .bank-card-saldo { font-variant-numeric: tabular-nums; }
+html[data-theme] .bank-card-saldo.positivo { color: var(--az-text) !important; }
+html[data-theme] .bank-card-saldo.negativo { color: var(--az-danger) !important; }
+html[data-theme] .bank-card-cta { border-top: 1px solid var(--az-border); padding-top: 12px; margin-top: 14px !important; }
+html[data-theme] .bank-add-card { border: 1.5px dashed var(--az-border-strong) !important; border-radius: var(--az-radius-lg) !important; color: var(--az-text-2) !important; min-height: 180px; }
+html[data-theme] .bank-add-card:hover { border-color: var(--az-primary) !important; color: var(--az-primary) !important; background: var(--az-primary-soft) !important; }
+
+/* Panel lateral de cuenta */
+html[data-theme] .bank-drawer { border-radius: 0 !important; border-width: 0 0 0 1px !important; }
+html[data-theme] .bank-drawer-overlay { background: var(--az-overlay) !important; }
+html[data-theme] .bank-drawer-sub { color: var(--az-text-2) !important; }
+html[data-theme] .bank-saldo-box {
+    background: var(--az-sidebar) !important;
+    background-image: linear-gradient(135deg, var(--az-sidebar) 0%, var(--az-sidebar-2) 100%) !important;
+    border-radius: var(--az-radius-lg) !important;
+    box-shadow: none !important;
+}
+html[data-theme] .bank-saldo-label { font-size: 12px; color: rgba(255, 255, 255, .7); margin-bottom: 4px; }
+html[data-theme] .bank-saldo-sub { font-size: 12px; color: rgba(255, 255, 255, .55); margin-top: 4px; }
+html[data-theme] .bank-saldo-num { font-variant-numeric: tabular-nums; }
+html[data-theme] .drawer-action-btn { flex-direction: column !important; height: auto !important; padding: 10px 6px !important; font-size: 11.5px !important; }
+html[data-theme] .drawer-stat { background: var(--az-surface-2) !important; border: 1px solid var(--az-border); }
+html[data-theme] .drawer-stat-label { color: var(--az-text-2) !important; }
+html[data-theme] .drawer-stat-val { font-variant-numeric: tabular-nums; }
+html[data-theme] .drawer-section-title { font-size: 13px; font-weight: 700; color: var(--az-text); margin-bottom: 10px; }
+html[data-theme] .drawer-trx-item { background: var(--az-surface-2) !important; border: 1px solid var(--az-border); }
+html[data-theme] .drawer-trx-icon { background: var(--az-surface-hover); }
+html[data-theme] .drawer-trx-icon svg { stroke: var(--az-text-2); }
+html[data-theme] .drawer-trx-icon.ing { background: var(--az-success-soft); } html[data-theme] .drawer-trx-icon.ing svg { stroke: var(--az-success); }
+html[data-theme] .drawer-trx-icon.egr { background: var(--az-danger-soft); }  html[data-theme] .drawer-trx-icon.egr svg { stroke: var(--az-danger); }
+html[data-theme] .drawer-trx-icon.tra { background: var(--az-info-soft); }    html[data-theme] .drawer-trx-icon.tra svg { stroke: var(--az-info); }
+html[data-theme] .drawer-trx-icon.adj { background: var(--az-warning-soft); } html[data-theme] .drawer-trx-icon.adj svg { stroke: var(--az-warning); }
+html[data-theme] .drawer-trx-date { color: var(--az-text-3) !important; }
+html[data-theme] .drawer-trx-side { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+html[data-theme] .drawer-trx-amount { font-variant-numeric: tabular-nums; }
+html[data-theme] .drawer-trx-amount.ing { color: var(--az-success) !important; }
+html[data-theme] .drawer-trx-amount.egr { color: var(--az-danger) !important; }
+html[data-theme] .drawer-trx-amount.tra { color: var(--az-info) !important; }
+html[data-theme] .drawer-trx-amount.adj { color: var(--az-warning) !important; }
+html[data-theme] .drawer-trx-del {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px;
+    border: 0; border-radius: var(--az-radius-sm);
+    background: transparent; color: var(--az-text-3);
+    cursor: pointer;
+}
+html[data-theme] .drawer-trx-del:hover { background: var(--az-danger-soft); color: var(--az-danger); }
+html[data-theme] .drawer-trx-del svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+html[data-theme] .bank-drawer-footer { justify-content: space-between !important; background: var(--az-surface-2); }
+/* El asistente flotante tapaba los botones del panel */
+html[data-theme] body:has(.bank-drawer.open) .az-ai-fab { display: none !important; }
+
+/* Etiquetas de tipo (plan de cuentas / transacciones) con tokens: legibles en ambos temas */
+html[data-theme] .tag-activo,
+html[data-theme] .tag-trx-Transferencia { background: var(--az-info-soft) !important; color: var(--az-info) !important; }
+html[data-theme] .tag-pasivo,
+html[data-theme] .tag-trx-Ajuste { background: var(--az-warning-soft) !important; color: var(--az-warning) !important; }
+html[data-theme] .tag-capital { background: var(--az-primary-soft) !important; color: var(--az-primary) !important; }
+html[data-theme] .tag-ingreso-c,
+html[data-theme] .tag-trx-Ingreso,
+html[data-theme] .tag-success { background: var(--az-success-soft) !important; color: var(--az-success) !important; }
+html[data-theme] .tag-egreso,
+html[data-theme] .tag-trx-Egreso,
+html[data-theme] .tag-danger { background: var(--az-danger-soft) !important; color: var(--az-danger) !important; }
+html[data-theme] .tag-accent { background: var(--az-primary-soft) !important; color: var(--az-primary) !important; }
+html[data-theme] .tag-warning { background: var(--az-warning-soft) !important; color: var(--az-warning) !important; }
+
+@media (max-width: 640px) {
+    html[data-theme] .cont-filter-group { width: 100%; }
+    html[data-theme] .mini-date { flex: 1 1 120px; width: auto; }
+    html[data-theme] .cont-totals-values { margin-left: 0; }
+}
+
+/* ── 15. Impresión ──────────────────────────────────────────────────── */
 @media print {
     html[data-theme] .sidebar, html[data-theme] .topbar, html[data-theme] .bottom-nav, html[data-theme] .az-theme-switch { display: none !important; }
     html[data-theme] body { background: #FFFFFF !important; color: #000 !important; }
