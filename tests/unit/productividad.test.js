@@ -82,7 +82,7 @@ test('dashboard: páginas, menú, script y enganche de showPage del Lote 7', () 
 test('POS: las ventas pendientes se guardan en el servidor y se reclaman antes de retomarlas', () => {
   const pos = code('pos.js');
   assert.ok(pos.includes("_posApi('posPendienteGuardar'"));
-  const ret = pos.match(/async function posRetomarPendiente[\s\S]*?\n}\n/)[0];
+  const ret = pos.match(/async function posRetomarPendiente[\s\S]*?\r?\n}\r?\n/)[0];
   const iElim = ret.indexOf("_posApi('posPendienteEliminar'"), iCarga = ret.indexOf('_posCarrito.push');
   assert.ok(iElim > 0 && iElim < iCarga, 'debe eliminarse en el servidor antes de cargar el carrito');
   assert.ok(ret.includes('if (!r.ok)'), 'si otro equipo ya la tomó, no se carga');
