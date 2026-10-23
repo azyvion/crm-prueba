@@ -1,0 +1,21 @@
+{
+  "name": "Azyvion CRM",
+  "short_name": "Azyvion",
+  "description": "CRM, punto de venta e inventario de Azyvion.",
+  "id": "/crm-prueba/",
+  "start_url": "./login.html?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "es",
+  "background_color": "#0D1522",
+  "theme_color": "#0A84FF",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "logo-crm.png", "sizes": "192x192 512x512 1024x1024", "type": "image/png", "purpose": "any" },
+    { "src": "logo-crm.png", "sizes": "192x192 512x512 1024x1024", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Punto de venta", "url": "./dashboard.html#pos", "icons": [{ "src": "logo-crm.png", "sizes": "192x192" }] }
+  ]
+}

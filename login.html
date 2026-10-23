@@ -6,6 +6,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#eef0f4" />
   <title>Azyvion CRM — Iniciar sesión</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="logo-crm.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <link rel="icon" type="image/png" href="logo-crm.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -597,5 +600,7 @@
     document.addEventListener('keydown', function(e){ if (e.key === 'Enter') window.handleLogin(); });
   })();
   </script>
+<button id="az-install" onclick="azInstalar()" style="display:none;position:fixed;right:16px;bottom:16px;z-index:50;background:#0A84FF;color:#fff;border:0;border-radius:12px;padding:10px 16px;font:600 13.5px Inter,system-ui,sans-serif;cursor:pointer;box-shadow:0 6px 20px rgba(10,132,255,.4)">⬇ Instalar aplicación</button>
+<script src="pwa.js"></script>
 </body>
 </html>
