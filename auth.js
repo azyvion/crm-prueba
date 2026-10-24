@@ -2562,6 +2562,10 @@ function _hideSplash() { setTimeout(function(){ if(window._ovGreeting) window._o
                             })
                             .catch(function() { loadAll(); });
 
+                        // [Lote 9] Licencia: el servidor ya niega los datos sin licencia; aquí se
+                        // muestra el bloqueo con el contacto de ventas o el aviso de vencimiento.
+                        if (window.Licencia) window.Licencia.verificarPanel(window._sb, { salir: function () { if (typeof doLogout === 'function') doLogout(); else location.href = 'login.html?logout=1'; } });
+
                         // Si el rol es Cajero, forzar apertura en POS
                         if (window.esCajero()) {
                             setTimeout(function() {

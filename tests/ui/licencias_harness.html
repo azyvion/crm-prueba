@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arnés de pruebas · Licencias</title>
+<!-- Lote 9 con servidor simulado. node tests/ui/serve.js 4181 → http://localhost:4181/tests/ui/licencias_harness.html
+     ?vista=bloqueo-admin | bloqueo-vend | aviso | admin  ·  &theme=dark -->
+<link rel="stylesheet" href="../../dashboard.css"><link rel="stylesheet" href="../../azyvion-enterprise.css">
+<style>body{margin:0;padding:16px;background:var(--az-bg);font-family:Inter,system-ui,sans-serif}</style>
+</head>
+<body>
+<div class="main"><div id="sub-view-licencias"></div></div>
+<div class="toast" id="toast"></div>
+<script src="../../utils.js"></script><script src="../../licencia.js"></script><script src="../../licencias-admin.js"></script>
+<script>
+  var p = new URLSearchParams(location.search), t = p.get('theme'); if (t) document.documentElement.setAttribute('data-theme', t);
+  window.__rpc = [];
+  var hoy = new Date(Date.now() - 6 * 3600e3).toISOString().slice(0, 10);
+  var DB = {
+    licencias: [
+      { id: 'l1', clave: 'AZV-QKFX-EYSK-NZ74', estado: 'DISPONIBLE', plan_id: 'plan_pro', max_usuarios: 20, vence_en: '2027-10-23', notas: 'Factura 1234', organization_id: null, creada_en: '2026-10-23', sub_planes: { nombre: 'Pro' } },
+      { id: 'l2', clave: 'AZV-7M3P-RT9W-K2HD', estado: 'ASIGNADA', plan_id: 'plan_enterprise', max_usuarios: 999, vence_en: null, notas: 'Migración Lote 9: empresa existente al activar licencias.', organization_id: 'org_concreta_001', creada_en: '2026-10-22', sub_empresas: { nombre: 'Concreta' }, sub_planes: { nombre: 'Enterprise' } },
+      { id: 'l3', clave: 'AZV-H8VN-5QZC-3XEB', estado: 'ASIGNADA', plan_id: null, max_usuarios: 5, vence_en: '2026-10-01', notas: '', organization_id: 'coca-cola-muysseyy', creada_en: '2026-10-21', sub_empresas: { nombre: 'Coca Cola' } },
+      { id: 'l4', clave: 'AZV-B4KM-W6YT-9PRS', estado: 'REVOCADA', plan_id: null, max_usuarios: 5, vence_en: null, notas: 'Prueba', organization_id: null, creada_en: '2026-10-20' }
+    ],
+    sub_empresas: [{ id: 'org_concreta_001', nombre: 'Concreta', estado: 'ACTIVE' }, { id: 'coca-cola-muysseyy', nombre: 'Coca Cola', estado: 'ACTIVE' }, { id: 'org_azyvion_001', nombre: 'Azyvion', estado: 'INTERNAL' }],
+    sub_planes: [{ id: 'plan_starter', nombre: 'Starter', max_usuarios: 5 }, { id: 'plan_pro', nombre: 'Pro', max_usuarios: 20 }, { id: 'plan_enterprise', nombre: 'Enterprise', max_usuarios: 999 }]
+  };
+  function q(tabla) { var o = { select: function () { return o; }, order: function () { return Promise.resolve({ data: JSON.parse(JSON.stringify(DB[tabla])), error: null }); } }; return o; }
+  window._sb = {
+    from: q,
+    rpc: function (fn, args) {
+      window.__rpc.push([fn, args]);
+      if (fn === 'licencia_admin' && args.p_accion === 'generar') {
+        var n = Number(args.p_datos.cantidad || 1), claves = [];
+        for (var i = 0; i < n; i++) { var c = 'AZV-N3W' + i + '-2CDE-FGH' + i; claves.push(c); DB.licencias.unshift({ id: 'n' + i + Date.now(), clave: c, estado: 'DISPONIBLE', max_usuarios: Number(args.p_datos.max_usuarios) || 20, vence_en: args.p_datos.vence_en || null, notas: args.p_datos.notas || '', creada_en: hoy }); }
+        return Promise.resolve({ data: { ok: true, claves: claves }, error: null });
+      }
+      if (fn === 'licencia_admin' && args.p_accion === 'revocar') { DB.licencias.forEach(function (l) { if (l.id === args.p_datos.id) l.estado = 'REVOCADA'; }); return Promise.resolve({ data: { ok: true }, error: null }); }
+      if (fn === 'licencia_activar') return Promise.resolve(args.p_clave === 'AZV-QKFX-EYSK-NZ74' ? { data: { vigente: true }, error: null } : { data: null, error: { message: 'La licencia no es válida, ya fue usada o está vencida.' } });
+      return Promise.resolve({ data: { ok: true }, error: null });
+    }
+  };
+  var vista = p.get('vista') || 'admin';
+  if (vista === 'admin') LicenciasAdmin.render(document.getElementById('sub-view-licencias'));
+  else if (vista === 'aviso') Licencia.mostrarAviso(Licencia.avisoVencimiento({ vigente: true, dias_restantes: 6 }));
+  else Licencia.mostrarBloqueo({ vigente: false, motivo: vista === 'bloqueo-admin' ? 'VENCIDA' : 'SIN_LICENCIA', puede_activar: vista === 'bloqueo-admin' },
+    { activar: function (c) { return window._sb.rpc('licencia_activar', { p_clave: c }); }, salir: function () { window.__salir = true; } });
+</script>
+</body>
+</html>

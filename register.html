@@ -295,6 +295,9 @@
     .success-title { font-size:22px; font-weight:800; color:var(--text); letter-spacing:-0.5px; margin-bottom:8px; }
     .success-msg   { font-size:14px; color:var(--text-3); line-height:1.6; margin-bottom:20px; }
     .success-detail { background:#f9fafb; border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:18px; text-align:left; }
+    .lic-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+    .lic-ok { border: 1px solid rgba(22,132,91,.35); background: rgba(22,132,91,.07); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: 13px; color: var(--text); }
+    .lic-ok strong { color: var(--green); }
     .success-row   { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); }
     .success-row:last-child { border-bottom:none; }
     .success-key   { font-size:11.5px; color:var(--text-3); font-weight:500; }
@@ -388,19 +391,32 @@
         <div class="step-dot" id="sd2"><span>2</span></div>
         <div class="step-line" id="sl2"></div>
         <div class="step-dot" id="sd3"><span>3</span></div>
-        <div class="step-line" id="sl3"></div>
-        <div class="step-dot" id="sd4"><span>4</span></div>
       </div>
       <div class="steps-labels">
-        <div class="step-label active" id="lbl1">Empresa</div>
-        <div class="step-label" id="lbl2">Cuenta</div>
-        <div class="step-label" id="lbl3">Plan</div>
-        <div class="step-label" id="lbl4">Pago</div>
+        <div class="step-label active" id="lbl1">Licencia</div>
+        <div class="step-label" id="lbl2">Empresa</div>
+        <div class="step-label" id="lbl3">Cuenta</div>
       </div>
     </div>
 
-    <!-- STEP 1 -->
+    <!-- PASO 1: LICENCIA -->
     <div id="step1">
+      <h1 class="form-title">Tu licencia</h1>
+      <p class="form-sub">Para crear tu cuenta necesitas el código de licencia que te entregó Azyvion.</p>
+      <div class="field-wrap">
+        <label class="field-label" for="f_licencia">Código de licencia *</label>
+        <div class="field-inner"><input class="field-input lic-code" type="text" id="f_licencia" placeholder="AZV-XXXX-XXXX-XXXX" maxlength="18" autocomplete="off" spellcheck="false" oninput="this.value = Licencia.formatear(this.value)" /></div>
+      </div>
+      <div class="lic-ok" id="licOk" style="display:none"></div>
+      <div class="error-msg" id="err1"></div>
+      <div id="licContacto" style="display:none;margin-bottom:12px"></div>
+      <button class="btn-primary" id="licBtn" onclick="nextStep(2)"><span class="btn-text">Validar licencia</span><div class="spinner"></div></button>
+      <p class="form-footer">¿No tienes licencia? <a class="link-btn" href="#" onclick="mostrarContacto();return false">Contáctanos</a></p>
+      <p class="form-footer" style="margin-top:4px">¿Ya tienes cuenta? <a class="link-btn" href="login.html">Iniciar sesión</a></p>
+    </div>
+
+    <!-- PASO 2: EMPRESA -->
+    <div id="step2" style="display:none">
       <h1 class="form-title">Tu empresa</h1>
       <p class="form-sub">Información básica para configurar tu CRM.</p>
 
@@ -459,13 +475,13 @@
         <div class="field-inner"><input class="field-input" type="email" id="f_correo_emp" placeholder="contacto@empresa.com" /></div>
       </div>
 
-      <div class="error-msg" id="err1"></div>
-      <button class="btn-primary" onclick="nextStep(2)"><span class="btn-text">Continuar</span><div class="spinner"></div></button>
-      <p class="form-footer">¿Ya tienes cuenta? <a class="link-btn" href="login.html">Iniciar sesión</a></p>
+      <div class="error-msg" id="err2"></div>
+      <button class="btn-primary" onclick="nextStep(3)"><span class="btn-text">Continuar</span><div class="spinner"></div></button>
+      <button class="btn-back" onclick="goBack(1)">← Anterior</button>
     </div>
 
-    <!-- STEP 2 -->
-    <div id="step2" style="display:none">
+    <!-- PASO 3: CUENTA -->
+    <div id="step3" style="display:none">
       <h1 class="form-title">Tu cuenta</h1>
       <p class="form-sub">Serás el administrador principal del CRM.</p>
 
@@ -504,181 +520,14 @@
         </div>
       </div>
 
-      <div class="error-msg" id="err2"></div>
-      <button class="btn-primary" onclick="nextStep(3)"><span class="btn-text">Continuar</span><div class="spinner"></div></button>
-      <button class="btn-back" onclick="goBack(1)">← Anterior</button>
-    </div>
-
-    <!-- STEP 3 -->
-    <div id="step3" style="display:none">
-      <h1 class="form-title">Elige tu plan</h1>
-      <p class="form-sub">Prueba completa por 4 días. Sin cobros durante el período de prueba.</p>
-
-      <div class="plan-grid">
-        <label><input type="radio" name="plan" value="starter" class="plan-radio" checked />
-          <div class="plan-card"><div class="plan-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <div class="plan-name">Starter</div><div class="plan-price">$59<span>/mes</span></div>
-            <div class="plan-detail">3 usuarios · 2,500 contactos · 1 Caja POS · 4 días gratis</div></div></label>
-        <label><input type="radio" name="plan" value="pro" class="plan-radio" />
-          <div class="plan-card"><div class="plan-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <div class="plan-name">Pro / Business</div><div class="plan-price">$149<span>/mes</span></div>
-            <div class="plan-detail">10 usuarios · 25,000 contactos · FEL SAT & Finanzas · 4 días gratis</div>
-            <div class="plan-badge">Más popular</div></div></label>
-        <label><input type="radio" name="plan" value="enterprise" class="plan-radio" />
-          <div class="plan-card"><div class="plan-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <div class="plan-name">Enterprise</div>
-            <div class="plan-price">$299<span>/mes</span></div>
-            <div class="plan-detail">30+ usuarios · Sucursales ilimitadas · Comisiones & Auditoría</div></div></label>
-      </div>
-
+      <label class="checkbox-label">
+        <input type="checkbox" id="f_terms" />
+        <span class="custom-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
+        <span>Acepto los <a class="link-btn" href="#">Términos de uso</a> y la <a class="link-btn" href="#">Política de privacidad</a></span>
+      </label>
       <div class="error-msg" id="err3"></div>
-      <button class="btn-primary" onclick="nextStep(4)"><span class="btn-text">Continuar</span><div class="spinner"></div></button>
+      <button class="btn-primary" id="finalBtn" onclick="handleRegister()"><span class="btn-text">Crear mi cuenta</span><div class="spinner"></div></button>
       <button class="btn-back" onclick="goBack(2)">← Anterior</button>
-    </div>
-
-    <!-- STEP 4: PAGO -->
-    <div id="step4" style="display:none">
-      <h1 class="form-title" id="payTitle">Pago y confirmación</h1>
-      <p class="form-sub" id="paySubtitle">Activa tu plan y empieza a cerrar negocios hoy.</p>
-
-      <!-- Plan summary -->
-      <div class="plan-summary" id="planSummary">
-        <div>
-          <div class="plan-sum-name" id="sumName">Plan Gratis</div>
-          <div class="plan-sum-note" id="sumNote">Sin tarjeta de crédito</div>
-        </div>
-        <div class="plan-sum-price" id="sumPrice">$0/mes</div>
-      </div>
-
-      <!-- FREE: sin pago -->
-      <div id="freeSection">
-        <label class="checkbox-label">
-          <input type="checkbox" id="f_terms_free" />
-          <span class="custom-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
-          <span>Acepto los <a class="link-btn" href="#">Términos de uso</a> y la <a class="link-btn" href="#">Política de privacidad</a></span>
-        </label>
-        <div class="error-msg" id="err4_free"></div>
-        <button class="btn-primary" id="finalBtnFree" onclick="handleRegister('free')">
-          <span class="btn-text">Crear mi cuenta gratis</span><div class="spinner"></div>
-        </button>
-      </div>
-
-      <!-- PAID: tarjeta/transferencia/paypal -->
-      <div id="paidSection" style="display:none">
-        <div class="pay-tabs">
-          <button class="pay-tab active" id="tabCard" onclick="setPayTab('card')">
-            <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            Tarjeta
-          </button>
-          <button class="pay-tab" id="tabTransfer" onclick="setPayTab('transfer')">
-            <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            Transferencia
-          </button>
-          <button class="pay-tab" id="tabPaypal" onclick="setPayTab('paypal')">
-            <svg viewBox="0 0 24 24"><path d="M7 11l1-8h7a4 4 0 0 1 4 4c0 3-2 4-4 4H7z"/><path d="M6 16l1-5h5a3 3 0 0 1 3 3c0 2-1.5 3-3 3H6z"/></svg>
-            PayPal
-          </button>
-        </div>
-
-        <!-- Tarjeta -->
-        <div id="cardForm">
-          <div class="field-wrap">
-            <label class="field-label" for="f_card">Número de tarjeta *</label>
-            <div class="field-inner">
-              <input class="field-input" type="text" id="f_card" placeholder="0000 0000 0000 0000" maxlength="19" oninput="fmtCard(this)" autocomplete="cc-number" inputmode="numeric" />
-              <div class="card-brands">
-                <div class="cb cb-visa">VISA</div>
-                <div class="cb cb-mc">MC</div>
-              </div>
-            </div>
-          </div>
-          <div class="field-wrap">
-            <label class="field-label" for="f_name_card">Nombre en la tarjeta *</label>
-            <div class="field-inner"><input class="field-input" type="text" id="f_name_card" placeholder="Como aparece en la tarjeta" autocomplete="cc-name" /></div>
-          </div>
-          <div class="card-row">
-            <div class="field-wrap" style="margin-bottom:0">
-              <label class="field-label" for="f_exp">Vencimiento *</label>
-              <div class="field-inner"><input class="field-input" type="text" id="f_exp" placeholder="MM / AA" maxlength="7" oninput="fmtExp(this)" autocomplete="cc-exp" inputmode="numeric" /></div>
-            </div>
-            <div class="field-wrap" style="margin-bottom:0">
-              <label class="field-label" for="f_cvv">CVV *</label>
-              <div class="field-inner">
-                <input class="field-input pad-r" type="password" id="f_cvv" placeholder="•••" maxlength="4" autocomplete="cc-csc" inputmode="numeric" />
-                <button class="field-btn" onclick="togglePwd('f_cvv')" aria-label="Mostrar CVV"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-              </div>
-            </div>
-          </div>
-          <div style="margin-bottom:14px"></div>
-          <div class="secure-note"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Pago seguro cifrado con SSL. No almacenamos tus datos de tarjeta.</div>
-          <label class="checkbox-label">
-            <input type="checkbox" id="f_terms_card" />
-            <span class="custom-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
-            <span>Acepto los <a class="link-btn" href="#">Términos de uso</a> y la <a class="link-btn" href="#">Política de privacidad</a></span>
-          </label>
-          <div class="error-msg" id="err4_card"></div>
-          <button class="btn-primary" id="finalBtnCard" onclick="handleRegister('card')">
-            <span class="btn-text" id="finalCardText">Activar prueba de 14 días</span><div class="spinner"></div>
-          </button>
-        </div>
-
-        <!-- Transferencia -->
-        <div id="transferForm" style="display:none">
-          <div class="transfer-box">
-            <div class="transfer-row"><span class="transfer-key">Banco</span><span class="transfer-val">Banco Industrial</span></div>
-            <div class="transfer-row"><span class="transfer-key">Cuenta</span><span class="transfer-val">078-001234-5 <button class="copy-btn" onclick="copyText('078-001234-5')">Copiar</button></span></div>
-            <div class="transfer-row"><span class="transfer-key">CCI / CLABE</span><span class="transfer-val">00807800123450 <button class="copy-btn" onclick="copyText('00807800123450')">Copiar</button></span></div>
-            <div class="transfer-row"><span class="transfer-key">Beneficiario</span><span class="transfer-val">Azyvion S.A. de C.V.</span></div>
-            <div class="transfer-row"><span class="transfer-key">Monto</span><span class="transfer-val" id="transferAmount">$29 USD</span></div>
-          </div>
-          <p class="transfer-note">Realiza la transferencia y adjunta el número de referencia. Tu cuenta se activará en 24 h hábiles después de validar el pago.</p>
-          <div class="field-wrap" style="margin-top:12px">
-            <label class="field-label" for="f_ref">Número de referencia / comprobante *</label>
-            <div class="field-inner"><input class="field-input" type="text" id="f_ref" placeholder="Ej. TRF-20260929-001" /></div>
-          </div>
-          <label class="checkbox-label">
-            <input type="checkbox" id="f_terms_transfer" />
-            <span class="custom-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
-            <span>Acepto los <a class="link-btn" href="#">Términos de uso</a> y la <a class="link-btn" href="#">Política de privacidad</a></span>
-          </label>
-          <div class="error-msg" id="err4_transfer"></div>
-          <button class="btn-primary" id="finalBtnTransfer" onclick="handleRegister('transfer')">
-            <span class="btn-text">Enviar comprobante y crear cuenta</span><div class="spinner"></div>
-          </button>
-        </div>
-
-        <!-- PayPal -->
-        <div id="paypalForm" style="display:none">
-          <div class="paypal-box">
-            <button class="paypal-btn" onclick="handleRegister('paypal')">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M19.5 7C19.5 10.5 17 13 13.5 13H11L9.5 20H6L8.5 7H13C17 7 19.5 7 19.5 7Z" fill="#003087"/><path d="M20.5 4C20.5 7.5 18 10 14.5 10H12L10.5 17H7L9.5 4H14C18 4 20.5 4 20.5 4Z" fill="#009CDE"/></svg>
-              Pagar con PayPal
-            </button>
-            <p class="paypal-note">Serás redirigido a PayPal para completar el pago de forma segura.</p>
-          </div>
-          <label class="checkbox-label" style="margin-top:8px">
-            <input type="checkbox" id="f_terms_paypal" />
-            <span class="custom-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
-            <span>Acepto los <a class="link-btn" href="#">Términos de uso</a> y la <a class="link-btn" href="#">Política de privacidad</a></span>
-          </label>
-          <div class="error-msg" id="err4_paypal"></div>
-        </div>
-      </div>
-
-      <!-- ENTERPRISE -->
-      <div id="enterpriseSection" style="display:none">
-        <label class="checkbox-label">
-          <input type="checkbox" id="f_terms_ent" />
-          <span class="custom-check"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
-          <span>Acepto los <a class="link-btn" href="#">Términos de uso</a> y la <a class="link-btn" href="#">Política de privacidad</a></span>
-        </label>
-        <div class="error-msg" id="err4_ent"></div>
-        <button class="btn-primary" id="finalBtnEnt" onclick="handleRegister('enterprise')">
-          <span class="btn-text">Solicitar Enterprise</span><div class="spinner"></div>
-        </button>
-      </div>
-
-      <button class="btn-back" onclick="goBack(3)">← Anterior</button>
     </div>
 
     <!-- SUCCESS -->
@@ -746,6 +595,7 @@
 <p class="page-footer">© 2026 Azyvion. Todos los derechos reservados.</p>
 <div class="toast" id="toast"></div>
 
+<script src="licencia.js"></script>
 <script>
 (function () {
   var SUPABASE_URL = 'https://dwtykzporgjjvdustjfq.supabase.co';
@@ -755,7 +605,10 @@
   var SESSION_KEY  = 'azyvion_session';
 
   var currentStep  = 1;
-  var activePayTab = 'card';
+  try {
+    var qLic = new URLSearchParams(window.location.search).get('licencia');
+    if (qLic) document.getElementById('f_licencia').value = Licencia.formatear(qLic);
+  } catch (_) {}
 
   // ── COUNTRIES ──────────────────────────────────
   var COUNTRIES = [
@@ -819,22 +672,18 @@
 
   renderCountries(COUNTRIES);
 
-  // Pre-select plan from URL
-  try {
-    var p = new URLSearchParams(window.location.search).get('plan');
-    if (p) { var r = document.querySelector('input[name="plan"][value="'+p+'"]'); if(r) r.checked = true; }
-  } catch(e) {}
+  var licencia = null;   // { clave, plan, max_usuarios, vence_en } validada por el servidor
 
   // ── STEP NAVIGATION ──────────────────────────
   function setStep(n) {
-    for (var i = 1; i <= 4; i++) {
+    for (var i = 1; i <= 3; i++) {
       var el = document.getElementById('step' + i);
       if (el) el.style.display = i === n ? '' : 'none';
       var dot = document.getElementById('sd' + i);
       var lbl = document.getElementById('lbl' + i);
       if (dot) dot.className = 'step-dot' + (i < n ? ' done' : i === n ? ' active' : '');
       if (lbl) lbl.className = 'step-label' + (i < n ? ' done' : i === n ? ' active' : '');
-      if (i < 4) { var ln = document.getElementById('sl' + i); if(ln) ln.className = 'step-line' + (i < n ? ' done' : ''); }
+      if (i < 3) { var ln = document.getElementById('sl' + i); if(ln) ln.className = 'step-line' + (i < n ? ' done' : ''); }
     }
     currentStep = n;
     try { document.getElementById('formSide').scrollTop = 0; } catch(e) {}
@@ -842,196 +691,146 @@
 
   function g(id)  { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
   function e(id, msg) { var el = document.getElementById(id); if(!el) return; el.textContent = msg; el.classList.toggle('visible', !!msg); }
+  function cargando(btn, si) { if (btn) { btn.classList.toggle('loading', si); btn.disabled = si; } }
+
+  async function llamar(payload) {
+    var httpRes;
+    try {
+      httpRes = await fetch(REGISTER_URL, { method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY },
+        body: JSON.stringify(payload) });
+    } catch (_) { return { ok: false, error: 'Sin conexión. Verifica tu internet e intenta de nuevo.' }; }
+    try { return await httpRes.json(); }
+    catch (_) { return { ok: false, error: 'Error del servidor (' + httpRes.status + '). Intenta en unos segundos.' }; }
+  }
+
+  window.mostrarContacto = function (titulo, mensaje) {
+    var c = document.getElementById('licContacto');
+    Licencia.estilos();
+    c.innerHTML = Licencia.contactoHtml(titulo || '¿Necesitas una licencia?', mensaje || 'Escríbenos o llámanos y te ayudamos a elegir el plan para tu empresa:');
+    c.style.display = '';
+  };
+
+  function fechaLarga(iso) {
+    try { return new Date(iso + 'T12:00:00').toLocaleDateString('es-GT', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (_) { return iso; }
+  }
+
+  // Paso 1: el servidor valida la licencia (no se crea nada todavía)
+  async function validarLicencia() {
+    var clave = Licencia.normalizar(g('f_licencia'));
+    document.getElementById('licOk').style.display = 'none';
+    document.getElementById('licContacto').style.display = 'none';
+    if (!clave) { e('err1', 'Escribe el código completo: AZV-XXXX-XXXX-XXXX.'); return; }
+    e('err1', '');
+    var btn = document.getElementById('licBtn'); cargando(btn, true);
+    var res = await llamar({ accion: 'validar', licencia: clave });
+    cargando(btn, false);
+    if (!res.ok) {
+      licencia = null;
+      e('err1', res.error || 'No se pudo validar la licencia.');
+      if (res.sinLicencia) window.mostrarContacto('¿Necesitas una licencia válida?', 'Si compraste una licencia y no funciona, o quieres adquirir una, contáctanos:');
+      return;
+    }
+    licencia = res.licencia;
+    var ok = document.getElementById('licOk');
+    ok.innerHTML = '<strong>✓ Licencia válida</strong> · Plan ' + esc(licencia.plan || 'Azyvion') + ' · hasta ' + Number(licencia.max_usuarios) + ' usuario' + (licencia.max_usuarios == 1 ? '' : 's') +
+      ' · ' + (licencia.vence_en ? 'vence el ' + esc(fechaLarga(licencia.vence_en)) : 'sin vencimiento');
+    ok.style.display = '';
+    setTimeout(function () { setStep(2); }, 700);
+  }
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
   window.nextStep = function(n) {
     if (n === 2) {
-      if (!g('f_empresa'))                            { e('err1','Ingresa el nombre de tu empresa.'); return; }
-      if (!g('f_pais'))                               { e('err1','Selecciona tu país.'); return; }
-      if (!g('f_sector'))                             { e('err1','Selecciona la industria.'); return; }
-      if (!g('f_correo_emp')||!g('f_correo_emp').includes('@')) { e('err1','Ingresa un correo de empresa válido.'); return; }
-      e('err1',''); setStep(2);
+      validarLicencia();
     } else if (n === 3) {
-      if (!g('f_nombre'))                             { e('err2','Ingresa tu nombre completo.'); return; }
-      var co = g('f_correo');
-      if (!co||!co.includes('@')||!co.includes('.')) { e('err2','Correo electrónico inválido.'); return; }
-      if (g('f_pwd').length < 8)                      { e('err2','La contraseña debe tener al menos 8 caracteres.'); return; }
-      if (g('f_pwd') !== g('f_pwd2'))                 { e('err2','Las contraseñas no coinciden.'); return; }
+      if (!licencia)                                  { setStep(1); return; }
+      if (!g('f_empresa'))                            { e('err2','Ingresa el nombre de tu empresa.'); return; }
+      if (!g('f_pais'))                               { e('err2','Selecciona tu país.'); return; }
+      if (!g('f_sector'))                             { e('err2','Selecciona la industria.'); return; }
+      if (!g('f_correo_emp')||!g('f_correo_emp').includes('@')) { e('err2','Ingresa un correo de empresa válido.'); return; }
       e('err2',''); setStep(3);
-    } else if (n === 4) {
-      e('err3','');
-      setupPayStep();
-      setStep(4);
     }
   };
 
   window.goBack = function(n) { setStep(n); };
 
-  function setupPayStep() {
-    var plan = (document.querySelector('input[name="plan"]:checked')||{}).value||'starter';
-    var names  = {starter:'Starter',pro:'Pro / Business',enterprise:'Enterprise'};
-    var prices = {starter:'$59/mes',pro:'$149/mes',enterprise:'$299/mes'};
-    var notes  = {starter:'4 días de prueba gratis, luego $59/mes',pro:'4 días de prueba gratis, luego $149/mes',enterprise:'Contacto personalizado · $299/mes'};
-    var amounts= {starter:'$59 USD',pro:'$149 USD',enterprise:'$299 USD'};
-
-    document.getElementById('sumName').textContent  = 'Plan ' + (names[plan] || 'Starter');
-    document.getElementById('sumPrice').textContent = prices[plan] || '$59/mes';
-    document.getElementById('sumNote').textContent  = notes[plan] || '4 días de prueba gratis';
-
-    if (document.getElementById('freeSection')) document.getElementById('freeSection').style.display = 'none';
-    if (document.getElementById('paidSection')) document.getElementById('paidSection').style.display = (plan==='starter'||plan==='pro') ? '' : 'none';
-    if (document.getElementById('enterpriseSection')) document.getElementById('enterpriseSection').style.display = plan === 'enterprise' ? '' : 'none';
-
-    if (plan === 'starter' || plan === 'pro' || plan === 'enterprise') {
-      var ta = document.getElementById('transferAmount');
-      if (ta) ta.textContent = amounts[plan] || '';
-      var fc = document.getElementById('finalCardText');
-      if (fc) fc.textContent = 'Activar prueba de 4 días · ' + (prices[plan] || '');
-    }
+  function validarCuenta() {
+    if (!g('f_nombre')) return 'Ingresa tu nombre completo.';
+    var co = g('f_correo');
+    if (!co||!co.includes('@')||!co.includes('.')) return 'Correo electrónico inválido.';
+    if (g('f_pwd').length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
+    if (g('f_pwd') !== g('f_pwd2')) return 'Las contraseñas no coinciden.';
+    if (!document.getElementById('f_terms').checked) return 'Acepta los términos para continuar.';
+    return '';
   }
 
-  window.setPayTab = function(tab) {
-    activePayTab = tab;
-    ['card','transfer','paypal'].forEach(function(t) {
-      document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('active', t===tab);
-      document.getElementById(t+'Form').style.display = t===tab ? '' : 'none';
-    });
-  };
-
   // ── REGISTER ─────────────────────────────────
-  window.handleRegister = function(method) {
-    var plan = (document.querySelector('input[name="plan"]:checked')||{}).value||'free';
-
-    // Validate terms
-    var termsMap = {free:'f_terms_free', card:'f_terms_card', transfer:'f_terms_transfer', paypal:'f_terms_paypal', enterprise:'f_terms_ent'};
-    var errMap   = {free:'err4_free', card:'err4_card', transfer:'err4_transfer', paypal:'err4_paypal', enterprise:'err4_ent'};
-    var termKey = termsMap[method] || 'f_terms_free';
-    var errKey  = errMap[method]  || 'err4_free';
-
-    if (!document.getElementById(termKey).checked) {
-      e(errKey, 'Acepta los términos para continuar.'); return;
-    }
-
-    // Card validation
-    if (method === 'card') {
-      if (!g('f_card') || g('f_card').replace(/\s/g,'').length < 16) { e(errKey,'Ingresa el número de tarjeta completo.'); return; }
-      if (!g('f_name_card'))                                           { e(errKey,'Ingresa el nombre en la tarjeta.'); return; }
-      if (!g('f_exp') || g('f_exp').length < 5)                       { e(errKey,'Ingresa la fecha de vencimiento.'); return; }
-      if (!g('f_cvv') || g('f_cvv').length < 3)                       { e(errKey,'Ingresa el CVV.'); return; }
-    }
-
-    // Transfer validation
-    if (method === 'transfer') {
-      if (!g('f_ref')) { e(errKey,'Ingresa el número de referencia de la transferencia.'); return; }
-    }
-
-    // PayPal: check terms already validated above
-    e(errKey,'');
-
-    var btnIds = {free:'finalBtnFree', card:'finalBtnCard', transfer:'finalBtnTransfer', enterprise:'finalBtnEnt'};
-    var btn = document.getElementById(btnIds[method]);
-    if (btn) { btn.classList.add('loading'); btn.disabled = true; }
-
-    var payload = {
+  window.handleRegister = async function() {
+    var msg = validarCuenta();
+    if (msg) { e('err3', msg); return; }
+    if (!licencia) { setStep(1); return; }
+    e('err3', '');
+    var btn = document.getElementById('finalBtn'); cargando(btn, true);
+    var res = await llamar({
+      licencia: licencia.clave,
       empresa: { nombre: g('f_empresa'), correo: g('f_correo_emp'), pais: g('f_pais'), sector: g('f_sector'), tamano: g('f_tamano') },
-      usuario: { nombre: g('f_nombre'), cargo: g('f_cargo'), correo: g('f_correo'), contrasena: g('f_pwd') },
-      plan: plan,
-      pago: {
-        metodo: method,
-        referencia: g('f_ref') || '',
-        cardLast4: method === 'card' ? g('f_card').replace(/\s/g,'').slice(-4) : ''
-      }
-    };
-
-    // ── REGISTRO ────────────────────────────────────────────────────────────
-    (async function() {
-      var httpRes, res;
-      try {
-        httpRes = await fetch(REGISTER_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY },
-          body: JSON.stringify(payload)
-        });
-      } catch (netErr) {
-        // Error de red puro (sin conexión, DNS, CORS preflight bloqueado)
-        if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
-        e(errKey, 'Sin conexión. Verifica tu internet e intenta de nuevo.');
+      usuario: { nombre: g('f_nombre'), cargo: g('f_cargo'), correo: g('f_correo'), contrasena: g('f_pwd') }
+    });
+    if (!res.ok) {
+      cargando(btn, false);
+      if (res.sinLicencia) {             // la licencia se usó en otro registro mientras tanto
+        licencia = null; setStep(1);
+        e('err1', res.error || 'La licencia ya no está disponible.');
+        window.mostrarContacto('¿Necesitas otra licencia?', 'Contáctanos y te ayudamos:');
         return;
       }
+      e('err3', res.error || 'Error al crear la cuenta. Intenta de nuevo.');
+      return;
+    }
 
-      try {
-        res = await httpRes.json();
-      } catch (_) {
-        // El servidor respondió pero con body no-JSON (ej: 502 gateway HTML)
-        if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
-        e(errKey, 'Error del servidor (' + httpRes.status + '). Intenta en unos segundos.');
-        return;
+    // ── REGISTRO EXITOSO → auto-login aislado ──────────────────────────
+    try {
+      var lr = await fetch(LOGIN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY },
+        body: JSON.stringify({ usuario: res.usuario || '', contrasena: g('f_pwd') })
+      });
+      var lres = await lr.json();
+      if (lres.ok && lres.session && !lres.sinLicencia) {
+        var sesion = {
+          token: lres.session.access_token,
+          refresh_token: lres.session.refresh_token,
+          nombre: lres.nombre, usuario: lres.usuario,
+          rol: lres.rol, expira: new Date(lres.session.expires_at * 1000).toISOString(),
+          organization_id: lres.organization_id || res.organization_id || '',
+          fotoUrl: lres.fotoUrl || '',
+          preferencias: lres.preferencias || {}
+        };
+        try { localStorage.setItem(SESSION_KEY, JSON.stringify(sesion)); } catch(_) {}
       }
-
-      if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
-
-      if (!res.ok) {
-        // Error controlado de la función (correo duplicado, validación, etc.)
-        e(errKey, res.error || 'Error al crear la cuenta. Intenta de nuevo.');
-        return;
-      }
-
-      // ── REGISTRO EXITOSO → auto-login aislado ──────────────────────────
-      var password    = g('f_pwd');
-      var usuarioSlug = res.usuario || '';
-
-      try {
-        var lr = await fetch(LOGIN_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY },
-          body: JSON.stringify({ usuario: usuarioSlug, contrasena: password })
-        });
-        var lres = await lr.json();
-        if (lres.ok && lres.session) {
-          var expira = new Date(lres.session.expires_at * 1000).toISOString();
-          var sesion = {
-            token: lres.session.access_token,
-            refresh_token: lres.session.refresh_token,
-            nombre: lres.nombre, usuario: lres.usuario,
-            rol: lres.rol, expira: expira,
-            organization_id: lres.organization_id || res.organization_id || '',
-            fotoUrl: lres.fotoUrl || '',
-            preferencias: lres.preferencias || {}
-          };
-          try { localStorage.setItem(SESSION_KEY, JSON.stringify(sesion)); } catch(_) {}
-        }
-      } catch (_) {
-        // Auto-login falló — no importa, el registro fue exitoso.
-        // El usuario podrá iniciar sesión manualmente.
-      }
-
-      showSuccess(plan);
-    })();
+    } catch (_) {
+      // Auto-login falló — no importa, el registro fue exitoso. Podrá iniciar sesión manualmente.
+    }
+    cargando(btn, false);
+    showSuccess(res);
   };
 
-  function showSuccess(plan) {
+  function showSuccess(res) {
     document.getElementById('stepsWrap').style.display = 'none';
-    for (var i = 1; i <= 4; i++) { var el=document.getElementById('step'+i); if(el) el.style.display='none'; }
+    for (var i = 1; i <= 3; i++) { var el=document.getElementById('step'+i); if(el) el.style.display='none'; }
     document.getElementById('stepSuccess').style.display = '';
-    // Si hay sesión guardada, redirigir al dashboard tras 2.5 s
-    try {
-      if (localStorage.getItem(SESSION_KEY)) {
-        setTimeout(function(){ window.location.href = 'dashboard.html'; }, 2500);
-      }
-    } catch(e) {}
     var tieneSession = false;
     try { tieneSession = !!localStorage.getItem(SESSION_KEY); } catch(_) {}
-    var msgs = {
-      free: tieneSession ? 'Tu cuenta gratuita está lista. Entrando al panel…' : 'Tu cuenta gratuita está lista. Ya puedes iniciar sesión.',
-      starter: tieneSession ? 'Tu prueba de 14 días ha comenzado. Entrando al panel…' : 'Tu prueba de 14 días ha comenzado. Inicia sesión para continuar.',
-      pro: tieneSession ? 'Tu prueba de 14 días ha comenzado. Entrando al panel…' : 'Tu prueba de 14 días ha comenzado. Inicia sesión para continuar.',
-      enterprise: 'Recibimos tu solicitud. Un ejecutivo te contactará en menos de 24 horas.'
-    };
-    document.getElementById('successMsg').textContent = msgs[plan] || msgs.free;
-    var names = {free:'Gratis',starter:'Starter ($29/mes)',pro:'Pro ($79/mes)',enterprise:'Enterprise'};
-    var html = '<div class="success-row"><span class="success-key">Empresa</span><span class="success-val">'+g('f_empresa')+'</span></div>';
-    html += '<div class="success-row"><span class="success-key">Administrador</span><span class="success-val">'+g('f_nombre')+'</span></div>';
-    html += '<div class="success-row"><span class="success-key">Correo</span><span class="success-val">'+g('f_correo')+'</span></div>';
-    html += '<div class="success-row"><span class="success-key">Plan</span><span class="success-val">'+(names[plan]||plan)+'</span></div>';
+    if (tieneSession) setTimeout(function(){ window.location.href = 'dashboard.html'; }, 2500);
+    document.getElementById('successMsg').textContent = tieneSession ? 'Tu cuenta está lista. Entrando al panel…' : 'Tu cuenta está lista. Ya puedes iniciar sesión.';
+    var l = res.licencia || licencia || {};
+    var html = '<div class="success-row"><span class="success-key">Empresa</span><span class="success-val">'+esc(g('f_empresa'))+'</span></div>';
+    html += '<div class="success-row"><span class="success-key">Administrador</span><span class="success-val">'+esc(g('f_nombre'))+'</span></div>';
+    html += '<div class="success-row"><span class="success-key">Correo</span><span class="success-val">'+esc(g('f_correo'))+'</span></div>';
+    html += '<div class="success-row"><span class="success-key">Plan</span><span class="success-val">'+esc(res.plan || (licencia && licencia.plan) || '—')+'</span></div>';
+    html += '<div class="success-row"><span class="success-key">Usuarios</span><span class="success-val">Hasta '+Number(l.max_usuarios || 0)+'</span></div>';
+    html += '<div class="success-row"><span class="success-key">Vigencia</span><span class="success-val">'+(l.vence_en ? 'Hasta el '+esc(fechaLarga(l.vence_en)) : 'Sin vencimiento')+'</span></div>';
     document.getElementById('successDetail').innerHTML = html;
   }
 
@@ -1050,17 +849,6 @@
 
   window.togglePwd = function(id) { var el=document.getElementById(id); if(el) el.type=el.type==='password'?'text':'password'; };
 
-  // ── CARD FORMATTERS ──────────────────────────
-  window.fmtCard = function(el) {
-    var v = el.value.replace(/\D/g,'').substring(0,16);
-    el.value = v.replace(/(.{4})/g,'$1 ').trim();
-  };
-  window.fmtExp = function(el) {
-    var v = el.value.replace(/\D/g,'');
-    if (v.length >= 2) v = v.substring(0,2) + ' / ' + v.substring(2,4);
-    el.value = v;
-  };
-
   // ── COPY ─────────────────────────────────────
   window.copyText = function(txt) {
     try { navigator.clipboard.writeText(txt).then(function(){ showToast('Copiado al portapapeles'); }); } catch(e) { showToast('Copia: ' + txt); }
@@ -1076,7 +864,8 @@
 
   // ── ENTER KEY ────────────────────────────────
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && currentStep < 4) window.nextStep(currentStep + 1);
+    if (e.key !== 'Enter') return;
+    if (currentStep === 3) window.handleRegister(); else window.nextStep(currentStep + 1);
   });
 
 })();

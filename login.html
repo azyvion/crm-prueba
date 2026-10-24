@@ -361,6 +361,7 @@
       </div>
 
       <div class="error-msg" id="errMsg"></div>
+      <div id="licPanel" style="display:none;margin-bottom:14px"></div>
 
       <div class="row-aux">
         <label class="checkbox-label">
@@ -472,6 +473,7 @@
     var SESSION_KEY  = 'azyvion_session';
     var REMEMBER_KEY = 'azyvion_remember_user';
     var LOGIN_URL    = 'https://dwtykzporgjjvdustjfq.supabase.co/functions/v1/login-crm';
+    var ANON_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3dHlrenBvcmdqanZkdXN0amZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5MjM2MjIsImV4cCI6MjEwNTQ5OTYyMn0.0SXLE5HhIjHbHz2k0cgyat9bvCper_sjAiiCrkOSmF8';
 
     (function checkExisting() {
       try {
@@ -506,7 +508,36 @@
       .then(function(r){ return r.json(); })
       .then(function(res){
         btn.classList.remove('loading'); btn.disabled = false;
+        document.getElementById('licPanel').style.display = 'none';
+        // [Lote 9] Empresa sin licencia vigente: contacto de ventas (y activación si es administrador)
+        if (res.sinLicencia) { mostrarSinLicencia(res, usuario, remember); return; }
         if (!res.ok) { err.textContent = res.error || 'Error al iniciar sesión.'; err.classList.add('visible'); return; }
+        guardarYEntrar(res, usuario, remember);
+      })
+      .catch(function(e){ btn.classList.remove('loading'); btn.disabled = false; err.textContent = 'Error de conexión. Intenta de nuevo.'; err.classList.add('visible'); });
+    };
+
+    function mostrarSinLicencia(res, usuario, remember) {
+      var panel = document.getElementById('licPanel');
+      Licencia.estilos();
+      panel.innerHTML = Licencia.contactoHtml(res.puedeActivar ? 'Tu empresa no tiene una licencia activa' : 'Sin licencia vigente',
+        res.puedeActivar ? 'Activa una licencia nueva para entrar, o contáctanos:' : (res.error || 'Tu empresa no tiene una licencia vigente.') + ' Contáctanos:',
+        'Hola, necesito una licencia para Azyvion CRM.') + '<div id="licPanelAct"></div>';
+      panel.style.display = '';
+      if (res.puedeActivar && res.session) {
+        // La sesión solo se guarda cuando la licencia queda activa
+        Licencia.montarActivacion(document.getElementById('licPanelAct'), function (clave) {
+          return Licencia.rpc('licencia_activar', { p_clave: clave }, res.session.access_token, ANON_KEY).then(function (r) {
+            if (!r.error) setTimeout(function () { guardarYEntrar(res, usuario, remember); }, 500);
+            return r;
+          });
+        });
+      }
+      try { panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) {}
+    }
+
+    function guardarYEntrar(res, usuario, remember) {
+        var err = document.getElementById('errMsg');
         try { if (remember) { localStorage.setItem(REMEMBER_KEY, usuario); } else { localStorage.removeItem(REMEMBER_KEY); } } catch(e){}
         var expira = new Date(res.session.expires_at * 1000).toISOString();
         var sesion = {
@@ -524,9 +555,7 @@
         try { localStorage.setItem(SESSION_KEY, JSON.stringify(sesion)); } catch(e){ err.textContent = 'No se pudo guardar la sesión.'; err.classList.add('visible'); return; }
         showToast('Bienvenido, ' + res.nombre, '#22c55e');
         setTimeout(function(){ window.location.href = 'dashboard.html'; }, 1300);
-      })
-      .catch(function(e){ btn.classList.remove('loading'); btn.disabled = false; err.textContent = 'Error de conexión. Intenta de nuevo.'; err.classList.add('visible'); });
-    };
+    }
 
     window.handleForgot = function () {
       document.getElementById('forgotModal').classList.add('visible');
@@ -605,6 +634,7 @@
   })();
   </script>
 <button id="az-install" onclick="azInstalar()" style="display:none;position:fixed;right:16px;bottom:16px;z-index:50;background:#0A84FF;color:#fff;border:0;border-radius:12px;padding:10px 16px;font:600 13.5px Inter,system-ui,sans-serif;cursor:pointer;box-shadow:0 6px 20px rgba(10,132,255,.4)">⬇ Instalar aplicación</button>
+<script src="licencia.js"></script>
 <script src="pwa.js"></script>
 </body>
 </html>

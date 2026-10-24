@@ -1,4 +1,11 @@
-// supabase/functions/register-crm/index.ts — v5 (auditoría 2026-10-23)
+// supabase/functions/register-crm/index.ts — v6 (Lote 9: licencias)
+// v6: el registro exige una licencia DISPONIBLE y no vencida.
+//  - { accion: "validar", licencia }  → solo consulta (no crea nada); con límite de intentos.
+//  - registro: valida la licencia ANTES de crear la cuenta y la reclama con un UPDATE
+//    condicional (estado = DISPONIBLE) después de crear la empresa: dos registros con la
+//    misma clave no pueden ganar los dos. Si algo falla, la licencia vuelve a DISPONIBLE.
+//  - El plan sale de la licencia (se ignora el plan que envíe el navegador).
+// v5 (auditoría 2026-10-23)
 // Basado en la v4 desplegada. Cambios [AUDIT FN-05]:
 //  - Crea también la fila en sub_empresas (FK de user_roles y catálogos de inventario).
 //  - Crea user_roles(ADMIN) para el usuario fundador → get_my_org_id() deja de ser NULL.
@@ -21,6 +28,36 @@ function json(body: unknown, status = 200) {
   });
 }
 
+const CONTACTO = { telefono: "+502 5145 5610", correo: "ventas@azyvion.com" };
+
+// Igual que public.licencia_normalizar(): mayúsculas, sin espacios, guiones en su lugar
+function normalizarLicencia(v: unknown): string | null {
+  const c = String(v ?? "").toUpperCase().replace(/[^0-9A-Z]/g, "");
+  return c.length === 15 && c.startsWith("AZV") ? `AZV-${c.slice(3, 7)}-${c.slice(7, 11)}-${c.slice(11, 15)}` : null;
+}
+// Fecha de hoy en Guatemala (UTC-6, sin horario de verano), igual que public.licencia_hoy()
+function hoyGT(): string { return new Date(Date.now() - 6 * 3600 * 1000).toISOString().slice(0, 10); }
+
+const intentos = new Map<string, { n: number; hasta: number }>();
+function permitido(clave: string, max = 20): boolean {
+  const ahora = Date.now(); const e = intentos.get(clave);
+  if (!e || e.hasta < ahora) { intentos.set(clave, { n: 1, hasta: ahora + 15 * 60 * 1000 }); return true; }
+  e.n++; return e.n <= max;
+}
+
+type Lic = { id: string; clave: string; plan_id: string | null; max_usuarios: number; vence_en: string | null; estado: string };
+const SIN_LICENCIA = (msg: string) => json({ ok: false, sinLicencia: true, contacto: CONTACTO, error: msg }, 403);
+
+// deno-lint-ignore no-explicit-any
+async function buscarLicencia(sb: any, clave: string | null): Promise<{ lic?: Lic & { plan_nombre?: string }; error?: Response }> {
+  if (!clave) return { error: SIN_LICENCIA("El código de licencia no es válido. Revisa que tenga el formato AZV-XXXX-XXXX-XXXX.") };
+  const { data, error } = await sb.from("licencias").select("id, clave, plan_id, max_usuarios, vence_en, estado, sub_planes(nombre)").eq("clave", clave).maybeSingle();
+  if (error) { console.error("[register-crm] LIC:", error.message); return { error: json({ ok: false, error: "No se pudo verificar la licencia. Intenta de nuevo." }, 503) }; }
+  if (!data || data.estado !== "DISPONIBLE") return { error: SIN_LICENCIA("Esta licencia no existe o ya fue utilizada.") };
+  if (data.vence_en && data.vence_en < hoyGT()) return { error: SIN_LICENCIA("Esta licencia está vencida.") };
+  return { lic: { ...data, plan_nombre: data.sub_planes?.nombre ?? null } };
+}
+
 function slugify(txt: string): string {
   return txt
     .toLowerCase()
@@ -38,27 +75,44 @@ serve(async (req) => {
   let body: {
     empresa?: { nombre?: string; correo?: string; pais?: string; sector?: string; tamano?: string };
     usuario?: { nombre?: string; cargo?: string; correo?: string; contrasena?: string };
-    plan?: string;
-    pago?: { metodo?: string; referencia?: string; cardLast4?: string };
+    licencia?: string;
+    accion?: string;
   };
 
   try { body = await req.json(); }
   catch { return json({ ok: false, error: "JSON inválido." }, 400); }
 
-  const { empresa, usuario, plan = "free" } = body;
+  const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "sin-ip";
+  const claveLic = normalizarLicencia(body.licencia);
+
+  const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  // 0 — Solo validar la licencia (primer paso del formulario)
+  if (body.accion === "validar") {
+    if (!permitido("v:" + ip)) return json({ ok: false, error: "Demasiados intentos. Espera 15 minutos." }, 429);
+    const r = await buscarLicencia(sb, claveLic);
+    if (r.error) return r.error;
+    const l = r.lic!;
+    return json({ ok: true, licencia: { clave: l.clave, plan: l.plan_nombre, max_usuarios: l.max_usuarios, vence_en: l.vence_en } });
+  }
+
+  const { empresa, usuario } = body;
+  if (!permitido("r:" + ip, 10)) return json({ ok: false, error: "Demasiados intentos. Espera 15 minutos." }, 429);
 
   if (!empresa?.nombre?.trim())  return json({ ok: false, error: "Nombre de empresa requerido." }, 400);
   if (!empresa?.correo?.trim() || !empresa.correo.includes("@"))  return json({ ok: false, error: "Correo de empresa inválido." }, 400);
   if (!usuario?.nombre?.trim())  return json({ ok: false, error: "Nombre del usuario requerido." }, 400);
   if (!usuario?.correo?.trim() || !usuario.correo.includes("@"))  return json({ ok: false, error: "Correo de usuario inválido." }, 400);
   if (!usuario?.contrasena || usuario.contrasena.length < 8)  return json({ ok: false, error: "La contraseña debe tener al menos 8 caracteres." }, 400);
-  if (!["free","starter","pro","enterprise"].includes(plan))  return json({ ok: false, error: "Plan no válido." }, 400);
   if (empresa.nombre.trim().length > 120 || usuario.nombre.trim().length > 120)
     return json({ ok: false, error: "Nombre demasiado largo." }, 400);
 
-  const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  // 0 — Licencia válida ANTES de crear nada
+  const rLic = await buscarLicencia(sb, claveLic);
+  if (rLic.error) return rLic.error;
+  const lic = rLic.lic!;
 
   const correoUsuario = usuario.correo.trim().toLowerCase();
 
@@ -114,10 +168,25 @@ serve(async (req) => {
     id: orgId,
     nombre: empresa.nombre.trim(),
     correo: empresa.correo.trim().toLowerCase(),
-    estado: "TRIAL",
+    estado: "ACTIVE",
+    plan_id: lic.plan_id,
+    fecha_inicio: hoyGT(),
   });
   if (subErr) return await rollback("SUB", subErr);
   undo.push(async () => { await sb.from("sub_empresas").delete().eq("id", orgId); });
+
+  // 3c — [Lote 9] Reclamar la licencia: solo si sigue DISPONIBLE (atómico)
+  const { data: reclamada, error: licErr } = await sb.from("licencias")
+    .update({ estado: "ASIGNADA", organization_id: orgId, asignada_en: nowIso, actualizada_en: nowIso })
+    .eq("id", lic.id).eq("estado", "DISPONIBLE").select("id");
+  if (licErr) return await rollback("LIC", licErr);
+  if (!reclamada || reclamada.length !== 1) {
+    for (const fn of undo.reverse()) { try { await fn(); } catch (_) { /**/ } }
+    return SIN_LICENCIA("Esta licencia acaba de ser utilizada en otro registro.");
+  }
+  undo.push(async () => {
+    await sb.from("licencias").update({ estado: "DISPONIBLE", organization_id: null, asignada_en: null, actualizada_en: new Date().toISOString() }).eq("id", lic.id);
+  });
 
   // 4 — Usuario (rol legacy 'Admin' por check constraint)
   const { data: usrRow, error: usrErr } = await sb.from("Usuarios").insert({
@@ -144,5 +213,5 @@ serve(async (req) => {
   const { error: roleErr } = await sb.from("user_roles").insert({ user_id: authUid, role: "ADMIN", organization_id: orgId });
   if (roleErr) return await rollback("ROLE", roleErr);
 
-  return json({ ok: true, organization_id: orgId, usuario: usuarioSlug, plan });
+  return json({ ok: true, organization_id: orgId, usuario: usuarioSlug, plan: lic.plan_nombre, licencia: { max_usuarios: lic.max_usuarios, vence_en: lic.vence_en } });
 });

@@ -1,4 +1,8 @@
-// supabase/functions/admin-user-manager/index.ts — v6 (auditoría 2026-10-23)
+// supabase/functions/admin-user-manager/index.ts — v7 (Lote 9: licencias)
+// v7: al ACTIVAR un usuario primero se actualiza el perfil (el trigger de licencia puede
+//     rechazarlo por el límite de usuarios) y solo después se desbloquea en Auth; el mensaje
+//     de la licencia llega al administrador. Crear usuario ya mostraba el mensaje del servidor.
+// v6 (auditoría 2026-10-23)
 // Basado en la v5 desplegada. Cambios marcados con [AUDIT …]:
 //  SEC-02  createUser ya NO reutiliza cuentas Auth existentes (antes reseteaba la
 //          contraseña de un usuario de OTRA empresa, borraba sus roles y podía
@@ -334,12 +338,20 @@ async function handleSetActive(
   const r = await loadAuthorizedTarget(body, callerRole, callerOrgId, callerAuthUid, supabaseAdmin);
   if (r.error) return err(r.error[0], origin, r.error[1]);
   const t = r.target!;
-  if (t.auth_uid) {
-    const { error: banErr } = await supabaseAdmin.auth.admin.updateUserById(t.auth_uid, { ban_duration: activo ? "none" : BAN_FOREVER });
-    if (banErr) return err("No se pudo actualizar el acceso del usuario.", origin, 500);
-  }
+  const ban = async () => t.auth_uid
+    ? (await supabaseAdmin.auth.admin.updateUserById(t.auth_uid, { ban_duration: activo ? "none" : BAN_FOREVER })).error
+    : null;
+  // [Lote 9] Desactivar: bloquear primero. Activar: perfil primero (puede rechazarlo la licencia).
+  if (!activo && await ban()) return err("No se pudo actualizar el acceso del usuario.", origin, 500);
   const { error: upErr } = await supabaseAdmin.from("Usuarios").update({ activo }).eq("id", t.id);
-  if (upErr) return err("No se pudo actualizar el perfil.", origin, 500);
+  if (upErr) {
+    if (upErr.code === "P0001") return err(upErr.message, origin, 409);   // límite / sin licencia
+    return err("No se pudo actualizar el perfil.", origin, 500);
+  }
+  if (activo && await ban()) {
+    await supabaseAdmin.from("Usuarios").update({ activo: false }).eq("id", t.id);
+    return err("No se pudo actualizar el acceso del usuario.", origin, 500);
+  }
   return ok({ id: t.id, activo }, origin, 200);
 }
 

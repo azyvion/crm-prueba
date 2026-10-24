@@ -2984,6 +2984,7 @@ body.bn-more-open .az-ai-fab { display: none !important; }
             <div class="sub-tabs" id="subTabsSus">
                 <button class="sub-tab active" onclick="_subTab('reporte')">Reporte</button>
                 <button class="sub-tab" onclick="_subTab('empresas')">Empresas</button>
+                <button class="sub-tab" onclick="_subTab('licencias')">Licencias</button>
                 <button class="sub-tab" onclick="_subTab('subs')">Suscripciones</button>
                 <button class="sub-tab" onclick="_subTab('planes')">Planes</button>
                 <button class="sub-tab" onclick="_subTab('pagos')">Pagos</button>
@@ -3120,6 +3121,9 @@ body.bn-more-open .az-ai-fab { display: none !important; }
             </div>
 
             <!-- ── Auditoría ── -->
+            <!-- ── Licencias (Lote 9; la dibuja licencias-admin.js) ── -->
+            <div id="sub-view-licencias" style="display:none"></div>
+
             <div id="sub-view-auditoria" style="display:none">
                 <div class="card">
                     <div class="table-toolbar" style="display:flex;align-items:center;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--border);">
@@ -3719,6 +3723,8 @@ body.bn-more-open .az-ai-fab { display: none !important; }
     </script>
     <script src="clientes.js"></script>
     <script src="vendedor.js"></script>
+    <script src="licencia.js"></script>
+    <script src="licencias-admin.js"></script>
     <script src="embudo-calc.js"></script>
     <script src="prospectos.js"></script>
     <script src="inventario.js"></script>
@@ -6680,7 +6686,7 @@ CREATE TABLE IF NOT EXISTS sub_auditoria (
     window._subTab = function(tab) {
         _tabActual = tab;
         // Ocultar todos los views
-        ['reporte','empresas','subs','planes','pagos','auditoria'].forEach(function(v) {
+        ['reporte','empresas','licencias','subs','planes','pagos','auditoria'].forEach(function(v) {
             var el = document.getElementById('sub-view-' + v);
             if (el) el.style.display = 'none';
         });
@@ -6690,12 +6696,13 @@ CREATE TABLE IF NOT EXISTS sub_auditoria (
         // Tab activo
         document.querySelectorAll('#subTabsSus .sub-tab').forEach(function(b) { b.classList.remove('active'); });
         var tabs = document.querySelectorAll('#subTabsSus .sub-tab');
-        var idx = ['reporte','empresas','subs','planes','pagos','auditoria'].indexOf(tab);
+        var idx = ['reporte','empresas','licencias','subs','planes','pagos','auditoria'].indexOf(tab);
         if (tabs[idx]) tabs[idx].classList.add('active');
 
         if (!_tablesExist) { _renderSetupBanner(tab); return; }
         if (tab === 'reporte') _renderReporte();
         else if (tab === 'empresas') _renderEmpresas();
+        else if (tab === 'licencias' && window.LicenciasAdmin) window.LicenciasAdmin.render(document.getElementById('sub-view-licencias'));
         else if (tab === 'subs') _renderSubs();
         else if (tab === 'planes') _renderPlanes();
         else if (tab === 'pagos') _renderPagos();
@@ -7945,49 +7952,9 @@ window.closeUpgradeModal = function() {
     if (modal) modal.style.display = 'none';
 };
 
-window.checkTrialAndPlanStatus = function() {
-    try {
-        var user = JSON.parse(localStorage.getItem('crm_user') || '{}');
-        var org = user.empresa || {};
-        var estado = org.estado || user.estado || 'TRIAL';
-        var fechaFin = org.fecha_fin || user.fecha_fin;
-
-        var diasRestantes = 4;
-        if (fechaFin) {
-            var diff = new Date(fechaFin) - new Date();
-            diasRestantes = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-        } else {
-            var trialKey = 'azyvion_trial_start';
-            var start = localStorage.getItem(trialKey);
-            if (!start) {
-                start = Date.now();
-                localStorage.setItem(trialKey, start);
-            }
-            var elapsed = Math.floor((Date.now() - parseInt(start, 10)) / (1000 * 60 * 60 * 24));
-            diasRestantes = Math.max(0, 4 - elapsed);
-        }
-
-        if (estado === 'TRIAL' || !org.estado) {
-            if (diasRestantes > 0) {
-                var banner = document.getElementById('trialCountdownBanner');
-                var text = document.getElementById('trialBannerText');
-                if (banner && text) {
-                    text.innerHTML = '⏱️ <strong>Prueba gratuita activa:</strong> Te quedan <strong>' + diasRestantes + ' día' + (diasRestantes === 1 ? '' : 's') + '</strong> de acceso completo.';
-                    banner.style.display = 'flex';
-                }
-            } else {
-                var paywall = document.getElementById('paywallModal');
-                if (paywall) paywall.style.display = 'flex';
-            }
-        } else if (estado === 'EXPIRED' || estado === 'PAST_DUE') {
-            var paywall = document.getElementById('paywallModal');
-            if (paywall) paywall.style.display = 'flex';
-        }
-    } catch(e) {
-        console.error('[Trial] Error verificando estado:', e);
-    }
-};
-
+// [Lote 9] Reemplazado por licencias verificadas en el servidor (licencia.js + mi_licencia()).
+// La prueba de 4 días se contaba en localStorage y cualquiera podía saltarla.
+window.checkTrialAndPlanStatus = function() { return; };
 window.openSubscriptionCheckout = function(planId) {
     planId = planId || 'pro';
     var prices = { starter: 59, pro: 149, enterprise: 299 };
