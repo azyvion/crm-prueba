@@ -64,6 +64,20 @@ jobs:
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
+      # APK de prueba descargable sin iniciar sesión (pre-release pública), solo si no hay firma
+      - name: Publicar APK de prueba
+        if: env.HAY_FIRMA != 'true' && github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-prueba-${{ github.run_number }}
+          name: Azyvion CRM Android (prueba ${{ github.run_number }})
+          prerelease: true
+          make_latest: false
+          files: android/app/build/outputs/apk/debug/app-debug.apk
+          body: |
+            APK de prueba (firma de depuración). Para actualizar a una versión nueva hay que desinstalar la anterior.
+            Requiere Android 8.0 o superior.
+
       - name: Preparar llave de firma
         if: env.HAY_FIRMA == 'true'
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/azyvion.p12"
