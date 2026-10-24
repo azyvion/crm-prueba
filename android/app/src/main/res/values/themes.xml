@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema mínimo de la ventana; la interfaz la dibuja Compose (ui/theme/Theme.kt) -->
+    <style name="Theme.Azyvion" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#12345A</item>
+        <item name="android:navigationBarColor">#12345A</item>
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+</resources>
