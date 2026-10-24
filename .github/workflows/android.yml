@@ -54,7 +54,9 @@ jobs:
       - name: Resumen de errores
         if: failure()
         run: |
-          grep -E "^e: |^w: .*(error)|What went wrong|^> |error:|FAILED|Expected|AssertionError" "$RUNNER_TEMP/build.log"             | sed -E 's#file:///home/runner/work/[^/]+/[^/]+/android/##' | head -45             | while IFS= read -r l; do echo "::error::$l"; done
+          L="$RUNNER_TEMP/build.log"
+          # GitHub muestra hasta 10 anotaciones por paso: se agrupan varios errores por anotación
+          { grep -E "^e: " "$L"; grep -A6 -E "What went wrong" "$L"; grep -E "(AssertionError|expected:|FAILED$)" "$L"; }             | grep -v "^> Task" | sed -E 's#file:///home/runner/work/[^/]+/[^/]+/android/app/src/main/java/com/azyvion/crm/##'             | head -60 | paste -sd'|' | fold -w 900 | head -10             | while IFS= read -r l; do echo "::error::$l"; done
 
       - uses: actions/upload-artifact@v4
         with:
