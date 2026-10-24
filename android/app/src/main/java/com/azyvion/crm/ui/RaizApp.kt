@@ -129,7 +129,7 @@ private fun AppPrincipal(s: Sesion, lic: MiLicencia?) {
     }
 }
 
-fun irPestana(nav: NavHostController, ruta: String) {
+fun irPestana(nav: androidx.navigation.NavController, ruta: String) {
     nav.navigate(ruta) {
         popUpTo(nav.graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
